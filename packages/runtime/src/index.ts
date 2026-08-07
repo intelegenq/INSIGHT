@@ -37,3 +37,6 @@ export {
   calculateReportMetadata,
   generateSummary,
 } from "./report/index";
+
+export type { Snapshot, SnapshotRepository } from "./snapshot";
+export { InMemorySnapshotRepository, createSnapshot, snapshotFromRuntimeResult } from "./snapshot";

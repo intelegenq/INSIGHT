@@ -1,13 +1,10 @@
 import { defineConfig } from "vitest/config";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
   },
-  resolve: {
-    alias: {
-      "@insight/intelligence": "/home/ubuntu/Insight/packages/intelligence/src/index.ts",
-    },
-  },
+  plugins: [tsconfigPaths()],
 });
