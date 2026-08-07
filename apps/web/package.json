@@ -8,11 +8,13 @@
     "build": "next build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No web tests configured yet\""
+    "test": "vitest run"
   },
   "dependencies": {
     "@insight/core": "workspace:*",
     "@insight/data": "workspace:*",
+    "@insight/knowledge": "workspace:*",
+    "@insight/runtime": "workspace:*",
     "next": "^15.5.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
@@ -23,8 +25,11 @@
     "@types/node": "^22.15.3",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
+    "@vitest/runner": "^4.1.10",
     "eslint": "^9.35.0",
     "eslint-config-next": "^15.5.2",
-    "tailwindcss": "^4.1.13"
+    "tailwindcss": "^4.1.13",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^3.2.7"
   }
 }
