@@ -97,6 +97,12 @@ export type {
   RawDefiLlamaProtocol,
 } from "./providers/defillama/DefiLlamaProvider";
 
+export { CoinGeckoProvider } from "./providers/coingecko/CoinGeckoProvider";
+export type {
+  CoinGeckoConfig,
+  RawCoinGeckoMarketAsset,
+} from "./providers/coingecko/CoinGeckoProvider";
+
 export { MockHttpClient } from "./providers/mock/MockHttpClient";
 export type { MockHandler, MockResponse } from "./providers/mock/MockHttpClient";
 
