@@ -1,0 +1,17 @@
+{
+  "name": "@insight/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Domain entities, evidence, scoring, and report contracts for Insight.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
