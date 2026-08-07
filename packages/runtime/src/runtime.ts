@@ -21,6 +21,8 @@ import type { RuntimeDashboard, RuntimeOptions, RuntimeResult } from "./types";
  * Every public method is deterministic: results depend only on the options
  * passed in (reference timestamp included), never on wall-clock time.
  */
+import { validateReferenceDate, validateReportLens, assertValid } from "./validation";
+
 export class InsightRuntime {
   private readonly repository: ProjectRepository;
 
@@ -38,6 +40,12 @@ export class InsightRuntime {
 
   /** Build pipeline input from options, resolving defaults. */
   private buildInput(options: RuntimeOptions): PipelineInput {
+    // Validate runtime options
+    assertValid(validateReferenceDate(options.referenceDate), "InsightRuntime.buildInput");
+    if (options.lens) {
+      assertValid(validateReportLens(options.lens), "InsightRuntime.buildInput");
+    }
+
     return {
       repository: options.repository ?? this.repository,
       referenceDate: options.referenceDate,

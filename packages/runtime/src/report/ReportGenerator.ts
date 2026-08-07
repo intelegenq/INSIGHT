@@ -10,6 +10,7 @@ import {
   calculateReportMetadata,
   generateSummary,
 } from "./ReportTypes";
+import { validateEnum, assertValid } from "../validation";
 
 /**
  * ReportGenerator — Orchestrates report generation from intelligence signals.
@@ -31,6 +32,14 @@ export class ReportGenerator {
   private jsonRenderer: JsonRenderer;
 
   constructor(config: ReportGeneratorConfig = {}) {
+    // Validate config format if provided
+    if (config.format) {
+      assertValid(
+        validateEnum(config.format, ["markdown", "html", "json"], "format"),
+        "ReportGenerator.constructor"
+      );
+    }
+
     this.config = { ...DEFAULT_REPORT_CONFIG, ...config };
     this.markdownRenderer = new MarkdownRenderer();
     this.htmlRenderer = new HtmlRenderer();

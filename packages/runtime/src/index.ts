@@ -67,3 +67,31 @@ export {
   calculateReportMetadata,
   generateSummary,
 } from "./report/index";
+
+export {
+  InsightError,
+  InsightErrors,
+  normalizeError,
+  isRetryable,
+  getErrorCode,
+  type ErrorCode,
+  ErrorCodeCategory,
+  DefaultRetryable,
+} from "./errors";
+
+export {
+  validateRequiredString,
+  validateEnum,
+  validateReferenceDate,
+  validateReportLens,
+  validateHistoryRange,
+  validatePositiveInteger,
+  validateExecutionId,
+  validateSnapshotId,
+  validateJobId,
+  safeJsonParse,
+  validateAll,
+  assertValid,
+  unwrapOrThrow,
+  type ValidationResult,
+} from "./validation";

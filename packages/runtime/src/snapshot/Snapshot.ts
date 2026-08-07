@@ -8,10 +8,10 @@
  * Time fields are explicit and required by the caller; the runtime layer
  * never invents timestamps of its own.
  */
-
 import type { Evidence, Narrative, Project, Report } from "@insight/core";
 import type { KnowledgeGraph } from "@insight/knowledge";
 import type { RuntimeOptions, RuntimeResult, RuntimeSummary } from "../types";
+import { validateExecutionId, validateReferenceDate, assertValid } from "../validation";
 
 /**
  * A snapshot of a runtime execution.
@@ -58,6 +58,56 @@ export interface Snapshot {
  */
 export function buildSnapshotId(referenceDate: string, contentHash: string): string {
   return `snapshot-${referenceDate}-${contentHash}`;
+}
+
+/**
+ * Create a snapshot from components with validation.
+ */
+export function createSnapshot(input: {
+  referenceDate: string;
+  options: RuntimeOptions;
+  summary: RuntimeSummary;
+  projects: readonly Project[];
+  narratives: readonly Narrative[];
+  evidence: readonly Evidence[];
+  report: Report;
+  knowledgeGraph: KnowledgeGraph;
+  executionId?: string;
+}): Snapshot {
+  // Validate inputs
+  assertValid(validateReferenceDate(input.referenceDate), "createSnapshot");
+  if (input.executionId) {
+    assertValid(validateExecutionId(input.executionId), "createSnapshot");
+  }
+
+  const base = {
+    referenceDate: input.referenceDate,
+    options: input.options,
+    summary: input.summary,
+    projects: input.projects,
+    narratives: input.narratives,
+    evidence: input.evidence,
+    report: input.report,
+    knowledgeGraph: input.knowledgeGraph,
+    executionId: input.executionId,
+  };
+
+  const contentHash = hashSnapshotContent(base);
+  const id = buildSnapshotId(input.referenceDate, contentHash);
+
+  return Object.freeze({
+    id,
+    referenceDate: input.referenceDate,
+    createdAt: input.referenceDate,
+    options: input.options,
+    summary: input.summary,
+    projects: input.projects,
+    narratives: input.narratives,
+    evidence: input.evidence,
+    report: input.report,
+    knowledgeGraph: input.knowledgeGraph,
+    executionId: input.executionId,
+  });
 }
 
 /**

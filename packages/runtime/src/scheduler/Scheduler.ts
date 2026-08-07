@@ -5,6 +5,8 @@
  * No cron, no timers, no I/O — pure deterministic execution.
  */
 import type { RuntimeJob, ScheduledJob, ExecutionRecord, ExecutionStatus } from "./types";
+import { validateJobId, validateExecutionId, assertValid } from "../validation";
+import { InsightErrors } from "../errors";
 
 /**
  * Clock — supplies the current time as an ISO-8601 string. Injectable
@@ -68,18 +70,22 @@ export class Scheduler {
 
   /** Register a job. Overwrites if id exists. */
   register(job: ScheduledJob): this {
+    // Validate job ID
+    assertValid(validateJobId(job.id), "Scheduler.register");
     this.jobs.set(job.id, job);
     return this;
   }
 
   /** Unregister a job by id. */
   unregister(id: string): this {
+    assertValid(validateJobId(id), "Scheduler.unregister");
     this.jobs.delete(id);
     return this;
   }
 
   /** Get a job by id. */
   get(id: string): ScheduledJob | undefined {
+    assertValid(validateJobId(id), "Scheduler.get");
     return this.jobs.get(id);
   }
 
@@ -90,12 +96,13 @@ export class Scheduler {
 
   /** Execute a job by id with its registered options. */
   async execute(id: string): Promise<ReturnType<RuntimeJob["execute"]>> {
+    assertValid(validateJobId(id), "Scheduler.execute");
     const job = this.jobs.get(id);
     if (!job) {
-      throw new Error(`Job not found: ${id}`);
+      throw InsightErrors.notFound("Job", id);
     }
     if (!job.enabled) {
-      throw new Error(`Job disabled: ${id}`);
+      throw InsightErrors.validationError(`Job disabled: ${id}`, { jobId: id });
     }
 
     // Create execution record
@@ -130,6 +137,7 @@ export class Scheduler {
 
   /** Get an execution record by id. */
   getExecution(id: string): ExecutionRecord | undefined {
+    assertValid(validateExecutionId(id), "Scheduler.getExecution");
     return this.executions.get(id);
   }
 
@@ -140,6 +148,7 @@ export class Scheduler {
 
   /** Check if a job is registered. */
   has(id: string): boolean {
+    assertValid(validateJobId(id), "Scheduler.has");
     return this.jobs.has(id);
   }
 
