@@ -54,6 +54,39 @@ export { STATIC_AS_OF, staticFetch, staticHealth } from "./interfaces/DataProvid
 export { DemoProvider, demoProvider, demoRaw } from "./providers/DemoProvider";
 export { MockProvider, mockProvider, mockRaw } from "./providers/MockProvider";
 
+/* ── Provider SDK (base infrastructure) ─────────────────────────────── */
+export { BaseProvider } from "./providers/base/BaseProvider";
+export type { BaseProviderOptions } from "./providers/base/BaseProvider";
+
+export { HttpClient, fetchTransport } from "./providers/base/HttpClient";
+export type { HttpTransport, HttpResponse } from "./providers/base/HttpClient";
+
+export {
+  computeBackoff,
+  shouldRetry,
+  retrySchedule,
+  RetryPolicy,
+  DEFAULT_RETRY_CONFIG,
+} from "./providers/base/RetryPolicy";
+export type { RetryConfig } from "./providers/base/RetryPolicy";
+
+export { RateLimiter, validateRateLimitConfig, defaultClock } from "./providers/base/RateLimiter";
+export type { RateLimitConfig, Clock, TokensResult } from "./providers/base/RateLimiter";
+
+export { serializeQuery, resolveUrl } from "./providers/base/RequestOptions";
+export type {
+  HttpClientConfig,
+  HttpMethod,
+  RequestOptions,
+  RequestQuery,
+} from "./providers/base/RequestOptions";
+
+export { HeliusProvider } from "./providers/helius/HeliusProvider";
+export type { HeliusConfig } from "./providers/helius/HeliusProvider";
+
+export { MockHttpClient } from "./providers/mock/MockHttpClient";
+export type { MockHandler, MockResponse } from "./providers/mock/MockHttpClient";
+
 /* ── Transformer layer (the only place raw → core mapping happens) ─── */
 export {
   dedupeEvidence,
