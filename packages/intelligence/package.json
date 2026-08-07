@@ -1,0 +1,22 @@
+{
+  "name": "@insight/intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic intelligence engine: evidence, project health, narratives, and reports.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@insight/core": "workspace:*",
+    "@insight/data": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
