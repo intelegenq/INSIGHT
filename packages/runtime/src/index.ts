@@ -40,3 +40,15 @@ export {
 
 export type { Snapshot, SnapshotRepository } from "./snapshot";
 export { InMemorySnapshotRepository, createSnapshot, snapshotFromRuntimeResult } from "./snapshot";
+export { snapshottingRuntimeJob } from "./snapshot/snapshottingJob";
+export type { SnapshottingJobOptions, SnapshotExecutionInfo } from "./snapshot/snapshottingJob";
+
+export { HistoryAnalyzer, trendRank } from "./history";
+export type {
+  ChangeDirection,
+  HistoryDiff,
+  HistorySummary,
+  NarrativeChange,
+  ProjectChange,
+  ProjectMetricChange,
+} from "./history";
