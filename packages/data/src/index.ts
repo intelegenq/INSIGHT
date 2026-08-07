@@ -84,6 +84,13 @@ export type {
 export { HeliusProvider } from "./providers/helius/HeliusProvider";
 export type { HeliusConfig } from "./providers/helius/HeliusProvider";
 
+export { SolanaRPCProvider } from "./providers/solana/SolanaRPCProvider";
+export type {
+  SolanaRPCConfig,
+  RawSolanaAccount,
+  RawProgramData,
+} from "./providers/solana/SolanaRPCProvider";
+
 export { MockHttpClient } from "./providers/mock/MockHttpClient";
 export type { MockHandler, MockResponse } from "./providers/mock/MockHttpClient";
 
