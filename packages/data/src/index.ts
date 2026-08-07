@@ -106,6 +106,17 @@ export type {
 export { MockHttpClient } from "./providers/mock/MockHttpClient";
 export type { MockHandler, MockResponse } from "./providers/mock/MockHttpClient";
 
+/* ── Evidence layer ───────────────────────────────────────────────────── */
+export { EvidenceCollector } from "./evidence/EvidenceCollector";
+export { EvidenceNormalizer } from "./evidence/EvidenceNormalizer";
+export type {
+  EvidenceSource,
+  EvidenceItem,
+  EvidenceCollection,
+  EvidenceCollectorConfig,
+  NormalizeResult,
+} from "./evidence/EvidenceTypes";
+
 /* ── Transformer layer (the only place raw → core mapping happens) ─── */
 export {
   dedupeEvidence,
