@@ -8,7 +8,7 @@ import type { KnowledgeGraph } from "@insight/knowledge";
 
 import { runPipeline } from "./pipeline";
 import type { PipelineInput, PipelineResult } from "./pipeline";
-import { composeDashboard, composeRuntimeResult } from "./report";
+import { composeDashboard, composeRuntimeResult } from "./runtimeReport";
 import type { RuntimeDashboard, RuntimeOptions, RuntimeResult } from "./types";
 
 /**

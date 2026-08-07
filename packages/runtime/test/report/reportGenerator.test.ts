@@ -7,7 +7,7 @@ import {
   calculateReportMetadata,
   generateSummary,
   generateReportId,
-} from "../../src/report/index.ts";
+} from "../../src/report";
 import type { IntelligenceSignal, SignalEvidence } from "@insight/intelligence";
 
 function createMockSignal(overrides: Partial<IntelligenceSignal> = {}): IntelligenceSignal {

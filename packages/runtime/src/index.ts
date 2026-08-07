@@ -12,7 +12,7 @@ export type { RuntimeDashboard, RuntimeOptions, RuntimeResult, RuntimeSummary } 
 export { defaultPipelineInput, runPipeline } from "./pipeline";
 export type { PipelineInput, PipelineResult } from "./pipeline";
 
-export { buildSummary, composeDashboard, composeRuntimeResult } from "./report";
+export { buildSummary, composeDashboard, composeRuntimeResult } from "./runtimeReport";
 
 export { InsightRuntime, runtime } from "./runtime";
 
@@ -29,4 +29,4 @@ export {
   generateReportId,
   calculateReportMetadata,
   generateSummary,
-} from "./report";
+} from "./report/index";
