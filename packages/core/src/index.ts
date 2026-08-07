@@ -19,11 +19,6 @@ export type {
   ReportConfidence,
   ReportLens,
   ReportSections,
-} from "./types.js";
+} from "./types";
 
-export {
-  confidenceFromEvidence,
-  confidenceRange,
-  evidenceWeight,
-  rankNarratives,
-} from "./scoring.js";
+export { confidenceFromEvidence, confidenceRange, evidenceWeight, rankNarratives } from "./scoring";

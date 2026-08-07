@@ -11,6 +11,8 @@
     "test": "echo \"No web tests configured yet\""
   },
   "dependencies": {
+    "@insight/core": "workspace:*",
+    "@insight/data": "workspace:*",
     "next": "^15.5.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"

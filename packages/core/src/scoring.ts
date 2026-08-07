@@ -1,4 +1,4 @@
-import type { Confidence, Evidence, EvidenceStatus, Narrative, ReportConfidence } from "./types.js";
+import type { Confidence, Evidence, EvidenceStatus, Narrative, ReportConfidence } from "./types";
 
 /**
  * Deterministic scoring utilities.

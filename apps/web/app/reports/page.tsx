@@ -2,54 +2,26 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import type { ReportLens } from "@insight/core";
+import { projectRepository } from "@insight/data";
 
-const evidence = [
-  {
-    source: "Protocol telemetry",
-    note: "Illustrative TVL and lending-activity signal",
-    status: "Demo",
-  },
-  {
-    source: "Developer activity",
-    note: "Illustrative release and repository signal",
-    status: "Demo",
-  },
-  {
-    source: "Ecosystem monitoring",
-    note: "Illustrative narrative and launch signal",
-    status: "Demo",
-  },
-];
-
-const lenses = {
-  ecosystem: {
-    title: "Solana ecosystem pulse",
-    thesis:
-      "Liquidity and consumer activity are the strongest illustrative signals in this demo snapshot.",
-    catalyst:
-      "Protocol launches and lending demand could reinforce attention around the ecosystem.",
-    risk: "These signals are illustrative; live collection and source validation are not active yet.",
-  },
-  defi: {
-    title: "Solana DeFi brief",
-    thesis:
-      "The demo points to a constructive liquidity backdrop, led by lending and capital efficiency.",
-    catalyst: "Higher utilization and new collateral routes would be the next signals to validate.",
-    risk: "TVL and volume movements need source-backed context before they support a conclusion.",
-  },
-  infrastructure: {
-    title: "Solana infrastructure brief",
-    thesis: "Developer activity suggests continued attention on performance and data tooling.",
-    catalyst:
-      "Shipping milestones and adoption by consumer applications would strengthen the case.",
-    risk: "Repository activity alone is not a reliable proxy for real adoption.",
-  },
+const lensLabels: Record<ReportLens, string> = {
+  ecosystem: "Ecosystem",
+  defi: "DeFi",
+  infrastructure: "Infrastructure",
 };
 
+const lensOptions: ReportLens[] = ["ecosystem", "defi", "infrastructure"];
+
 export default function ReportsPage() {
-  const [lens, setLens] = useState<keyof typeof lenses>("ecosystem");
+  const [lens, setLens] = useState<ReportLens>("ecosystem");
   const [isEvidenceOpen, setEvidenceOpen] = useState(true);
-  const report = useMemo(() => lenses[lens], [lens]);
+
+  const report = useMemo(() => projectRepository.getReport(lens), [lens]);
+  const evidence = useMemo(
+    () => (report ? projectRepository.resolveEvidenceIds(report.evidenceIds) : []),
+    [report],
+  );
 
   return (
     <main>
@@ -81,17 +53,13 @@ export default function ReportsPage() {
         <aside className="report-controls" aria-label="Report controls">
           <span className="control-label">Research lens</span>
           <div className="lens-options">
-            {(Object.keys(lenses) as Array<keyof typeof lenses>).map((option) => (
+            {lensOptions.map((option) => (
               <button
                 className={lens === option ? "lens active" : "lens"}
                 key={option}
                 onClick={() => setLens(option)}
               >
-                {option === "ecosystem"
-                  ? "Ecosystem"
-                  : option === "defi"
-                    ? "DeFi"
-                    : "Infrastructure"}
+                {lensLabels[option]}
               </button>
             ))}
           </div>
@@ -107,26 +75,30 @@ export default function ReportsPage() {
             <span>INSIGHT RESEARCH MEMO</span>
             <span>07 AUG 2026 · DEMO</span>
           </div>
-          <h2>{report.title}</h2>
-          <div className="memo-grid">
-            <div>
-              <p className="memo-label">Executive summary</p>
-              <p>{report.thesis}</p>
-            </div>
-            <div>
-              <p className="memo-label">What could matter next</p>
-              <p>{report.catalyst}</p>
-            </div>
-            <div>
-              <p className="memo-label">Research caveat</p>
-              <p>{report.risk}</p>
-            </div>
-          </div>
-          <div className="memo-footer">
-            <span>Confidence</span>
-            <strong>Illustrative</strong>
-            <span>Not investment advice</span>
-          </div>
+          {report && (
+            <>
+              <h2>{report.title}</h2>
+              <div className="memo-grid">
+                <div>
+                  <p className="memo-label">Executive summary</p>
+                  <p>{report.sections.thesis}</p>
+                </div>
+                <div>
+                  <p className="memo-label">What could matter next</p>
+                  <p>{report.sections.catalyst}</p>
+                </div>
+                <div>
+                  <p className="memo-label">Research caveat</p>
+                  <p>{report.sections.risk}</p>
+                </div>
+              </div>
+              <div className="memo-footer">
+                <span>Confidence</span>
+                <strong>{report.confidence}</strong>
+                <span>Not investment advice</span>
+              </div>
+            </>
+          )}
         </article>
 
         <aside className="evidence-panel">
@@ -144,9 +116,9 @@ export default function ReportsPage() {
           {isEvidenceOpen && (
             <div className="evidence-list">
               {evidence.map((item) => (
-                <article key={item.source}>
+                <article key={item.id}>
                   <div>
-                    <h3>{item.source}</h3>
+                    <h3>{item.source.name}</h3>
                     <p>{item.note}</p>
                   </div>
                   <span>{item.status}</span>

@@ -1,0 +1,19 @@
+{
+  "name": "@insight/data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Intelligence data layer: demo sources, fixtures, and repositories backed by @insight/core.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@insight/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

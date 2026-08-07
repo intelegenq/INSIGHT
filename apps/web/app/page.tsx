@@ -1,46 +1,20 @@
-const narratives = [
-  {
-    name: "DeFi liquidity",
-    change: "+18.4%",
-    note: "Borrowing activity and TVL are expanding across the lending stack.",
-    tone: "positive",
-  },
-  {
-    name: "Consumer apps",
-    change: "+7.2%",
-    note: "New launches are bringing more recurring on-chain activity.",
-    tone: "positive",
-  },
-  {
-    name: "Infrastructure",
-    change: "Watch",
-    note: "Developer releases are concentrated around performance and data tooling.",
-    tone: "neutral",
-  },
-];
+import { projectRepository } from "@insight/data";
+import type { NarrativeTrend } from "@insight/core";
 
-const events = [
-  {
-    time: "09:40 UTC",
-    title: "Liquidity momentum strengthens across leading protocols",
-    source: "Demo signal",
-    confidence: "Illustrative",
-  },
-  {
-    time: "08:15 UTC",
-    title: "Developer activity points to renewed infrastructure focus",
-    source: "Demo signal",
-    confidence: "Illustrative",
-  },
-  {
-    time: "06:30 UTC",
-    title: "Solana ecosystem pulse prepared for review",
-    source: "Insight",
-    confidence: "Draft",
-  },
-];
+function trendTone(trend: NarrativeTrend): string {
+  switch (trend) {
+    case "up":
+      return "positive";
+    default:
+      return "neutral";
+  }
+}
 
 export default function Home() {
+  const pulse = projectRepository.getPulse();
+  const timelines = projectRepository.getTimeline();
+  const narratives = projectRepository.getNarratives();
+
   return (
     <main>
       <nav className="nav" aria-label="Primary navigation">
@@ -70,7 +44,7 @@ export default function Home() {
         </p>
         <div className="hero-actions">
           <a className="primary-button" href="#pulse">
-            Explore today’s pulse <span>↓</span>
+            Explore today&apos;s pulse <span>↓</span>
           </a>
           <a className="text-link" href="/reports">
             View sample brief →
@@ -85,27 +59,22 @@ export default function Home() {
             <h2 id="pulse-title">A quieter way to read the day.</h2>
           </div>
           <p className="as-of">
-            Demo snapshot · 07 Aug 2026
+            Demo snapshot · {pulse.asOf}
             <br />
             Not live market data
           </p>
         </div>
         <div className="metric-grid">
-          <article className="metric-card">
-            <span>Signals reviewed</span>
-            <strong>24</strong>
-            <small>Illustrative events across on-chain and off-chain sources</small>
-          </article>
-          <article className="metric-card">
-            <span>Emerging narratives</span>
-            <strong>03</strong>
-            <small>Detected themes awaiting source-backed scoring</small>
-          </article>
-          <article className="metric-card violet">
-            <span>Research confidence</span>
-            <strong>—</strong>
-            <small>Available once connected sources and evaluation rules are live</small>
-          </article>
+          {pulse.metrics.map((metric) => (
+            <article
+              className={metric.variant === "violet" ? "metric-card violet" : "metric-card"}
+              key={metric.id}
+            >
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.caption}</small>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -120,11 +89,11 @@ export default function Home() {
         </div>
         <div className="narrative-list">
           {narratives.map((n) => (
-            <article className="narrative" key={n.name}>
+            <article className="narrative" key={n.id}>
               <div>
                 <div className="narrative-top">
                   <h3>{n.name}</h3>
-                  <span className={n.tone}>{n.change}</span>
+                  <span className={trendTone(n.trend)}>{n.change}</span>
                 </div>
                 <p>{n.note}</p>
               </div>
@@ -145,8 +114,8 @@ export default function Home() {
           </a>
         </div>
         <div className="event-list">
-          {events.map((event) => (
-            <article className="event" key={event.time}>
+          {timelines.map((event) => (
+            <article className="event" key={event.id}>
               <time>{event.time}</time>
               <div>
                 <h3>{event.title}</h3>
