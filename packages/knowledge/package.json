@@ -1,0 +1,22 @@
+{
+  "name": "@insight/knowledge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic knowledge graph: entity and relationship models, graph builder, traversal, and resolver API.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@insight/core": "workspace:*",
+    "@insight/data": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
