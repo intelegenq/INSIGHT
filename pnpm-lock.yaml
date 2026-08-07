@@ -108,6 +108,28 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)
 
+  packages/runtime:
+    dependencies:
+      "@insight/core":
+        specifier: workspace:*
+        version: link:../core
+      "@insight/data":
+        specifier: workspace:*
+        version: link:../data
+      "@insight/intelligence":
+        specifier: workspace:*
+        version: link:../intelligence
+      "@insight/knowledge":
+        specifier: workspace:*
+        version: link:../knowledge
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)
+
 packages:
   "@alloc/quick-lru@5.2.0":
     resolution:

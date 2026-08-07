@@ -1,0 +1,24 @@
+{
+  "name": "@insight/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic orchestration layer for Insight. Thin coordination only: pipeline ordering and result composition.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@insight/core": "workspace:*",
+    "@insight/data": "workspace:*",
+    "@insight/intelligence": "workspace:*",
+    "@insight/knowledge": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

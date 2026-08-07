@@ -1,0 +1,17 @@
+/**
+ * @insight/runtime — deterministic orchestration layer for Insight.
+ *
+ * Thin coordination only: wires @insight/data, @insight/intelligence, and
+ * @insight/knowledge together, and composes results. Contains no business
+ * logic of its own. No React, no Next.js, no I/O, no Date.now(), no
+ * randomness — every output is deterministic given its inputs.
+ */
+
+export type { RuntimeDashboard, RuntimeOptions, RuntimeResult, RuntimeSummary } from "./types";
+
+export { defaultPipelineInput, runPipeline } from "./pipeline";
+export type { PipelineInput, PipelineResult } from "./pipeline";
+
+export { buildSummary, composeDashboard, composeRuntimeResult } from "./report";
+
+export { InsightRuntime, runtime } from "./runtime";
