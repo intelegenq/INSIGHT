@@ -9,3 +9,5 @@ export type { SnapshotRepository } from "./SnapshotRepository";
 export { InMemorySnapshotRepository } from "./InMemorySnapshotRepository";
 
 export { createSnapshot, snapshotFromRuntimeResult } from "./createSnapshot";
+export { snapshottingRuntimeJob } from "./snapshottingJob";
+export type { SnapshottingJobOptions, SnapshotExecutionInfo } from "./snapshottingJob";
