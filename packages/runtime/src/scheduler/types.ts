@@ -36,3 +36,34 @@ export interface ScheduledJob extends RuntimeJob {
   /** Optional: tags for filtering/grouping. */
   tags?: string[];
 }
+
+/**
+ * ExecutionStatus — lifecycle state of a job execution.
+ */
+export type ExecutionStatus = "pending" | "running" | "completed" | "failed";
+
+/**
+ * ExecutionRecord — tracks a single job execution lifecycle.
+ */
+export interface ExecutionRecord {
+  /** Unique execution identifier. */
+  id: string;
+
+  /** Job identifier that was executed. */
+  jobId: string;
+
+  /** Current status of the execution. */
+  status: ExecutionStatus;
+
+  /** ISO timestamp when execution started. */
+  startedAt: string;
+
+  /** ISO timestamp when execution completed (if finished). */
+  completedAt?: string;
+
+  /** Runtime result (available when completed). */
+  result?: RuntimeResult;
+
+  /** Error message (available when failed). */
+  error?: string;
+}

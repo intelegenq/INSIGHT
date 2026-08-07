@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Scheduler } from "../src/scheduler/Scheduler";
 import { InsightRuntimeJob } from "../src/scheduler/InsightRuntimeJob";
 import type { RuntimeOptions, RuntimeResult } from "../src/types";
-import type { ScheduledJob } from "../src/scheduler/types";
+import type { ScheduledJob, ExecutionRecord, ExecutionStatus } from "../src/scheduler/types";
 
 const REFERENCE_DATE = "2026-08-07T00:00:00.000Z";
 const options: RuntimeOptions = { referenceDate: REFERENCE_DATE };
@@ -107,5 +107,141 @@ describe("Scheduler with InsightRuntimeJob", () => {
     const list = scheduler.list();
     expect(list).toHaveLength(2);
     expect(list.map((j) => j.id).sort()).toEqual(["job-1", "job-2"]);
+  });
+});
+
+describe("Scheduler Execution Lifecycle", () => {
+  it("creates execution record with pending status then running on execute", async () => {
+    const scheduler = new Scheduler();
+    const job = new InsightRuntimeJob("lifecycle-job", "Lifecycle Job", options);
+
+    scheduler.register({
+      ...job,
+      execute: job.execute.bind(job),
+      enabled: true,
+    } as ScheduledJob);
+
+    const execPromise = scheduler.execute("lifecycle-job");
+
+    // Check execution record was created
+    const executions = scheduler.listExecutions();
+    expect(executions.length).toBeGreaterThan(0);
+
+    const execution = executions[0]!;
+    expect(execution.jobId).toBe("lifecycle-job");
+    expect(execution.status).toBe("running");
+    expect(execution.startedAt).toBeDefined();
+    expect(execution.completedAt).toBeUndefined();
+    expect(execution.result).toBeUndefined();
+    expect(execution.error).toBeUndefined();
+
+    await execPromise;
+  });
+
+  it("marks execution completed with result on success", async () => {
+    const scheduler = new Scheduler();
+    const job = new InsightRuntimeJob("success-job", "Success Job", options);
+
+    scheduler.register({
+      ...job,
+      execute: job.execute.bind(job),
+      enabled: true,
+    } as ScheduledJob);
+
+    await scheduler.execute("success-job");
+
+    const executions = scheduler.listExecutions();
+    const execution = executions.find((e) => e.jobId === "success-job");
+
+    expect(execution).toBeDefined();
+    expect(execution!.status).toBe("completed");
+    expect(execution!.completedAt).toBeDefined();
+    expect(execution!.result).toBeDefined();
+    expect(execution!.result!.projects.length).toBeGreaterThan(0);
+    expect(execution!.error).toBeUndefined();
+  });
+
+  it("marks execution failed with error on failure", async () => {
+    const scheduler = new Scheduler();
+
+    // Register a job that will fail
+    scheduler.register({
+      id: "fail-job",
+      name: "Fail Job",
+      options,
+      enabled: true,
+      execute: async () => {
+        throw new Error("Simulated failure");
+      },
+    } as ScheduledJob);
+
+    await expect(scheduler.execute("fail-job")).rejects.toThrow("Simulated failure");
+
+    const executions = scheduler.listExecutions();
+    const execution = executions.find((e) => e.jobId === "fail-job");
+
+    expect(execution).toBeDefined();
+    expect(execution!.status).toBe("failed");
+    expect(execution!.completedAt).toBeDefined();
+    expect(execution!.error).toBe("Simulated failure");
+    expect(execution!.result).toBeUndefined();
+  });
+
+  it("getExecution retrieves specific execution record", async () => {
+    const scheduler = new Scheduler();
+    const job = new InsightRuntimeJob("get-job", "Get Job", options);
+
+    scheduler.register({
+      ...job,
+      execute: job.execute.bind(job),
+      enabled: true,
+    } as ScheduledJob);
+
+    await scheduler.execute("get-job");
+
+    const executions = scheduler.listExecutions();
+    expect(executions.length).toBe(1);
+    const executionId = executions[0]!.id;
+
+    const retrieved = scheduler.getExecution(executionId);
+    expect(retrieved).toBeDefined();
+    expect(retrieved!.id).toBe(executionId);
+    expect(retrieved!.jobId).toBe("get-job");
+  });
+
+  it("listExecutions returns all executions in order", async () => {
+    const scheduler = new Scheduler();
+    const job1 = new InsightRuntimeJob("list-1", "List 1", options);
+    const job2 = new InsightRuntimeJob("list-2", "List 2", options);
+
+    scheduler.register({ ...job1, execute: job1.execute.bind(job1), enabled: true } as ScheduledJob);
+    scheduler.register({ ...job2, execute: job2.execute.bind(job2), enabled: true } as ScheduledJob);
+
+    await scheduler.execute("list-1");
+    await scheduler.execute("list-2");
+
+    const executions = scheduler.listExecutions();
+    expect(executions).toHaveLength(2);
+    expect(executions[0]!.jobId).toBe("list-1");
+    expect(executions[1]!.jobId).toBe("list-2");
+    expect(executions[0]!.status).toBe("completed");
+    expect(executions[1]!.status).toBe("completed");
+  });
+
+  it("clearExecutions removes all execution records", async () => {
+    const scheduler = new Scheduler();
+    const job = new InsightRuntimeJob("clear-job", "Clear Job", options);
+
+    scheduler.register({
+      ...job,
+      execute: job.execute.bind(job),
+      enabled: true,
+    } as ScheduledJob);
+
+    await scheduler.execute("clear-job");
+    expect(scheduler.listExecutions()).toHaveLength(1);
+
+    scheduler.clearExecutions();
+    expect(scheduler.listExecutions()).toHaveLength(0);
   });
 });

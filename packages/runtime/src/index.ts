@@ -21,6 +21,8 @@ export {
   scheduler,
   type RuntimeJob,
   type ScheduledJob,
+  type ExecutionRecord,
+  type ExecutionStatus,
 } from "./scheduler";
 
 export {
