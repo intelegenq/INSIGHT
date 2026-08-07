@@ -7,6 +7,24 @@
 import type { RuntimeJob, ScheduledJob, ExecutionRecord, ExecutionStatus } from "./types";
 
 /**
+ * Clock — supplies the current time as an ISO-8601 string. Injectable
+ * so tests and the snapshot pipeline can drive the scheduler with a
+ * fixed timeline.
+ */
+export type Clock = () => string;
+
+/** Default clock: ISO-8601 from the platform clock. */
+const defaultClock: Clock = () => new Date().toISOString();
+
+/**
+ * SchedulerOptions — configuration for the Scheduler instance.
+ */
+export interface SchedulerOptions {
+  /** Clock used to stamp execution records. Defaults to the platform clock. */
+  clock?: Clock;
+}
+
+/**
  * Scheduler — manages registered jobs and executes them on demand.
  *
  * Does NOT:
@@ -18,21 +36,25 @@ export class Scheduler {
   private readonly jobs: Map<string, ScheduledJob> = new Map();
   private readonly executions: Map<string, ExecutionRecord> = new Map();
   private executionCounter = 0;
+  private readonly clock: Clock;
+
+  constructor(options: SchedulerOptions = {}) {
+    this.clock = options.clock ?? defaultClock;
+  }
 
   /** Generate a unique execution ID. */
   private generateExecutionId(): string {
-    this.executionCounter++;
-    return `exec-${Date.now()}-${this.executionCounter}`;
+    this.executionCounter += 1;
+    return `exec-${this.executionCounter.toString(36).padStart(6, "0")}`;
   }
 
   /** Create a new execution record with pending status. */
   private createExecutionRecord(jobId: string): ExecutionRecord {
-    const now = new Date().toISOString();
     return {
       id: this.generateExecutionId(),
       jobId,
       status: "pending",
-      startedAt: now,
+      startedAt: this.clock(),
     };
   }
 
@@ -89,7 +111,7 @@ export class Scheduler {
       // Mark as completed
       this.updateExecution(execution.id, {
         status: "completed",
-        completedAt: new Date().toISOString(),
+        completedAt: this.clock(),
         result,
       });
 
@@ -98,7 +120,7 @@ export class Scheduler {
       // Mark as failed
       this.updateExecution(execution.id, {
         status: "failed",
-        completedAt: new Date().toISOString(),
+        completedAt: this.clock(),
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -132,6 +154,11 @@ export class Scheduler {
     this.executions.clear();
     this.executionCounter = 0;
     return this;
+  }
+
+  /** Get the current execution counter (for snapshotting). */
+  getExecutionCount(): number {
+    return this.executionCounter;
   }
 }
 

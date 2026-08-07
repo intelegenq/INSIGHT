@@ -60,7 +60,10 @@ export {
   type ReportMetadata,
   type ReportGeneratorConfig,
   DEFAULT_REPORT_CONFIG,
-  generateReportId,
+  REPORT_EPOCH_MS,
+  REPORT_GENERATOR_VERSION,
+  buildDeterministicReportId,
+  buildDeterministicGeneratedAt,
   calculateReportMetadata,
   generateSummary,
 } from "./report/index";

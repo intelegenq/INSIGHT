@@ -245,3 +245,43 @@ describe("Scheduler Execution Lifecycle", () => {
     expect(scheduler.listExecutions()).toHaveLength(0);
   });
 });
+
+describe("Scheduler — injected clock", () => {
+  it("uses injected clock to stamp startedAt and completedAt", async () => {
+    const calls: string[] = [];
+    const fakeClock = () => {
+      const t = `2026-01-01T00:00:0${calls.length}.000Z`;
+      calls.push(t);
+      return t;
+    };
+    const scheduler = new Scheduler({ clock: fakeClock });
+    const job = new InsightRuntimeJob("clock-job", "Clock Job", options);
+
+    scheduler.register({
+      ...job,
+      execute: job.execute.bind(job),
+      enabled: true,
+    } as ScheduledJob);
+
+    await scheduler.execute("clock-job");
+    const exec = scheduler.listExecutions()[0]!;
+    expect(exec.startedAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(exec.completedAt).toBe("2026-01-01T00:00:01.000Z");
+  });
+
+  it("execution ids are deterministic across runs with no clock involved", async () => {
+    const scheduler1 = new Scheduler();
+    const scheduler2 = new Scheduler();
+    const job1 = new InsightRuntimeJob("det-1", "Det 1", options);
+    const job2 = new InsightRuntimeJob("det-2", "Det 2", options);
+    scheduler1.register({ ...job1, execute: job1.execute.bind(job1), enabled: true } as ScheduledJob);
+    scheduler2.register({ ...job2, execute: job2.execute.bind(job2), enabled: true } as ScheduledJob);
+    await scheduler1.execute("det-1");
+    await scheduler2.execute("det-2");
+    const id1 = scheduler1.listExecutions()[0]!.id;
+    const id2 = scheduler2.listExecutions()[0]!.id;
+    // No wall-clock component in the id
+    expect(id1).toMatch(/^exec-[0-9a-z]{6}$/);
+    expect(id2).toMatch(/^exec-[0-9a-z]{6}$/);
+  });
+});

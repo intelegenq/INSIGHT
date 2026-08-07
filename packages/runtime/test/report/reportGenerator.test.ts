@@ -6,7 +6,7 @@ import {
   JsonRenderer,
   calculateReportMetadata,
   generateSummary,
-  generateReportId,
+  buildDeterministicReportId,
 } from "../../src/report";
 import type { IntelligenceSignal, SignalEvidence } from "@insight/intelligence";
 
@@ -40,12 +40,28 @@ function createMockSignals(count: number): IntelligenceSignal[] {
 }
 
 describe("ReportTypes — helpers", () => {
-  it("generateReportId produces unique IDs", () => {
-    const id1 = generateReportId();
-    const id2 = generateReportId();
-    expect(id1).toMatch(/^report_\d+_[a-z0-9]+$/);
-    expect(id2).toMatch(/^report_\d+_[a-z0-9]+$/);
+  it("buildDeterministicReportId is content-derived and stable", () => {
+    const signals = createMockSignals(3);
+    const id1 = buildDeterministicReportId(signals, "Title A");
+    const id2 = buildDeterministicReportId(signals, "Title A");
+    expect(id1).toBe(id2);
+    expect(id1).toMatch(/^report-[0-9a-f]{8}(-.+)?$/);
+  });
+
+  it("buildDeterministicReportId differs when content differs", () => {
+    const idA = buildDeterministicReportId(createMockSignals(2), "Title A");
+    const idB = buildDeterministicReportId(createMockSignals(2), "Title B");
+    const idC = buildDeterministicReportId(createMockSignals(3), "Title A");
+    expect(idA).not.toBe(idB);
+    expect(idA).not.toBe(idC);
+  });
+
+  it("buildDeterministicReportId suffix allows same content to be uniquely reported", () => {
+    const signals = createMockSignals(1);
+    const id1 = buildDeterministicReportId(signals, "Title", "run-1");
+    const id2 = buildDeterministicReportId(signals, "Title", "run-2");
     expect(id1).not.toBe(id2);
+    expect(id1).toMatch(/^report-[0-9a-f]{8}-run-1$/);
   });
 
   it("calculateReportMetadata computes correct values", () => {
@@ -291,7 +307,7 @@ describe("ReportGenerator", () => {
     const signals = createMockSignals(3);
     const report = gen.generateReport(signals);
 
-    expect(report.id).toMatch(/^report_\d+_[a-z0-9]+$/);
+    expect(report.id).toMatch(/^report-[0-9a-f]{8}(-.+)?$/);
     expect(report.title).toBe("Custom Title");
     expect(report.signals).toEqual(signals);
     expect(report.summary).toContain("3 signal");

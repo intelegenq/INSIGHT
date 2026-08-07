@@ -5,6 +5,10 @@ import type { IntelligenceSignal } from "@insight/intelligence";
  *
  * This layer transforms IntelligenceSignal arrays into human-readable artifacts.
  * No reasoning, no data fetching — pure presentation formatting.
+ *
+ * All ID and timestamp generation is deterministic and content-derived. No
+ * wall-clock reads, no randomness. This makes reports reproducible across
+ * runs and friendly to snapshot diffing and golden-file testing.
  */
 
 export type ReportFormat = "markdown" | "html" | "json";
@@ -41,29 +45,56 @@ export const DEFAULT_REPORT_CONFIG: Required<ReportGeneratorConfig> = {
   includeSignalDetails: true,
 };
 
-export function generateReportId(): string {
-  return `report_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+export const REPORT_GENERATOR_VERSION = "1.0.0";
+
+/**
+ * Build a deterministic report id from the report's content payload.
+ *
+ * The id encodes the title, signal identifiers, and a content hash, so the
+ * same input always produces the same id. The optional `suffix` lets
+ * callers guarantee uniqueness when a single payload needs to be reported
+ * on multiple times (e.g. separate runs of an identical input).
+ */
+export function buildDeterministicReportId(
+  signals: readonly IntelligenceSignal[],
+  title: string,
+  suffix?: string,
+): string {
+  const signalIds = [...signals.map((s) => s.id)].sort();
+  const payload = `${title}|${signalIds.join(",")}`;
+  const hash = fnv1a32(payload).toString(16).padStart(8, "0");
+  if (suffix === undefined || suffix.length === 0) {
+    return `report-${hash}`;
+  }
+  return `report-${hash}-${suffix}`;
 }
 
 /**
- * Deterministic report ID generator for testing.
- * Uses a counter instead of randomness.
+ * Build a deterministic generatedAt timestamp for a report.
+ *
+ * Combines a fixed epoch (the Insight M0 milestone: 2024-08-07T12:00:00Z)
+ * with a content-derived offset so equal inputs always yield equal
+ * timestamps. The offset is bounded so the value stays within a sane
+ * range and never collides with real wall-clock values.
  */
-let reportIdCounter = 0;
-export function generateDeterministicReportId(): string {
-  return `report_${Date.now()}_${++reportIdCounter}`;
+export function buildDeterministicGeneratedAt(
+  signals: readonly IntelligenceSignal[],
+  title: string,
+): number {
+  const payload = `${title}|${signals.length}|${signals[0]?.id ?? ""}`;
+  const offset = fnv1a32(payload) % 1_000_000; // bounded, deterministic offset
+  return REPORT_EPOCH_MS + offset;
 }
 
 /**
- * Deterministic timestamp generator for testing.
- * Uses a fixed base timestamp plus an incrementing counter.
+ * Fixed reference epoch for deterministic timestamps.
+ * 2024-08-07T12:00:00.000Z — chosen as the Insight M0 milestone anchor.
  */
-let timestampCounter = 0;
-const BASE_TIMESTAMP = 1723032000000; // Fixed base: 2024-08-07T12:00:00.000Z
-export function generateDeterministicTimestamp(): number {
-  return BASE_TIMESTAMP + ++timestampCounter;
-}
+export const REPORT_EPOCH_MS = 1_723_032_000_000;
 
+/**
+ * Compute the report metadata block from a list of signals.
+ */
 export function calculateReportMetadata(signals: IntelligenceSignal[]): ReportMetadata {
   const signalTypes = [...new Set(signals.map((s) => s.type))];
   const avgConfidence =
@@ -73,7 +104,7 @@ export function calculateReportMetadata(signals: IntelligenceSignal[]): ReportMe
     signalCount: signals.length,
     signalTypes,
     avgConfidence: Number(avgConfidence.toFixed(4)),
-    generatorVersion: "1.0.0",
+    generatorVersion: REPORT_GENERATOR_VERSION,
   };
 }
 
@@ -100,4 +131,14 @@ export function generateSummary(signals: IntelligenceSignal[]): string {
   const totalEvidence = signals.reduce((sum, s) => sum + s.evidenceIds.length, 0);
 
   return `Generated ${signals.length} signal(s) across ${topTypes}. ${highConfidence} high-confidence signal(s). Based on ${totalEvidence} total evidence reference(s).`;
+}
+
+/** FNV-1a 32-bit hash. Mirrors the implementation in Snapshot.ts. */
+function fnv1a32(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
 }
