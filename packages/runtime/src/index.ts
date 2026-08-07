@@ -15,3 +15,18 @@ export type { PipelineInput, PipelineResult } from "./pipeline";
 export { buildSummary, composeDashboard, composeRuntimeResult } from "./report";
 
 export { InsightRuntime, runtime } from "./runtime";
+
+export {
+  ReportGenerator,
+  MarkdownRenderer,
+  HtmlRenderer,
+  JsonRenderer,
+  type Report,
+  type ReportFormat,
+  type ReportMetadata,
+  type ReportGeneratorConfig,
+  DEFAULT_REPORT_CONFIG,
+  generateReportId,
+  calculateReportMetadata,
+  generateSummary,
+} from "./report";

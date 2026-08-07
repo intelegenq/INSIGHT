@@ -117,6 +117,28 @@ export type {
   NormalizeResult,
 } from "./evidence/EvidenceTypes";
 
+/* ── Normalization layer ──────────────────────────────────────────────── */
+export {
+  isCanonicalEvidence,
+  createCanonicalEvidence,
+  createSourceMetadata,
+  isSourceMetadata,
+  BaseNormalizer,
+  normalizeWithErrors,
+  NormalizationRegistry,
+  normalizationRegistry,
+  NormalizationError,
+  UnsupportedSourceError,
+  InvalidPayloadError,
+  MissingRequiredFieldError,
+  SchemaMismatchError,
+  isNormalizationError,
+  isUnsupportedSourceError,
+  isInvalidPayloadError,
+  isMissingRequiredFieldError,
+  isSchemaMismatchError,
+} from "./normalization";
+
 /* ── Transformer layer (the only place raw → core mapping happens) ─── */
 export {
   dedupeEvidence,

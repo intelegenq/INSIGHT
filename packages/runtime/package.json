@@ -5,7 +5,14 @@
   "type": "module",
   "description": "Deterministic orchestration layer for Insight. Thin coordination only: pipeline ordering and result composition.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./report": {
+      "types": "./src/report/index.ts",
+      "default": "./src/report/index.ts"
+    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

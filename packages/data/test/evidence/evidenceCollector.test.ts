@@ -1,10 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 import { EvidenceCollector } from "../../src/evidence/EvidenceCollector";
 import { EvidenceNormalizer } from "../../src/evidence/EvidenceNormalizer";
-import type { DataProvider, ProviderFetch, RawProject } from "../../src/interfaces/DataProvider";
+import type {
+  DataProvider,
+  ProviderFetch,
+  RawProject,
+  RawEvidence,
+  RawNarrative,
+} from "../../src/interfaces/DataProvider";
 import type { RawCoinGeckoMarketAsset } from "../../src/providers/coingecko/CoinGeckoProvider";
 import type { RawDefiLlamaProtocol } from "../../src/providers/defillama/DefiLlamaProvider";
 import type { RawProgramData } from "../../src/providers/solana/SolanaRPCProvider";
+import { NormalizationRegistry } from "../../src/normalization/NormalizationRegistry";
+import type { Normalizer } from "../../src/normalization/Normalizer";
+import type { CanonicalEvidence } from "../../src/normalization/CanonicalEvidence";
+import { createSourceMetadata } from "../../src/normalization/SourceMetadata";
 
 // Mock provider factory
 function createMockProvider(
@@ -33,24 +43,75 @@ function createMockProvider(
   };
 }
 
+// Create a test normalizer for mock providers
+function createTestNormalizer(
+  providerName: string,
+): Normalizer<RawProject | RawEvidence | RawNarrative> {
+  return {
+    supports: (sourceType: string) => sourceType === providerName,
+    normalize: (input) => {
+      const metadata = createSourceMetadata({
+        provider: providerName,
+        providerVersion: "1.0.0",
+        schemaVersion: "1.0.0",
+        collectedAt: Date.now(),
+      });
+
+      // Extend metadata to satisfy CanonicalEvidence requirement
+      const extendedMetadata: import("../../src/normalization/SourceMetadata").SourceMetadata &
+        Record<string, unknown> = {
+        ...metadata,
+      };
+
+      const id = (input as RawProject)?.id ?? "unknown";
+
+      return [
+        {
+          id: `${providerName}-${id}`,
+          sourceId: providerName,
+          sourceType: providerName,
+          evidenceType: "raw-project" as const,
+          collectedAt: Date.now(),
+          content: input,
+          tags: [],
+          metadata: extendedMetadata,
+        },
+      ];
+    },
+  };
+}
+
 describe("EvidenceCollector", () => {
   it("collects from a single provider", async () => {
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("test-provider"), ["test-provider"]);
+
     const provider = createMockProvider("test-provider", [
       { id: "proj-1", name: "Project 1", category: "test", description: "desc" },
     ]);
-    const collector = new EvidenceCollector(new Map([["test-provider", provider]]));
+    const collector = new EvidenceCollector(new Map([["test-provider", provider]]), {}, registry);
 
     const result = await collector.collect();
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.id).toBe("test-provider-proj-1");
-    expect(result.items[0]?.type).toBe("project");
+    expect(result.items[0]?.type).toBe("raw-project");
     expect(result.items[0]?.source.provider).toBe("test-provider");
+    expect(result.items[0]?.data.content).toEqual({
+      id: "proj-1",
+      name: "Project 1",
+      category: "test",
+      description: "desc",
+    });
     expect(result.metadata?.providersSucceeded).toBe(1);
     expect(result.metadata?.providersFailed).toBe(0);
   });
 
   it("collects from multiple providers", async () => {
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("provider-1"), ["provider-1"]);
+    registry.register(createTestNormalizer("provider-2"), ["provider-2"]);
+
     const p1 = createMockProvider("provider-1", [
       { id: "a", name: "A", category: "c", description: "d" },
     ]);
@@ -62,6 +123,8 @@ describe("EvidenceCollector", () => {
         ["provider-1", p1],
         ["provider-2", p2],
       ]),
+      {},
+      registry,
     );
 
     const result = await collector.collect();
@@ -72,6 +135,10 @@ describe("EvidenceCollector", () => {
   });
 
   it("handles provider failure with continueOnFailure=true", async () => {
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("good"), ["good"]);
+    registry.register(createTestNormalizer("bad"), ["bad"]);
+
     const p1 = createMockProvider("good", [
       { id: "a", name: "A", category: "c", description: "d" },
     ]);
@@ -82,6 +149,7 @@ describe("EvidenceCollector", () => {
         ["bad", p2],
       ]),
       { continueOnFailure: true },
+      registry,
     );
 
     const result = await collector.collect();
@@ -93,6 +161,10 @@ describe("EvidenceCollector", () => {
   });
 
   it("throws on provider failure with continueOnFailure=false", async () => {
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("good"), ["good"]);
+    registry.register(createTestNormalizer("bad"), ["bad"]);
+
     const p1 = createMockProvider("good", [
       { id: "a", name: "A", category: "c", description: "d" },
     ]);
@@ -103,16 +175,20 @@ describe("EvidenceCollector", () => {
         ["bad", p2],
       ]),
       { continueOnFailure: false },
+      registry,
     );
 
     await expect(collector.collect()).rejects.toThrow("bad failed");
   });
 
   it("includes collection metadata", async () => {
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("test"), ["test"]);
+
     const provider = createMockProvider("test", [
       { id: "a", name: "A", category: "c", description: "d" },
     ]);
-    const collector = new EvidenceCollector(new Map([["test", provider]]));
+    const collector = new EvidenceCollector(new Map([["test", provider]]), {}, registry);
 
     const result = await collector.collect();
 
@@ -123,17 +199,24 @@ describe("EvidenceCollector", () => {
   });
 
   it("respects timeout on slow provider", async () => {
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("slow"), ["slow"]);
+
     const provider = createMockProvider("slow", [], false, 1000);
-    const collector = new EvidenceCollector(new Map([["slow", provider]]), {
-      timeoutMs: 10,
-      continueOnFailure: false,
-    });
+    const collector = new EvidenceCollector(
+      new Map([["slow", provider]]),
+      { timeoutMs: 10, continueOnFailure: false },
+      registry,
+    );
 
     await expect(collector.collect()).rejects.toThrow("timed out after 10ms");
   });
 
   it("addProvider and removeProvider work", () => {
-    const collector = new EvidenceCollector();
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("test"), ["test"]);
+
+    const collector = new EvidenceCollector(new Map(), {}, registry);
     const provider = createMockProvider("test", []);
 
     collector.addProvider("test", provider);
@@ -141,6 +224,43 @@ describe("EvidenceCollector", () => {
 
     collector.removeProvider("test");
     expect(collector.getProviderNames()).toEqual([]);
+  });
+
+  it("returns empty evidence for unsupported provider", async () => {
+    const registry = new NormalizationRegistry();
+    // No normalizer registered for "unsupported"
+
+    const provider = createMockProvider("unsupported", [
+      { id: "a", name: "A", category: "c", description: "d" },
+    ]);
+    const collector = new EvidenceCollector(
+      new Map([["unsupported", provider]]),
+      { continueOnFailure: true },
+      registry,
+    );
+
+    const result = await collector.collect();
+
+    // Provider succeeds but no normalizer → empty evidence
+    expect(result.items).toHaveLength(0);
+    expect(result.metadata?.providersSucceeded).toBe(1);
+  });
+
+  it("normalizes multiple evidence items from single provider", async () => {
+    const registry = new NormalizationRegistry();
+    registry.register(createTestNormalizer("multi"), ["multi"]);
+
+    const provider = createMockProvider("multi", [
+      { id: "a", name: "A", category: "c", description: "d" },
+      { id: "b", name: "B", category: "c", description: "d" },
+      { id: "c", name: "C", category: "c", description: "d" },
+    ]);
+    const collector = new EvidenceCollector(new Map([["multi", provider]]), {}, registry);
+
+    const result = await collector.collect();
+
+    expect(result.items).toHaveLength(3);
+    expect(result.items.map((i) => i.id).sort()).toEqual(["multi-a", "multi-b", "multi-c"]);
   });
 });
 

@@ -5,4 +5,9 @@ export default defineConfig({
     environment: "node",
     include: ["test/**/*.test.ts"],
   },
+  resolve: {
+    alias: {
+      "@insight/intelligence": "/home/ubuntu/Insight/packages/intelligence/src/index.ts",
+    },
+  },
 });
