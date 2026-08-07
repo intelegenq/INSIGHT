@@ -91,6 +91,12 @@ export type {
   RawProgramData,
 } from "./providers/solana/SolanaRPCProvider";
 
+export { DefiLlamaProvider } from "./providers/defillama/DefiLlamaProvider";
+export type {
+  DefiLlamaConfig,
+  RawDefiLlamaProtocol,
+} from "./providers/defillama/DefiLlamaProvider";
+
 export { MockHttpClient } from "./providers/mock/MockHttpClient";
 export type { MockHandler, MockResponse } from "./providers/mock/MockHttpClient";
 
