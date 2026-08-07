@@ -280,7 +280,7 @@ describe("Scheduler — injected clock", () => {
     await scheduler2.execute("det-2");
     const id1 = scheduler1.listExecutions()[0]!.id;
     const id2 = scheduler2.listExecutions()[0]!.id;
-    // No wall-clock component in the id
+    // Format: exec-<counter-in-base36>
     expect(id1).toMatch(/^exec-[0-9a-z]{6}$/);
     expect(id2).toMatch(/^exec-[0-9a-z]{6}$/);
   });

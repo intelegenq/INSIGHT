@@ -238,15 +238,15 @@ describe("validatePositiveInteger", () => {
 
 describe("validateExecutionId", () => {
   it("accepts valid execution ID", () => {
-    const result = validateExecutionId("exec-1723032000000-1");
+    const result = validateExecutionId("exec-000001");
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value).toBe("exec-1723032000000-1");
+    if (result.ok) expect(result.value).toBe("exec-000001");
   });
 
   it("rejects invalid format", () => {
     const result = validateExecutionId("invalid-id");
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.message).toContain("exec-<timestamp>-<counter>");
+    if (!result.ok) expect(result.error.message).toContain("exec-<counter-in-base36>");
   });
 
   it("rejects non-string", () => {

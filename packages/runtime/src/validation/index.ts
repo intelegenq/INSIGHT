@@ -153,15 +153,15 @@ export function validatePositiveInteger(
 }
 
 /**
- * Validate an execution ID format (exec-<timestamp>-<counter>).
+ * Validate an execution ID format (exec-<counter-in-base36>).
  */
 export function validateExecutionId(value: unknown): ValidationResult<string> {
   const stringResult = validateRequiredString(value, "executionId");
   if (!stringResult.ok) return stringResult;
 
-  const execIdRegex = /^exec-\d+-\d+$/;
+  const execIdRegex = /^exec-[0-9a-z]{6}$/;
   if (!execIdRegex.test(stringResult.value)) {
-    return { ok: false, error: InsightErrors.validationError("executionId must match format: exec-<timestamp>-<counter>", { field: "executionId", value: stringResult.value }) };
+    return { ok: false, error: InsightErrors.validationError("executionId must match format: exec-<counter-in-base36>", { field: "executionId", value: stringResult.value }) };
   }
 
   return { ok: true, value: stringResult.value };
