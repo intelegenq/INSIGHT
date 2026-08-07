@@ -17,6 +17,13 @@ export { buildSummary, composeDashboard, composeRuntimeResult } from "./runtimeR
 export { InsightRuntime, runtime } from "./runtime";
 
 export {
+  Scheduler,
+  scheduler,
+  type RuntimeJob,
+  type ScheduledJob,
+} from "./scheduler";
+
+export {
   ReportGenerator,
   MarkdownRenderer,
   HtmlRenderer,
