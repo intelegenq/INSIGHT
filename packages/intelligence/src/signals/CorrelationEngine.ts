@@ -4,6 +4,9 @@ import type { EvidenceCollection } from "@insight/data";
 /**
  * CorrelationEngine — finds relationships between evidence items from different providers.
  *
+ * Deterministic by contract: given the same collection (and an optional explicit
+ * `referenceDate`) the engine returns the same correlations with the same strengths.
+ *
  * Responsibilities:
  * - Detect correlations between evidence items
  * - Group related evidence by type, provider, entity
@@ -13,14 +16,25 @@ import type { EvidenceCollection } from "@insight/data";
 export class CorrelationEngine {
   /**
    * Analyze an EvidenceCollection and return all detected correlations.
+   *
+   * @param collection Evidence collection to analyze.
+   * @param referenceDate Optional ISO-8601 timestamp used for recency calculations.
+   *   When omitted, the engine derives a deterministic fallback from the
+   *   collection's items (the maximum observed timestamp), keeping output
+   *   reproducible without a wall-clock dependency.
    */
-  analyze(collection: EvidenceCollection<unknown>): CorrelationResult[] {
+  analyze(
+    collection: EvidenceCollection<unknown>,
+    referenceDate?: string,
+  ): CorrelationResult[] {
     const correlations: CorrelationResult[] = [];
     const items = collection.items;
 
     if (items.length < 2) {
       return correlations;
     }
+
+    const effectiveReferenceMs = resolveReferenceMs(collection, referenceDate);
 
     // Group evidence by type
     const byType = new Map<string, EvidenceItem<unknown>[]>();
@@ -34,7 +48,11 @@ export class CorrelationEngine {
     const marketMovements = byType.get("market-movement") ?? [];
     const protocolTvls = byType.get("protocol-tvl") ?? [];
     if (marketMovements.length > 0 && protocolTvls.length > 0) {
-      const strength = this.calculateCrossTypeStrength(marketMovements, protocolTvls);
+      const strength = this.calculateCrossTypeStrength(
+        marketMovements,
+        protocolTvls,
+        effectiveReferenceMs,
+      );
       correlations.push({
         correlationType: "market-ecosystem-correlation",
         evidenceItems: [...marketMovements, ...protocolTvls],
@@ -47,7 +65,11 @@ export class CorrelationEngine {
     const onchainActivity = byType.get("onchain-activity") ?? [];
     const walletActivity = byType.get("wallet-activity") ?? [];
     if (onchainActivity.length > 0 && walletActivity.length > 0) {
-      const strength = this.calculateCrossTypeStrength(onchainActivity, walletActivity);
+      const strength = this.calculateCrossTypeStrength(
+        onchainActivity,
+        walletActivity,
+        effectiveReferenceMs,
+      );
       correlations.push({
         correlationType: "adoption-activity-correlation",
         evidenceItems: [...onchainActivity, ...walletActivity],
@@ -101,19 +123,26 @@ export class CorrelationEngine {
   private calculateCrossTypeStrength(
     groupA: EvidenceItem<unknown>[],
     groupB: EvidenceItem<unknown>[],
+    referenceMs: number,
   ): number {
     const countFactor = Math.min(1, (groupA.length + groupB.length) / 10);
-    const recencyFactor = this.calculateRecencyFactor([...groupA, ...groupB]);
+    const recencyFactor = this.calculateRecencyFactor(
+      [...groupA, ...groupB],
+      referenceMs,
+    );
     const baseStrength = 0.4 + countFactor * 0.3 + recencyFactor * 0.3;
     return Math.min(0.95, baseStrength);
   }
 
   /**
    * Calculate recency factor (0-1) — more recent = higher.
+   * Deterministically bounded against an explicit `referenceMs`.
    */
-  private calculateRecencyFactor(items: EvidenceItem<unknown>[]): number {
-    const now = Date.now();
-    const ages = items.map((i) => now - i.source.timestamp);
+  private calculateRecencyFactor(
+    items: EvidenceItem<unknown>[],
+    referenceMs: number,
+  ): number {
+    const ages = items.map((i) => Math.max(0, referenceMs - i.source.timestamp));
     const avgAge = ages.reduce((a, b) => a + b, 0) / ages.length;
     // 1 hour = 3_600_000 ms → factor ~0.9
     // 24 hours = 86_400_000 ms → factor ~0.5
@@ -157,4 +186,43 @@ export class CorrelationEngine {
 
     return null;
   }
+}
+
+/**
+ * Resolve the reference timestamp (ms since epoch) used for recency math.
+ *
+ * Priority:
+ *   1. Explicit `referenceDate` (ISO-8601) from the caller.
+ *   2. Maximum observed `source.timestamp` in the collection.
+ *   3. The collection's own `timestamp` field.
+ *   4. `0` (epoch) — last-resort deterministic fallback.
+ *
+ * Never reads wall-clock time.
+ */
+function resolveReferenceMs(
+  collection: EvidenceCollection<unknown>,
+  referenceDate: string | undefined,
+): number {
+  if (referenceDate !== undefined) {
+    const parsed = Date.parse(referenceDate);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+
+  let maxObserved = Number.NEGATIVE_INFINITY;
+  for (const item of collection.items) {
+    if (item.source.timestamp > maxObserved) {
+      maxObserved = item.source.timestamp;
+    }
+  }
+  if (maxObserved !== Number.NEGATIVE_INFINITY) {
+    return maxObserved;
+  }
+
+  if (typeof collection.timestamp === "number") {
+    return collection.timestamp;
+  }
+
+  return 0;
 }
