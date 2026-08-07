@@ -1,3 +1,4 @@
+import { STATUS_WEIGHT } from "@insight/core";
 import type { Evidence, Narrative, Project } from "@insight/core";
 import type { AdjacencyIndex, Entity, KnowledgeGraph, Relationship } from "./models";
 import { compareRelationships } from "./models";
@@ -9,15 +10,10 @@ import { compareRelationships } from "./models";
  * The builder is a pure function: identical inputs always produce identical
  * graphs. Node and edge ordering is normalized (sorted) so downstream
  * traversal and resolution are reproducible.
+ *
+ * STATUS_WEIGHT is imported from @insight/core — the single source of
+ * truth shared by core, intelligence, and knowledge.
  */
-
-/** Weight of a relationship based on evidence status trust. */
-const STATUS_WEIGHT: Record<Evidence["status"], number> = {
-  verified: 1,
-  pending: 0.6,
-  draft: 0.45,
-  demo: 0.25,
-};
 
 /**
  * Build a knowledge graph from the given domain data.

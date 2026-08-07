@@ -1,3 +1,4 @@
+import { STATUS_WEIGHT } from "@insight/core";
 import type { Evidence, EvidenceStatus } from "@insight/core";
 import type { EvidenceFeedRecord } from "../types";
 
@@ -7,6 +8,11 @@ import type { EvidenceFeedRecord } from "../types";
  *
  * Pure functions only: no I/O, no randomness, no wall-clock reads. Every
  * operation is derived solely from its arguments.
+ *
+ * Note: STATUS_WEIGHT (the trust weight per status) is imported from
+ * @insight/core, the single source of truth. STATUS_ORDER below is a
+ * different concept — it is the deduplication priority, not a weight,
+ * so it remains local to this module.
  */
 
 const STATUS_ORDER: Record<EvidenceStatus, number> = {
@@ -14,14 +20,6 @@ const STATUS_ORDER: Record<EvidenceStatus, number> = {
   pending: 2,
   draft: 1,
   demo: 0,
-};
-
-/** Weights reflecting trust in each evidence status. */
-export const STATUS_WEIGHT: Record<EvidenceStatus, number> = {
-  verified: 1,
-  pending: 0.6,
-  draft: 0.45,
-  demo: 0.25,
 };
 
 function slugify(input: string): string {
@@ -158,3 +156,6 @@ function round(value: number, precision: number): number {
   const factor = 10 ** precision;
   return Math.round(value * factor) / factor;
 }
+
+/** Re-export the canonical weight table for legacy callers. */
+export { STATUS_WEIGHT } from "@insight/core";

@@ -21,4 +21,15 @@ export type {
   ReportSections,
 } from "./types";
 
-export { confidenceFromEvidence, confidenceRange, evidenceWeight, rankNarratives } from "./scoring";
+export {
+  STATUS_WEIGHT,
+  VERIFIED_WEIGHT,
+  PENDING_WEIGHT,
+  DRAFT_WEIGHT,
+  DEMO_WEIGHT,
+  statusWeight,
+  confidenceFromEvidence,
+  confidenceRange,
+  evidenceWeight,
+  rankNarratives,
+} from "./scoring";

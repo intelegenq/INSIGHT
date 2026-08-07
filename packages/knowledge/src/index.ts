@@ -6,6 +6,8 @@
  * I/O, no randomness. Depends only on @insight/core and @insight/data.
  */
 
+export { STATUS_WEIGHT } from "@insight/core";
+
 export type {
   AdjacencyIndex,
   Entity,

@@ -8,23 +8,37 @@ import type { Confidence, Evidence, EvidenceStatus, Narrative, ReportConfidence 
  * output, which keeps evidence-based scoring inspectable and testable.
  */
 
-/** Weight used when a source is confirmed live rather than demo/pending. */
-const VERIFIED_WEIGHT = 1;
-const DEMO_WEIGHT = 0.25;
-const PENDING_WEIGHT = 0.5;
-const DRAFT_WEIGHT = 0.5;
+/**
+ * Single source of truth for evidence status weights.
+ *
+ * Every layer in the monorepo (core, intelligence, knowledge) MUST
+ * import this constant rather than redefining its own. The values are
+ * chosen to reflect trust in each evidence status:
+ *
+ *  - verified  : 1.0  — independently confirmed
+ *  - pending   : 0.6  — awaiting confirmation
+ *  - draft     : 0.45 — unfinished work
+ *  - demo      : 0.25 — illustrative only
+ *
+ * If you need to weight evidence differently for a specific use case,
+ * derive a new map from this one — do not redefine it.
+ */
+export const STATUS_WEIGHT: Record<EvidenceStatus, number> = {
+  verified: 1,
+  pending: 0.6,
+  draft: 0.45,
+  demo: 0.25,
+};
 
-function statusWeight(status: EvidenceStatus): number {
-  switch (status) {
-    case "verified":
-      return VERIFIED_WEIGHT;
-    case "pending":
-      return PENDING_WEIGHT;
-    case "draft":
-      return DRAFT_WEIGHT;
-    case "demo":
-      return DEMO_WEIGHT;
-  }
+/** Weight used when a source is confirmed live rather than demo/pending. */
+export const VERIFIED_WEIGHT = STATUS_WEIGHT.verified;
+export const PENDING_WEIGHT = STATUS_WEIGHT.pending;
+export const DRAFT_WEIGHT = STATUS_WEIGHT.draft;
+export const DEMO_WEIGHT = STATUS_WEIGHT.demo;
+
+/** Convenience accessor mirroring the legacy `statusWeight` helper. */
+export function statusWeight(status: EvidenceStatus): number {
+  return STATUS_WEIGHT[status];
 }
 
 /** Sum of weighted evidence, a deterministic signal of support strength. */
