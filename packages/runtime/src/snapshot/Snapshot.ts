@@ -29,7 +29,7 @@ export interface Snapshot {
   /** Reference to the originating ExecutionRecord, when known. */
   readonly executionId?: string;
   /** ISO-8601 timestamp when the snapshot was created (from runtime options). */
-  readonly createdAt: string;
+  readonly createdAt?: string;
   /** Reference date captured from the underlying RuntimeResult.timestamp. */
   readonly referenceDate: string;
   /** The runtime options that produced this snapshot. */
