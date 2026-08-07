@@ -6,6 +6,9 @@
  * up front.
  */
 
+/** Sleeper abstraction so tests can run instantly without real waits. */
+export type Sleeper = (ms: number) => Promise<void>;
+
 export interface RetryConfig {
   /** Maximum number of retry attempts (attempts beyond the first). */
   maxRetry: number;
@@ -15,6 +18,11 @@ export interface RetryConfig {
   maxDelay: number;
   /** Backoff multiplier applied each attempt. Defaults to 2. */
   factor?: number;
+  /**
+   * Predicate determining whether an error should be retried. By default
+   * every thrown error is retried until the policy is exhausted.
+   */
+  shouldRetryError?: (error: unknown) => boolean;
 }
 
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
@@ -23,6 +31,12 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxDelay: 2_000,
   factor: 2,
 };
+
+/** Default sleeper: real wall-clock wait. */
+export const defaultSleeper: Sleeper = (ms) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 
 /** Compute the delay, in ms, before retry `attempt` (0-indexed). */
 export function computeBackoff(config: RetryConfig, attempt: number): number {
@@ -54,13 +68,15 @@ export function retrySchedule(config: RetryConfig): number[] {
 /** RetryPolicy — stores config and exposes deterministic retry helpers. */
 export class RetryPolicy {
   readonly config: RetryConfig;
+  readonly sleeper: Sleeper;
 
-  constructor(config: Partial<RetryConfig> = {}) {
+  constructor(config: Partial<RetryConfig> = {}, sleeper: Sleeper = defaultSleeper) {
     this.config = {
       ...DEFAULT_RETRY_CONFIG,
       factor: DEFAULT_RETRY_CONFIG.factor,
       ...config,
     };
+    this.sleeper = sleeper;
   }
 
   /** Delay in ms before the given (0-indexed) retry attempt. */
@@ -72,4 +88,40 @@ export class RetryPolicy {
   canRetry(attempt: number): boolean {
     return shouldRetry(this.config, attempt);
   }
+
+  /** Whether the given error is retryable under this policy. */
+  shouldRetryError(error: unknown): boolean {
+    const predicate = this.config.shouldRetryError;
+    if (predicate === undefined) {
+      return true;
+    }
+    return predicate(error);
+  }
+
+  /**
+   * Execute `operation` under this retry policy. Returns the first
+   * successful result. If the operation throws a non-retryable error or
+   * the policy is exhausted, rethrows the last error.
+   *
+   * Deterministic delays: the schedule is fixed by `config`. The
+   * injectable `sleeper` lets tests run instantly.
+   */
+  async run<T>(operation: (attempt: number) => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= this.config.maxRetry; attempt += 1) {
+      try {
+        return await operation(attempt);
+      } catch (error) {
+        lastError = error;
+        if (!this.shouldRetryError(error) || !this.canRetry(attempt)) {
+          throw error;
+        }
+        await this.sleeper(this.delayFor(attempt));
+      }
+    }
+    // Unreachable: loop body always either returns or throws, but TS
+    // can't infer that, so we rethrow to satisfy the return type.
+    throw lastError;
+  }
 }
+

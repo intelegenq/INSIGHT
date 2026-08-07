@@ -8,7 +8,7 @@ import type {
 } from "../../interfaces/DataProvider";
 import type { HttpClient } from "./HttpClient";
 import { RetryPolicy } from "./RetryPolicy";
-import type { RetryConfig } from "./RetryPolicy";
+import type { RetryConfig, Sleeper } from "./RetryPolicy";
 import { RateLimiter } from "./RateLimiter";
 import type { RateLimitConfig, Clock } from "./RateLimiter";
 
@@ -33,6 +33,8 @@ export interface BaseProviderOptions {
   rateLimit?: RateLimitConfig;
   /** Custom clock for deterministic rate limiting in tests. */
   clock?: Clock;
+  /** Custom sleeper for deterministic retry delays in tests. */
+  sleeper?: Sleeper;
   /** Unique provider id. */
   id: string;
   /** Human-readable provider name. */
@@ -55,7 +57,7 @@ export abstract class BaseProvider implements DataProvider {
     this.id = options.id;
     this.name = options.name;
     this.httpClient = options.httpClient;
-    this.retry = new RetryPolicy(options.retry);
+    this.retry = new RetryPolicy(options.retry, options.sleeper);
     this.limiter =
       options.rateLimit === undefined
         ? undefined
@@ -71,6 +73,18 @@ export abstract class BaseProvider implements DataProvider {
     if (!result.allowed) {
       throw new Error(`Rate limit exceeded for ${this.id}; retry after ${result.retryAfterMs}ms`);
     }
+  }
+
+  /**
+   * Run `operation` under the provider's configured retry policy.
+   *
+   * The operation is invoked once per attempt; the call is wrapped with
+   * exponential backoff between attempts, bounded by `config.maxRetry`.
+   * Throws the last error if the policy is exhausted or the error is
+   * non-retryable.
+   */
+  protected async withRetry<T>(operation: (attempt: number) => Promise<T>): Promise<T> {
+    return this.retry.run(operation);
   }
 
   /** Default health: available. Override for provider-specific checks. */

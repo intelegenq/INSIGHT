@@ -90,23 +90,26 @@ export class CoinGeckoProvider extends BaseProvider {
    * Fetch raw market data from CoinGecko.
    *
    * Returns raw market assets wrapped as RawProject for consistency
-   * with the provider interface.
+   * with the provider interface. Wrapped in withRetry so transient
+   * HTTP failures recover automatically within the configured policy.
    */
   async fetchProjects(): Promise<ProviderFetch<RawProject>> {
     this.acquire();
 
-    const response = await this.httpClient.get<RawCoinGeckoMarketAsset[]>({
-      url: this.buildUrl("/coins/markets"),
-      query: {
-        vs_currency: "usd",
-        order: "market_cap_desc",
-        per_page: "100",
-        page: "1",
-        sparkline: "false",
-        price_change_percentage: "24h",
-      },
-      timeoutMs: this.timeout,
-    });
+    const response = await this.withRetry(() =>
+      this.httpClient.get<RawCoinGeckoMarketAsset[]>({
+        url: this.buildUrl("/coins/markets"),
+        query: {
+          vs_currency: "usd",
+          order: "market_cap_desc",
+          per_page: "100",
+          page: "1",
+          sparkline: "false",
+          price_change_percentage: "24h",
+        },
+        timeoutMs: this.timeout,
+      }),
+    );
 
     if (!response.ok || !Array.isArray(response.data)) {
       return { data: [], asOf: new Date().toISOString() };
