@@ -11,17 +11,26 @@
 
 import type { Evidence, Narrative, Project, Report } from "@insight/core";
 import type { KnowledgeGraph } from "@insight/knowledge";
-import type { RuntimeOptions, RuntimeSummary } from "../types";
+import type { RuntimeOptions, RuntimeResult, RuntimeSummary } from "../types";
 
 /**
  * A snapshot of a runtime execution.
  *
  * Snapshots are immutable. Repositories must not mutate them after save.
+ *
+ * The `executionId` field is optional and accepted as a courtesy to the
+ * upstream scheduler lifecycle contract; when present it links the snapshot
+ * back to the {@link import("../scheduler/types").ExecutionRecord} that
+ * produced it.
  */
 export interface Snapshot {
   /** Deterministic identifier derived from snapshot contents. */
   readonly id: string;
-  /** ISO-8601 reference date the snapshot was generated for. */
+  /** Reference to the originating ExecutionRecord, when known. */
+  readonly executionId?: string;
+  /** ISO-8601 timestamp when the snapshot was created (from runtime options). */
+  readonly createdAt: string;
+  /** Reference date captured from the underlying RuntimeResult.timestamp. */
   readonly referenceDate: string;
   /** The runtime options that produced this snapshot. */
   readonly options: RuntimeOptions;
@@ -37,7 +46,9 @@ export interface Snapshot {
   readonly report: Report;
   /** Knowledge graph captured by the runtime execution. */
   readonly knowledgeGraph: KnowledgeGraph;
-  /** Optional reference to the job that produced this snapshot. */
+  /** Optional: the full RuntimeResult, for downstream consumers that want it. */
+  readonly result?: RuntimeResult;
+  /** Optional: the job identifier that triggered this snapshot. */
   readonly jobId?: string;
 }
 
@@ -55,6 +66,17 @@ export function buildSnapshotId(referenceDate: string, contentHash: string): str
  */
 export function hashSnapshotContent(snapshot: Omit<Snapshot, "id">): string {
   return fnv1a32Hex(stableStringify(snapshot)).toString(16).padStart(8, "0");
+}
+
+/**
+ * Re-compute the canonical id of a snapshot from its current contents.
+ * Used to verify integrity; mirrors {@link buildSnapshotId}.
+ */
+export function verifySnapshotId(snapshot: Snapshot): boolean {
+  const base = { ...snapshot };
+  delete (base as { id?: string }).id;
+  const expected = buildSnapshotId(snapshot.referenceDate, hashSnapshotContent(base));
+  return snapshot.id === expected;
 }
 
 /** Stable JSON serialization: object keys are sorted recursively. */

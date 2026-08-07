@@ -25,6 +25,9 @@ export interface CreateSnapshotInput {
   evidence: readonly Evidence[];
   report: Report;
   knowledgeGraph: KnowledgeGraph;
+  /** Optional: identifier of the ExecutionRecord that produced this result. */
+  executionId?: string;
+  /** Optional: job identifier (Scheduler job id). */
   jobId?: string;
 }
 
@@ -35,7 +38,7 @@ export interface CreateSnapshotInput {
 export function createSnapshot(input: CreateSnapshotInput): Snapshot {
   const base = toBaseSnapshot(input);
   const id = buildSnapshotId(input.referenceDate, hashSnapshotContent(base));
-  return Object.freeze({ ...base, id }) as Snapshot;
+  return Object.freeze({ ...base, id, createdAt: input.referenceDate }) as Snapshot;
 }
 
 /**
@@ -47,6 +50,7 @@ export function snapshotFromRuntimeResult(
   result: RuntimeResult,
   options: RuntimeOptions,
   jobId?: string,
+  executionId?: string,
 ): Snapshot {
   return createSnapshot({
     referenceDate: result.timestamp,
@@ -57,13 +61,15 @@ export function snapshotFromRuntimeResult(
     evidence: result.evidence,
     report: result.report,
     knowledgeGraph: result.knowledgeGraph,
-    jobId,
+    ...(jobId !== undefined ? { jobId } : {}),
+    ...(executionId !== undefined ? { executionId } : {}),
   });
 }
 
 function toBaseSnapshot(input: CreateSnapshotInput): Omit<Snapshot, "id"> {
   return {
     referenceDate: input.referenceDate,
+    createdAt: input.referenceDate,
     options: input.options,
     summary: input.summary,
     projects: input.projects,
@@ -71,6 +77,7 @@ function toBaseSnapshot(input: CreateSnapshotInput): Omit<Snapshot, "id"> {
     evidence: input.evidence,
     report: input.report,
     knowledgeGraph: input.knowledgeGraph,
+    ...(input.executionId !== undefined ? { executionId: input.executionId } : {}),
     ...(input.jobId !== undefined ? { jobId: input.jobId } : {}),
   };
 }

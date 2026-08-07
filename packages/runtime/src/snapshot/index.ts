@@ -3,7 +3,11 @@
  */
 
 export type { Snapshot } from "./Snapshot";
-export { buildSnapshotId, hashSnapshotContent } from "./Snapshot";
+export {
+  buildSnapshotId,
+  hashSnapshotContent,
+  verifySnapshotId,
+} from "./Snapshot";
 
 export type { SnapshotRepository } from "./SnapshotRepository";
 export { InMemorySnapshotRepository } from "./InMemorySnapshotRepository";
