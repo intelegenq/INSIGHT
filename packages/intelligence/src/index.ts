@@ -36,3 +36,18 @@ export {
 } from "./engines/narrativeEngine";
 
 export { generateReport } from "./engines/reportEngine";
+
+/* ── Signal Engine (Milestone 11) ────────────────────────────────────── */
+export { SignalEngine, CorrelationEngine, ConfidenceCalculator } from "./signals";
+
+export type {
+  IntelligenceSignal,
+  SignalEvidence,
+  CorrelationResult,
+  SignalEngineConfig,
+  CorrelationRule,
+  ConfidenceInput,
+  SignalType,
+} from "./signals/SignalTypes";
+
+export { SIGNAL_TYPES } from "./signals/SignalTypes";
