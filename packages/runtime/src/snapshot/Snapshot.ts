@@ -79,6 +79,51 @@ export function verifySnapshotId(snapshot: Snapshot): boolean {
   return snapshot.id === expected;
 }
 
+/** Result of a snapshot integrity check. */
+export interface IntegrityReport {
+  /** The id of the snapshot that was checked. */
+  id: string;
+  /** True when the id matches the canonical derivation. */
+  idValid: boolean;
+  /** True when the content hash matches the expected hash for the id. */
+  contentValid: boolean;
+  /** Human-readable description of any issue, when not valid. */
+  reason?: string;
+}
+
+/**
+ * Verify a snapshot's integrity in detail. Returns a structured report
+ * indicating whether the id is correctly derived from the content AND
+ * the content hash matches the expected value for the id. A snapshot
+ * passes integrity when both `idValid` and `contentValid` are true.
+ */
+export function verifySnapshot(snapshot: Snapshot): IntegrityReport {
+  const idValid = verifySnapshotId(snapshot);
+  if (!idValid) {
+    return {
+      id: snapshot.id,
+      idValid: false,
+      contentValid: false,
+      reason: "snapshot id does not match the canonical derivation from content",
+    };
+  }
+  // The id encodes the reference date and content hash. Re-derive and
+  // confirm the embedded hash agrees with the actual content hash.
+  const base = { ...snapshot };
+  delete (base as { id?: string }).id;
+  const actualHash = hashSnapshotContent(base);
+  const expectedHash = snapshot.id.slice(snapshot.id.lastIndexOf("-") + 1);
+  if (actualHash !== expectedHash) {
+    return {
+      id: snapshot.id,
+      idValid: true,
+      contentValid: false,
+      reason: `content hash mismatch: id embeds ${expectedHash} but content hashes to ${actualHash}`,
+    };
+  }
+  return { id: snapshot.id, idValid: true, contentValid: true };
+}
+
 /** Stable JSON serialization: object keys are sorted recursively. */
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== "object") {

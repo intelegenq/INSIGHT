@@ -8,7 +8,7 @@
  */
 
 import type { Snapshot } from "./Snapshot";
-import type { SnapshotRepository } from "./SnapshotRepository";
+import type { SyncSnapshotRepository } from "./SnapshotRepository";
 
 /**
  * In-memory snapshot repository.
@@ -17,7 +17,7 @@ import type { SnapshotRepository } from "./SnapshotRepository";
  * they were inserted. `delete()` removes by id while leaving relative order
  * of remaining snapshots intact.
  */
-export class InMemorySnapshotRepository implements SnapshotRepository {
+export class InMemorySnapshotRepository implements SyncSnapshotRepository {
   private readonly store = new Map<string, Snapshot>();
 
   /** Number of stored snapshots. */

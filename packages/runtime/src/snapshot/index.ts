@@ -7,10 +7,18 @@ export {
   buildSnapshotId,
   hashSnapshotContent,
   verifySnapshotId,
+  verifySnapshot,
 } from "./Snapshot";
+export type { IntegrityReport } from "./Snapshot";
 
-export type { SnapshotRepository } from "./SnapshotRepository";
+export type {
+  SnapshotRepository,
+  SyncSnapshotRepository,
+  AsyncSnapshotRepository,
+} from "./SnapshotRepository";
 export { InMemorySnapshotRepository } from "./InMemorySnapshotRepository";
+export { FileSnapshotRepository } from "./FileSnapshotRepository";
+export type { FileSnapshotRepositoryOptions } from "./FileSnapshotRepository";
 
 export { createSnapshot, snapshotFromRuntimeResult } from "./createSnapshot";
 export { snapshottingRuntimeJob } from "./snapshottingJob";
