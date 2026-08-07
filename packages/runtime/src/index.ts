@@ -26,6 +26,12 @@ export {
 } from "./scheduler";
 
 export {
+  type Snapshot,
+  createSnapshot,
+  verifySnapshotId,
+} from "./snapshot";
+
+export {
   ReportGenerator,
   MarkdownRenderer,
   HtmlRenderer,
