@@ -15,15 +15,15 @@ export default function Home() {
     <main>
       <nav className="nav" aria-label="Primary navigation">
         <a className="brand" href="#top" aria-label="Insight home"><span>◎</span> insight</a>
-        <div className="nav-links"><a href="#pulse">Pulse</a><a href="#narratives">Narratives</a><a href="#reports">Reports</a></div>
-        <button className="ghost-button">Research mode <span>↗</span></button>
+        <div className="nav-links"><a href="#pulse">Pulse</a><a href="#narratives">Narratives</a><a href="/reports">Reports</a></div>
+        <a className="ghost-button" href="/reports">Research mode <span>↗</span></a>
       </nav>
 
       <section className="hero" id="top">
         <p className="eyebrow">SOLANA INTELLIGENCE / DEMO</p>
         <h1>See the signal.<br /><em>Understand the story.</em></h1>
         <p className="hero-copy">Insight turns ecosystem activity into calm, evidence-aware research. This initial view uses clearly labeled illustrative data while live collectors are being built.</p>
-        <div className="hero-actions"><a className="primary-button" href="#pulse">Explore today’s pulse <span>↓</span></a><a className="text-link" href="#reports">View sample brief →</a></div>
+        <div className="hero-actions"><a className="primary-button" href="#pulse">Explore today’s pulse <span>↓</span></a><a className="text-link" href="/reports">View sample brief →</a></div>
       </section>
 
       <section className="section pulse" id="pulse" aria-labelledby="pulse-title">
@@ -41,11 +41,11 @@ export default function Home() {
       </section>
 
       <section className="section timeline" aria-labelledby="timeline-title">
-        <div className="section-heading"><div><p className="eyebrow">RESEARCH TIMELINE</p><h2 id="timeline-title">Context, not just updates.</h2></div><button className="ghost-button">All events →</button></div>
+        <div className="section-heading"><div><p className="eyebrow">RESEARCH TIMELINE</p><h2 id="timeline-title">Context, not just updates.</h2></div><a className="ghost-button" href="/reports">Generate a brief →</a></div>
         <div className="event-list">{events.map((event) => <article className="event" key={event.time}><time>{event.time}</time><div><h3>{event.title}</h3><p>{event.source} <span>·</span> {event.confidence}</p></div><span className="event-arrow">↗</span></article>)}</div>
       </section>
 
-      <section className="report-callout" id="reports"><div><p className="eyebrow">REPORT ENGINE / IN PROGRESS</p><h2>From scattered signals to a defensible brief.</h2><p>Generate a structured research memo with a summary, evidence log, narratives, catalysts, risks, and an explicit confidence level.</p></div><a className="primary-button light" href="mailto:hello@example.com?subject=Insight%20early%20access">Request early access <span>→</span></a></section>
+      <section className="report-callout" id="reports"><div><p className="eyebrow">REPORT ENGINE / DEMO</p><h2>From scattered signals to a defensible brief.</h2><p>Preview a structured research memo with an executive summary, evidence log, catalysts, risks, and an explicit confidence level.</p></div><a className="primary-button light" href="/reports">Open report studio <span>→</span></a></section>
 
       <footer><a className="brand" href="#top"><span>◎</span> insight</a><p>Built for better questions about Solana.</p><p>© 2026 Insight</p></footer>
     </main>
