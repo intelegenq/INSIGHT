@@ -6,7 +6,6 @@
  * logic of its own. No React, no Next.js, no I/O, no Date.now(), no
  * randomness — every output is deterministic given its inputs.
  */
-
 export type { RuntimeDashboard, RuntimeOptions, RuntimeResult, RuntimeSummary } from "./types";
 export { defaultPipelineInput, runPipeline } from "./pipeline";
 export type { PipelineInput, PipelineResult } from "./pipeline";
@@ -44,33 +43,9 @@ export type {
   ProjectChange,
   ProjectMetricChange,
 } from "./history";
-export {
-  ReportGenerator,
-  MarkdownRenderer,
-  HtmlRenderer,
-  JsonRenderer,
-  type Report,
-  type ReportFormat,
-  type ReportMetadata,
-  type ReportGeneratorConfig,
-  DEFAULT_REPORT_CONFIG,
-  REPORT_EPOCH_MS,
-  REPORT_GENERATOR_VERSION,
-  buildDeterministicReportId,
-  buildDeterministicGeneratedAt,
-  calculateReportMetadata,
-  generateSummary,
-} from "./report/index";
-export {
-  InsightError,
-  InsightErrors,
-  normalizeError,
-  isRetryable,
-  getErrorCode,
-  type ErrorCode,
-  ErrorCodeCategory,
-  DefaultRetryable,
-} from "./errors";
+export { ReportGenerator, MarkdownRenderer, HtmlRenderer, JsonRenderer, type Report, type ReportFormat, type ReportMetadata, type ReportGeneratorConfig, DEFAULT_REPORT_CONFIG, REPORT_EPOCH_MS, REPORT_GENERATOR_VERSION, buildDeterministicReportId, buildDeterministicGeneratedAt, calculateReportMetadata, generateSummary, } from "./report/index";
+export { RefreshEngine, createRefreshEngine, DEFAULT_REFRESH_OPTIONS, type RefreshEngineConfig, type RefreshResult, type RefreshEngineStats, } from "./refreshEngine";
+export { InsightError, InsightErrors, normalizeError, isRetryable, getErrorCode, type ErrorCode, ErrorCodeCategory, DefaultRetryable, } from "./errors";
 export {
   validateRequiredString,
   validateEnum,
