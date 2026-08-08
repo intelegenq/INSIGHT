@@ -42,10 +42,7 @@ class ThrowingHealthProvider extends HealthProvider {
 describe("SourceHealthMonitor", () => {
   it("returns a deterministic healthy report", async () => {
     const report = await checkSourceHealth(
-      [
-        new HealthProvider("zeta", "Zeta", true),
-        new HealthProvider("alpha", "Alpha", true),
-      ],
+      [new HealthProvider("zeta", "Zeta", true), new HealthProvider("alpha", "Alpha", true)],
       { checkedAt: CHECKED_AT },
     );
 
