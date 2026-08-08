@@ -6,7 +6,7 @@
  */
 import type { RuntimeJob, ScheduledJob, ExecutionRecord, ExecutionStatus } from "./types";
 import { validateJobId, validateExecutionId, assertValid } from "../validation";
-import { InsightErrors } from "../errors";
+import { InsightErrors, getErrorCode } from "../errors";
 
 /**
  * Clock — supplies the current time as an ISO-8601 string. Injectable
@@ -57,6 +57,7 @@ export class Scheduler {
       jobId,
       status: "pending",
       startedAt: this.clock(),
+      retryCount: 0,
     };
   }
 
@@ -105,32 +106,32 @@ export class Scheduler {
       throw InsightErrors.validationError(`Job disabled: ${id}`, { jobId: id });
     }
 
-    // Create execution record
     const execution = this.createExecutionRecord(id);
     this.executions.set(execution.id, execution);
-
-    // Mark as running
     this.updateExecution(execution.id, { status: "running" });
+
+    const startedAt = execution.startedAt;
 
     try {
       const result = await job.execute(job.options);
-
-      // Mark as completed
+      const completedAt = this.clock();
       this.updateExecution(execution.id, {
         status: "completed",
-        completedAt: this.clock(),
+        completedAt,
+        durationMs: Date.parse(completedAt) - Date.parse(startedAt),
         result,
       });
-
       return result;
     } catch (error) {
-      // Mark as failed
+      const completedAt = this.clock();
+      const structured = error instanceof Error ? getErrorCode(error) : undefined;
       this.updateExecution(execution.id, {
         status: "failed",
-        completedAt: this.clock(),
+        completedAt,
+        durationMs: Date.parse(completedAt) - Date.parse(startedAt),
+        errorCode: structured,
         error: error instanceof Error ? error.message : String(error),
       });
-
       throw error;
     }
   }
