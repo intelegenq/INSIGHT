@@ -1,0 +1,27 @@
+{
+  "name": "@insight/infra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "M26 database & worker infrastructure: PostgreSQL, Redis-style KV, S3-compatible object storage, and Docker-compatible worker adapters.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@insight/core": "workspace:*",
+    "@insight/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.9.2",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^3.2.4"
+  }
+}

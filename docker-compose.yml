@@ -1,0 +1,74 @@
+# Insight M26 — reproducible infra stack
+#
+#   postgres  → primary relational store (snapshots, entities)
+#   redis     → cache / queue
+#   minio     → S3-compatible artifact storage (reports, evidence)
+#   web-app   → Next.js frontend (built from the monorepo)
+#   worker    → scheduled refresh worker loop
+#
+# Services are intentionally simple + reproducible. Web/app and worker are
+# built from the same monorepo Dockerfile. Bring up with:
+#   docker compose up --build
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: insight
+      POSTGRES_PASSWORD: insight
+      POSTGRES_DB: insight
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U insight"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: insight
+      MINIO_ROOT_PASSWORD: insightsecret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  # Example worker: runs the scheduled refresh loop using @insight/infra.
+  # Real drivers resolve when INSIGHT_POSTGRES_URL/INSIGHT_REDIS_URL are set.
+  worker:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+    environment:
+      INSIGHT_POSTGRES_URL: postgresql://insight:insight@postgres:5432/insight
+      INSIGHT_REDIS_URL: redis://redis:6379
+      INSIGHT_S3_ENDPOINT: http://minio:9000
+      INSIGHT_S3_BUCKET: insight-artifacts
+      INSIGHT_WORKER_INTERVAL_MS: "5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio_data:
