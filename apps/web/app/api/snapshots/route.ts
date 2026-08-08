@@ -1,7 +1,7 @@
 import { getInsightService } from "../../../lib/insight-service";
 import { errorFromUnknown, ok, requestIdFromRequest } from "../../../lib/api";
 
-export async function GET(request: Request): Promise<Response> {
+export async function GET(request?: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
   try {
     const service = getInsightService();
@@ -12,7 +12,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
+export async function POST(request?: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
   try {
     const service = getInsightService();

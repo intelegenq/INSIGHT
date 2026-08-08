@@ -18,8 +18,8 @@ export function ok<T>(data: T, init?: ResponseInit): Response {
   return NextResponse.json(data, { status: 200, ...init });
 }
 
-export function requestIdFromRequest(request: Request): string | undefined {
-  const value = request.headers.get("x-request-id")?.trim();
+export function requestIdFromRequest(request?: Request): string | undefined {
+  const value = request?.headers.get("x-request-id")?.trim();
   return value ? value.slice(0, 128) : undefined;
 }
 

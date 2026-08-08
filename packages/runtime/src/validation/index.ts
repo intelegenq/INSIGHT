@@ -89,7 +89,17 @@ export function validateReferenceDate(
 }
 
 export function validateReportLens(value: unknown): ValidationResult<ReportLens> {
-  return validateEnum(value, ["ecosystem", "defi", "infrastructure"], "lens");
+  const result = validateEnum(value, ["ecosystem", "defi", "infrastructure"], "lens");
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: InsightErrors.validationError(
+        `Invalid lens: ${result.error.message}`,
+        result.error.details,
+      ),
+    };
+  }
+  return result;
 }
 
 export function validateHistoryRange(

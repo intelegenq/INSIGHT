@@ -4,12 +4,7 @@
 import { HistoryAnalyzer } from "@insight/runtime";
 import type { Project, Report, ReportLens } from "@insight/core";
 import type { Snapshot, RuntimeResult } from "@insight/runtime";
-import {
-  InMemorySnapshotRepository,
-  InsightRuntime,
-  createSnapshot,
-  InsightErrors,
-} from "@insight/runtime";
+import { InMemorySnapshotRepository, InsightRuntime, createSnapshot } from "@insight/runtime";
 import { projectRepository } from "@insight/data";
 
 const DEFAULT_REFERENCE_DATE = "2026-01-01T00:00:00.000Z";
@@ -94,8 +89,7 @@ export class InsightService {
   ): import("@insight/runtime").HistoryDiff | undefined {
     const from = this.repository.get(fromId);
     const to = this.repository.get(toId);
-    if (from === undefined) throw InsightErrors.snapshotNotFound(fromId);
-    if (to === undefined) throw InsightErrors.snapshotNotFound(toId);
+    if (from === undefined || to === undefined) return undefined;
     return this.historyAnalyzer.compare(from, to);
   }
 }
