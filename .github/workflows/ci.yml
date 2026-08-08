@@ -30,5 +30,10 @@ jobs:
         run: pnpm lint
       - name: Type check
         run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Determinism guard
+        run: |
+          ! rg -n 'Math\.random\(\)|Date\.now\(\)' packages/runtime/src/report packages/runtime/src/snapshot
       - name: Build
         run: pnpm build
