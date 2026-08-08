@@ -9,7 +9,7 @@ export async function GET(request: Request): Promise<Response> {
     const rawLens = url.searchParams.get("lens") ?? "ecosystem";
     const lensResult = validateReportLens(rawLens);
     if (!lensResult.ok) return errorResponse("VALIDATION_ERROR", lensResult.error.message, 400, lensResult.error.details, requestId);
-    const report = getInsightService().getReport();
+    const report = getInsightService().getReport(lensResult.value);
     if (report === undefined) return errorResponse("NOT_FOUND", `No report available for lens "${lensResult.value}".`, 404, undefined, requestId);
     return ok({ report, lens: report.lens });
   } catch (error) {
