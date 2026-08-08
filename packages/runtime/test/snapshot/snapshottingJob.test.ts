@@ -114,7 +114,11 @@ describe("snapshottingRuntimeJob", () => {
 
   it("snapshots multiple sequential executions in insertion order", async () => {
     const repo = new InMemorySnapshotRepository();
-    const dates = ["2026-01-01T00:00:00.000Z", "2026-01-02T00:00:00.000Z", "2026-01-03T00:00:00.000Z"];
+    const dates = [
+      "2026-01-01T00:00:00.000Z",
+      "2026-01-02T00:00:00.000Z",
+      "2026-01-03T00:00:00.000Z",
+    ];
     let i = 0;
     const job = makeJob({
       execute: () => {

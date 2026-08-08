@@ -97,10 +97,7 @@ describe("RetryPolicy.run — execution", () => {
 
   it("throws the last error when the policy is exhausted", async () => {
     const { sleeper } = recordingSleeper();
-    const policy = new RetryPolicy(
-      { maxRetry: 2, baseDelay: 10, maxDelay: 100 },
-      sleeper,
-    );
+    const policy = new RetryPolicy({ maxRetry: 2, baseDelay: 10, maxDelay: 100 }, sleeper);
     let calls = 0;
     await expect(
       policy.run(async () => {
@@ -134,10 +131,7 @@ describe("RetryPolicy.run — execution", () => {
 
   it("uses the configured sleeper for delays", async () => {
     const sleeper = vi.fn<Sleeper>(async () => {});
-    const policy = new RetryPolicy(
-      { maxRetry: 2, baseDelay: 50, maxDelay: 1_000 },
-      sleeper,
-    );
+    const policy = new RetryPolicy({ maxRetry: 2, baseDelay: 50, maxDelay: 1_000 }, sleeper);
     await expect(
       policy.run(async () => {
         throw new Error("boom");

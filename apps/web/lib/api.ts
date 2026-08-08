@@ -31,14 +31,26 @@ export function errorResponse(
   requestId?: string,
 ): Response {
   return NextResponse.json(
-    { error: { code, message, ...(requestId !== undefined ? { requestId } : {}), ...(details !== undefined ? { details } : {}) } },
+    {
+      error: {
+        code,
+        message,
+        ...(requestId !== undefined ? { requestId } : {}),
+        ...(details !== undefined ? { details } : {}),
+      },
+    },
     { status, headers: requestId ? { "x-request-id": requestId } : undefined },
   );
 }
 
 function statusForCode(code: string): number {
   if (code === "NOT_FOUND" || code === "SNAPSHOT_NOT_FOUND") return 404;
-  if (code === "INVALID_INPUT" || code === "VALIDATION_ERROR" || code === "SNAPSHOT_INTEGRITY_ERROR") return 400;
+  if (
+    code === "INVALID_INPUT" ||
+    code === "VALIDATION_ERROR" ||
+    code === "SNAPSHOT_INTEGRITY_ERROR"
+  )
+    return 400;
   if (code === "PROVIDER_TIMEOUT") return 504;
   if (code === "PROVIDER_ERROR") return 502;
   return 500;
@@ -46,12 +58,25 @@ function statusForCode(code: string): number {
 
 export function errorFromUnknown(error: unknown, requestId?: string): Response {
   const normalized = normalizeError(error);
-  const message = normalized.code === "INTERNAL_ERROR" ? "An unexpected error occurred." : normalized.message;
-  return errorResponse(normalized.code, message, statusForCode(normalized.code), normalized.details, requestId);
+  const message =
+    normalized.code === "INTERNAL_ERROR" ? "An unexpected error occurred." : normalized.message;
+  return errorResponse(
+    normalized.code,
+    message,
+    statusForCode(normalized.code),
+    normalized.details,
+    requestId,
+  );
 }
 
 export function errorFromInsightError(error: InsightError, requestId?: string): Response {
-  return errorResponse(error.code, error.message, statusForCode(error.code), error.details, requestId);
+  return errorResponse(
+    error.code,
+    error.message,
+    statusForCode(error.code),
+    error.details,
+    requestId,
+  );
 }
 
 export function getErrorMessage(error: unknown): string {

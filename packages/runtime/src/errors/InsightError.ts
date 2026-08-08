@@ -149,12 +149,14 @@ export class InsightError extends Error {
       details?: Record<string, unknown>;
       cause?: Error | InsightError;
       retryable?: boolean;
-    } = {}
+    } = {},
   ) {
     super(message);
     this.name = "InsightError";
     this.code = code;
-    this.details = options.details ? Object.freeze(sanitizeForSerialization(options.details) as Record<string, unknown>) : undefined;
+    this.details = options.details
+      ? Object.freeze(sanitizeForSerialization(options.details) as Record<string, unknown>)
+      : undefined;
     this.retryable = options.retryable ?? DefaultRetryable.get(code) ?? false;
     this._cause = options.cause;
   }
@@ -248,7 +250,9 @@ export function normalizeError(error: unknown, context?: Record<string, unknown>
   // Unknown type — wrap as internal error
   const message = typeof error === "string" ? error : "Unknown error";
   return new InsightError("INTERNAL_ERROR", message, {
-    details: context ? (sanitizeForSerialization({ ...context, original: error }) as Record<string, unknown>) : undefined,
+    details: context
+      ? (sanitizeForSerialization({ ...context, original: error }) as Record<string, unknown>)
+      : undefined,
     retryable: false,
   });
 }
@@ -326,7 +330,11 @@ export const InsightErrors = {
     return new InsightError("INVALID_INPUT", message, { details, retryable: false });
   },
 
-  notFound(resource: string, identifier: string | number, details?: Record<string, unknown>): InsightError {
+  notFound(
+    resource: string,
+    identifier: string | number,
+    details?: Record<string, unknown>,
+  ): InsightError {
     return new InsightError("NOT_FOUND", `${resource} not found: ${identifier}`, {
       details: { ...details, resource, identifier },
       retryable: false,
@@ -352,11 +360,19 @@ export const InsightErrors = {
     });
   },
 
-  snapshotIntegrityError(id: string, reason: string, details?: Record<string, unknown>): InsightError {
-    return new InsightError("SNAPSHOT_INTEGRITY_ERROR", `Snapshot integrity check failed: ${reason}`, {
-      details: { ...details, snapshotId: id, reason },
-      retryable: false,
-    });
+  snapshotIntegrityError(
+    id: string,
+    reason: string,
+    details?: Record<string, unknown>,
+  ): InsightError {
+    return new InsightError(
+      "SNAPSHOT_INTEGRITY_ERROR",
+      `Snapshot integrity check failed: ${reason}`,
+      {
+        details: { ...details, snapshotId: id, reason },
+        retryable: false,
+      },
+    );
   },
 
   executionFailed(message: string, details?: Record<string, unknown>, cause?: Error): InsightError {

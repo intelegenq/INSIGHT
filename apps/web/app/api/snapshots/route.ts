@@ -17,7 +17,10 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const service = getInsightService();
     const snapshot = service.snapshot();
-    return ok({ snapshot }, { status: 201, headers: requestId ? { "x-request-id": requestId } : undefined });
+    return ok(
+      { snapshot },
+      { status: 201, headers: requestId ? { "x-request-id": requestId } : undefined },
+    );
   } catch (error) {
     return errorFromUnknown(error, requestId);
   }

@@ -2,18 +2,10 @@ import { describe, expect, it } from "vitest";
 import { HistoryAnalyzer } from "../../src/history/HistoryAnalyzer";
 import { createSnapshot } from "../../src/snapshot";
 import type { Snapshot } from "../../src/snapshot";
-import type {
-  Evidence,
-  Narrative,
-  Project,
-  Report,
-} from "@insight/core";
+import type { Evidence, Narrative, Project, Report } from "@insight/core";
 import type { KnowledgeGraph } from "@insight/knowledge";
 
-function makeProject(
-  id: string,
-  partial: Partial<Project> = {},
-): Project {
+function makeProject(id: string, partial: Partial<Project> = {}): Project {
   return {
     id,
     name: id,
@@ -225,10 +217,7 @@ describe("HistoryAnalyzer", () => {
         makeProject("alpha", { metrics: { tvl: 1 } }),
         makeProject("mu", { metrics: { tvl: 1 } }),
       ],
-      [
-        makeNarrative("zeta", "flat", "a"),
-        makeNarrative("alpha", "flat", "b"),
-      ],
+      [makeNarrative("zeta", "flat", "a"), makeNarrative("alpha", "flat", "b")],
     );
     const newer = makeSnapshot(
       "2026-01-02T00:00:00.000Z",
@@ -237,10 +226,7 @@ describe("HistoryAnalyzer", () => {
         makeProject("alpha", { metrics: { tvl: 2 } }),
         makeProject("mu", { metrics: { tvl: 2 } }),
       ],
-      [
-        makeNarrative("zeta", "flat", "a2"),
-        makeNarrative("alpha", "flat", "b2"),
-      ],
+      [makeNarrative("zeta", "flat", "a2"), makeNarrative("alpha", "flat", "b2")],
     );
     const diff = analyzer.compare(older, newer);
     expect(diff.projects.map((p) => p.projectId)).toEqual(["alpha", "mu", "zeta"]);

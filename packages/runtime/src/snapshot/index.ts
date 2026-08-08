@@ -3,12 +3,7 @@
  */
 
 export type { Snapshot } from "./Snapshot";
-export {
-  buildSnapshotId,
-  hashSnapshotContent,
-  verifySnapshotId,
-  verifySnapshot,
-} from "./Snapshot";
+export { buildSnapshotId, hashSnapshotContent, verifySnapshotId, verifySnapshot } from "./Snapshot";
 export type { IntegrityReport } from "./Snapshot";
 
 export type {

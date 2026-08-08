@@ -5,10 +5,4 @@
  * Used to describe provider capabilities without runtime dependency.
  */
 export type ProviderCapability =
-  | "ONCHAIN"
-  | "MARKET"
-  | "NEWS"
-  | "SOCIAL"
-  | "DEVELOPMENT"
-  | "GOVERNANCE"
-  | "MACRO";
+  "ONCHAIN" | "MARKET" | "NEWS" | "SOCIAL" | "DEVELOPMENT" | "GOVERNANCE" | "MACRO";

@@ -3,11 +3,7 @@ import { GET as listProjects } from "../app/api/projects/route";
 import { GET as getReports } from "../app/api/reports/route";
 import { GET as listSnapshots, POST as createSnapshot } from "../app/api/snapshots/route";
 import { GET as getHistory } from "../app/api/history/route";
-import {
-  InsightService,
-  getInsightService,
-  resetInsightService,
-} from "../lib/insight-service";
+import { InsightService, getInsightService, resetInsightService } from "../lib/insight-service";
 
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text();
@@ -83,9 +79,7 @@ describe("API routes", () => {
     });
 
     it("returns 404 when snapshots are not found", async () => {
-      const request = new Request(
-        "http://localhost/api/history?from=a&to=b",
-      );
+      const request = new Request("http://localhost/api/history?from=a&to=b");
       const response = await getHistory(request);
       expect(response.status).toBe(404);
     });
@@ -99,9 +93,7 @@ describe("API routes", () => {
       const list = await listSnapshots();
       const body = await readJson<{ snapshots: { id: string }[] }>(list);
       const ids = body.snapshots.map((s) => s.id);
-      const request = new Request(
-        `http://localhost/api/history?from=${ids[0]}&to=${ids[1]}`,
-      );
+      const request = new Request(`http://localhost/api/history?from=${ids[0]}&to=${ids[1]}`);
       const response = await getHistory(request);
       expect(response.status).toBe(200);
       const diff = await readJson<{ diff: { fromId: string; toId: string } }>(response);

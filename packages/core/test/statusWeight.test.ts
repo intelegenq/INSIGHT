@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  STATUS_WEIGHT,
-  statusWeight,
-  evidenceWeight,
-  confidenceFromEvidence,
-} from "../src/index";
+import { STATUS_WEIGHT, statusWeight, evidenceWeight, confidenceFromEvidence } from "../src/index";
 import type { Evidence } from "../src/types";
 
 /**

@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { InMemorySnapshotRepository } from "../../src/snapshot/InMemorySnapshotRepository";
-import {
-  buildSnapshotId,
-  createSnapshot,
-  hashSnapshotContent,
-} from "../../src/snapshot";
+import { buildSnapshotId, createSnapshot, hashSnapshotContent } from "../../src/snapshot";
 import type { Snapshot } from "../../src/snapshot";
 import type { RuntimeResult } from "../../src/types";
 import type { Evidence, Narrative, Project, Report } from "@insight/core";

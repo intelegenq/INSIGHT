@@ -79,7 +79,12 @@ export class Scheduler {
     const execution = this.createExecutionRecord(id);
     this.executions.set(execution.id, execution);
     this.updateExecution(execution.id, { status: "running" });
-    this.observer.onEvent({ type: "execution.started", executionId: execution.id, jobId: id, timestamp: execution.startedAt });
+    this.observer.onEvent({
+      type: "execution.started",
+      executionId: execution.id,
+      jobId: id,
+      timestamp: execution.startedAt,
+    });
 
     const startedAt = execution.startedAt;
     try {
@@ -87,16 +92,33 @@ export class Scheduler {
       const completedAt = this.clock();
       const durationMs = Date.parse(completedAt) - Date.parse(startedAt);
       this.updateExecution(execution.id, { status: "completed", completedAt, durationMs, result });
-      this.observer.onEvent({ type: "execution.completed", executionId: execution.id, jobId: id, timestamp: completedAt, durationMs });
+      this.observer.onEvent({
+        type: "execution.completed",
+        executionId: execution.id,
+        jobId: id,
+        timestamp: completedAt,
+        durationMs,
+      });
       return result;
     } catch (error) {
       const completedAt = this.clock();
       const normalized = normalizeError(error);
       const durationMs = Date.parse(completedAt) - Date.parse(startedAt);
       this.updateExecution(execution.id, {
-        status: "failed", completedAt, durationMs, errorCode: normalized.code, error: normalized.message,
+        status: "failed",
+        completedAt,
+        durationMs,
+        errorCode: normalized.code,
+        error: normalized.message,
       });
-      this.observer.onEvent({ type: "execution.failed", executionId: execution.id, jobId: id, timestamp: completedAt, durationMs, errorCode: normalized.code });
+      this.observer.onEvent({
+        type: "execution.failed",
+        executionId: execution.id,
+        jobId: id,
+        timestamp: completedAt,
+        durationMs,
+        errorCode: normalized.code,
+      });
       throw error;
     }
   }

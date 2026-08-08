@@ -4,12 +4,19 @@
 import { HistoryAnalyzer } from "@insight/runtime";
 import type { Project, Report, ReportLens } from "@insight/core";
 import type { Snapshot, RuntimeResult } from "@insight/runtime";
-import { InMemorySnapshotRepository, InsightRuntime, createSnapshot, InsightErrors } from "@insight/runtime";
+import {
+  InMemorySnapshotRepository,
+  InsightRuntime,
+  createSnapshot,
+  InsightErrors,
+} from "@insight/runtime";
 import { projectRepository } from "@insight/data";
 
 const DEFAULT_REFERENCE_DATE = "2026-01-01T00:00:00.000Z";
 
-export interface InsightServiceOptions { referenceDate?: string; }
+export interface InsightServiceOptions {
+  referenceDate?: string;
+}
 
 export class InsightService {
   private readonly runtime: InsightRuntime;
@@ -24,7 +31,9 @@ export class InsightService {
     this.referenceDate = options.referenceDate ?? DEFAULT_REFERENCE_DATE;
   }
 
-  run(): RuntimeResult { return this.runtime.analyze({ referenceDate: this.referenceDate }); }
+  run(): RuntimeResult {
+    return this.runtime.analyze({ referenceDate: this.referenceDate });
+  }
 
   listProjects(): Project[] {
     const snapshots = this.repository.list();
@@ -45,9 +54,14 @@ export class InsightService {
   snapshot(): Snapshot {
     const result = this.run();
     const snapshot = createSnapshot({
-      referenceDate: this.referenceDate, options: { referenceDate: this.referenceDate },
-      summary: result.summary, projects: result.projects, narratives: result.narratives,
-      evidence: result.evidence, report: result.report, knowledgeGraph: result.knowledgeGraph,
+      referenceDate: this.referenceDate,
+      options: { referenceDate: this.referenceDate },
+      summary: result.summary,
+      projects: result.projects,
+      narratives: result.narratives,
+      evidence: result.evidence,
+      report: result.report,
+      knowledgeGraph: result.knowledgeGraph,
     });
     return this.repository.save(snapshot);
   }
@@ -55,17 +69,29 @@ export class InsightService {
   snapshotAt(referenceDate: string): Snapshot {
     const result = this.runtime.analyze({ referenceDate });
     const snapshot = createSnapshot({
-      referenceDate, options: { referenceDate }, summary: result.summary,
-      projects: result.projects, narratives: result.narratives, evidence: result.evidence,
-      report: result.report, knowledgeGraph: result.knowledgeGraph,
+      referenceDate,
+      options: { referenceDate },
+      summary: result.summary,
+      projects: result.projects,
+      narratives: result.narratives,
+      evidence: result.evidence,
+      report: result.report,
+      knowledgeGraph: result.knowledgeGraph,
     });
     return this.repository.save(snapshot);
   }
 
-  listSnapshots(): Snapshot[] { return this.repository.list(); }
-  getSnapshot(id: string): Snapshot | undefined { return this.repository.get(id); }
+  listSnapshots(): Snapshot[] {
+    return this.repository.list();
+  }
+  getSnapshot(id: string): Snapshot | undefined {
+    return this.repository.get(id);
+  }
 
-  compareSnapshots(fromId: string, toId: string): import("@insight/runtime").HistoryDiff | undefined {
+  compareSnapshots(
+    fromId: string,
+    toId: string,
+  ): import("@insight/runtime").HistoryDiff | undefined {
     const from = this.repository.get(fromId);
     const to = this.repository.get(toId);
     if (from === undefined) throw InsightErrors.snapshotNotFound(fromId);
@@ -79,4 +105,6 @@ export function getInsightService(): InsightService {
   if (shared === undefined) shared = new InsightService();
   return shared;
 }
-export function resetInsightService(): void { shared = undefined; }
+export function resetInsightService(): void {
+  shared = undefined;
+}

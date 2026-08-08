@@ -8,7 +8,13 @@ import { validateSnapshotId } from "../src/validation";
 const result = {} as RuntimeResult;
 
 function job(id: string, execute: RuntimeJob["execute"]): RuntimeJob & { enabled: boolean } {
-  return { id, name: id, options: { referenceDate: "2026-01-01T00:00:00.000Z" }, execute, enabled: true };
+  return {
+    id,
+    name: id,
+    options: { referenceDate: "2026-01-01T00:00:00.000Z" },
+    execute,
+    enabled: true,
+  };
 }
 
 describe("M20 observability and error model", () => {
@@ -27,9 +33,11 @@ describe("M20 observability and error model", () => {
       clock: () => "2026-01-01T00:00:0" + tick++ + ".000Z",
       observer: { onEvent: (event) => events.push(event.type) },
     });
-    scheduler.register(job("provider-job", async () => {
-      throw InsightErrors.providerTimeout("provider timed out");
-    }));
+    scheduler.register(
+      job("provider-job", async () => {
+        throw InsightErrors.providerTimeout("provider timed out");
+      }),
+    );
 
     await expect(scheduler.execute("provider-job")).rejects.toThrow("provider timed out");
     const execution = scheduler.listExecutions()[0];

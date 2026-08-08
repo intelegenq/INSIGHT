@@ -23,10 +23,7 @@ export class CorrelationEngine {
    *   collection's items (the maximum observed timestamp), keeping output
    *   reproducible without a wall-clock dependency.
    */
-  analyze(
-    collection: EvidenceCollection<unknown>,
-    referenceDate?: string,
-  ): CorrelationResult[] {
+  analyze(collection: EvidenceCollection<unknown>, referenceDate?: string): CorrelationResult[] {
     const correlations: CorrelationResult[] = [];
     const items = collection.items;
 
@@ -126,10 +123,7 @@ export class CorrelationEngine {
     referenceMs: number,
   ): number {
     const countFactor = Math.min(1, (groupA.length + groupB.length) / 10);
-    const recencyFactor = this.calculateRecencyFactor(
-      [...groupA, ...groupB],
-      referenceMs,
-    );
+    const recencyFactor = this.calculateRecencyFactor([...groupA, ...groupB], referenceMs);
     const baseStrength = 0.4 + countFactor * 0.3 + recencyFactor * 0.3;
     return Math.min(0.95, baseStrength);
   }
@@ -138,10 +132,7 @@ export class CorrelationEngine {
    * Calculate recency factor (0-1) — more recent = higher.
    * Deterministically bounded against an explicit `referenceMs`.
    */
-  private calculateRecencyFactor(
-    items: EvidenceItem<unknown>[],
-    referenceMs: number,
-  ): number {
+  private calculateRecencyFactor(items: EvidenceItem<unknown>[], referenceMs: number): number {
     const ages = items.map((i) => Math.max(0, referenceMs - i.source.timestamp));
     const avgAge = ages.reduce((a, b) => a + b, 0) / ages.length;
     // 1 hour = 3_600_000 ms → factor ~0.9

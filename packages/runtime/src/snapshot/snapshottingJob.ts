@@ -19,11 +19,7 @@
 
 import type { RuntimeOptions, RuntimeResult } from "../types";
 import type { RuntimeJob } from "../scheduler/types";
-import type {
-  Snapshot,
-  SyncSnapshotRepository,
-  AsyncSnapshotRepository,
-} from "../snapshot";
+import type { Snapshot, SyncSnapshotRepository, AsyncSnapshotRepository } from "../snapshot";
 import { snapshotFromRuntimeResult } from "../snapshot/createSnapshot";
 import { verifySnapshot, type IntegrityReport } from "../snapshot/Snapshot";
 

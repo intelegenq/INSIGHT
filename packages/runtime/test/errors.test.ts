@@ -93,7 +93,10 @@ describe("InsightErrors — factory functions", () => {
   });
 
   it("validationError creates correct error", () => {
-    const error = InsightErrors.validationError("Invalid enum", { field: "lens", allowed: ["a", "b"] });
+    const error = InsightErrors.validationError("Invalid enum", {
+      field: "lens",
+      allowed: ["a", "b"],
+    });
     expect(error.code).toBe("VALIDATION_ERROR");
     expect(error.retryable).toBe(false);
   });
@@ -217,7 +220,9 @@ describe("isRetryable — retryable check", () => {
   });
 
   it("returns false for non-retryable InsightError", () => {
-    expect(isRetryable(new InsightError("INVALID_INPUT", "test", { retryable: false }))).toBe(false);
+    expect(isRetryable(new InsightError("INVALID_INPUT", "test", { retryable: false }))).toBe(
+      false,
+    );
     expect(isRetryable(InsightErrors.invalidInput("test"))).toBe(false);
     expect(isRetryable(InsightErrors.internalError("test"))).toBe(false);
   });

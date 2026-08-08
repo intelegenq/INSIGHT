@@ -18,12 +18,7 @@ export class InsightRuntimeJob implements RuntimeJob {
 
   private readonly runtime: InsightRuntime;
 
-  constructor(
-    id: string,
-    name: string,
-    options: RuntimeOptions,
-    runtime?: InsightRuntime,
-  ) {
+  constructor(id: string, name: string, options: RuntimeOptions, runtime?: InsightRuntime) {
     this.id = id;
     this.name = name;
     this.options = options;

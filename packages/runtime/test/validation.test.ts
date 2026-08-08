@@ -265,7 +265,8 @@ describe("validateSnapshotId", () => {
   it("rejects invalid format", () => {
     const result = validateSnapshotId("snap-invalid");
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.message).toContain("snap-exec-<timestamp>-<counter>-<8-char-hex>");
+    if (!result.ok)
+      expect(result.error.message).toContain("snap-exec-<timestamp>-<counter>-<8-char-hex>");
   });
 });
 
@@ -322,7 +323,7 @@ describe("validateAll", () => {
     const results = validateAll(
       validateRequiredString("hello", "a"),
       validateRequiredString("world", "b"),
-      validatePositiveInteger(42, "c")
+      validatePositiveInteger(42, "c"),
     );
     expect(results.ok).toBe(true);
     if (results.ok) expect(results.value).toEqual(["hello", "world", 42]);
@@ -332,7 +333,7 @@ describe("validateAll", () => {
     const results = validateAll(
       validateRequiredString("hello", "a"),
       validateRequiredString("", "b"), // invalid
-      validatePositiveInteger(42, "c")
+      validatePositiveInteger(42, "c"),
     );
     expect(results.ok).toBe(false);
     if (!results.ok) expect(results.error.details?.field).toBe("b");
@@ -383,7 +384,10 @@ describe("ValidationResult type", () => {
   });
 
   it("discriminates correctly on ok=false", () => {
-    const result: ValidationResult<string> = { ok: false as const, error: InsightErrors.invalidInput("test") };
+    const result: ValidationResult<string> = {
+      ok: false as const,
+      error: InsightErrors.invalidInput("test"),
+    };
     if (result.ok) {
       // This branch is never reached but TypeScript narrows correctly
       const _exhaustive: never = result;

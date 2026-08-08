@@ -1,8 +1,4 @@
-import type {
-  IntelligenceSignal,
-  SignalEngineConfig,
-  CorrelationResult,
-} from "./SignalTypes";
+import type { IntelligenceSignal, SignalEngineConfig, CorrelationResult } from "./SignalTypes";
 import type { EvidenceCollection } from "@insight/data";
 import { CorrelationEngine } from "./CorrelationEngine";
 import { ConfidenceCalculator } from "./ConfidenceCalculator";

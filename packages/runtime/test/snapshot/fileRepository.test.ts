@@ -176,7 +176,8 @@ describe("FileSnapshotRepository — async contract", () => {
 
 describe("Repository polymorphism", () => {
   it("InMemorySnapshotRepository satisfies SyncSnapshotRepository", () => {
-    const repo: import("../../src/snapshot").SyncSnapshotRepository = new InMemorySnapshotRepository();
+    const repo: import("../../src/snapshot").SyncSnapshotRepository =
+      new InMemorySnapshotRepository();
     expect(typeof repo.save).toBe("function");
     expect(typeof repo.get).toBe("function");
   });

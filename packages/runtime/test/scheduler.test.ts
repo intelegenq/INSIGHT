@@ -101,8 +101,16 @@ describe("Scheduler with InsightRuntimeJob", () => {
     const job1 = new InsightRuntimeJob("job-1", "Job 1", options);
     const job2 = new InsightRuntimeJob("job-2", "Job 2", options);
 
-    scheduler.register({ ...job1, execute: job1.execute.bind(job1), enabled: true } as ScheduledJob);
-    scheduler.register({ ...job2, execute: job2.execute.bind(job2), enabled: true } as ScheduledJob);
+    scheduler.register({
+      ...job1,
+      execute: job1.execute.bind(job1),
+      enabled: true,
+    } as ScheduledJob);
+    scheduler.register({
+      ...job2,
+      execute: job2.execute.bind(job2),
+      enabled: true,
+    } as ScheduledJob);
 
     const list = scheduler.list();
     expect(list).toHaveLength(2);
@@ -214,8 +222,16 @@ describe("Scheduler Execution Lifecycle", () => {
     const job1 = new InsightRuntimeJob("list-1", "List 1", options);
     const job2 = new InsightRuntimeJob("list-2", "List 2", options);
 
-    scheduler.register({ ...job1, execute: job1.execute.bind(job1), enabled: true } as ScheduledJob);
-    scheduler.register({ ...job2, execute: job2.execute.bind(job2), enabled: true } as ScheduledJob);
+    scheduler.register({
+      ...job1,
+      execute: job1.execute.bind(job1),
+      enabled: true,
+    } as ScheduledJob);
+    scheduler.register({
+      ...job2,
+      execute: job2.execute.bind(job2),
+      enabled: true,
+    } as ScheduledJob);
 
     await scheduler.execute("list-1");
     await scheduler.execute("list-2");
@@ -274,8 +290,16 @@ describe("Scheduler — injected clock", () => {
     const scheduler2 = new Scheduler();
     const job1 = new InsightRuntimeJob("det-1", "Det 1", options);
     const job2 = new InsightRuntimeJob("det-2", "Det 2", options);
-    scheduler1.register({ ...job1, execute: job1.execute.bind(job1), enabled: true } as ScheduledJob);
-    scheduler2.register({ ...job2, execute: job2.execute.bind(job2), enabled: true } as ScheduledJob);
+    scheduler1.register({
+      ...job1,
+      execute: job1.execute.bind(job1),
+      enabled: true,
+    } as ScheduledJob);
+    scheduler2.register({
+      ...job2,
+      execute: job2.execute.bind(job2),
+      enabled: true,
+    } as ScheduledJob);
     await scheduler1.execute("det-1");
     await scheduler2.execute("det-2");
     const id1 = scheduler1.listExecutions()[0]!.id;

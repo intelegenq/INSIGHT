@@ -36,7 +36,7 @@ export class ReportGenerator {
     if (config.format) {
       assertValid(
         validateEnum(config.format, ["markdown", "html", "json"], "format"),
-        "ReportGenerator.constructor"
+        "ReportGenerator.constructor",
       );
     }
 

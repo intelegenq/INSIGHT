@@ -77,14 +77,8 @@ function diffProjects(older: Snapshot, newer: Snapshot): ProjectChange[] {
   return changes.sort((a, b) => a.projectId.localeCompare(b.projectId));
 }
 
-function diffMetrics(
-  previous: ProjectMetrics,
-  current: ProjectMetrics,
-): ProjectMetricChange[] {
-  const keys = new Set<string>([
-    ...Object.keys(previous),
-    ...Object.keys(current),
-  ]);
+function diffMetrics(previous: ProjectMetrics, current: ProjectMetrics): ProjectMetricChange[] {
+  const keys = new Set<string>([...Object.keys(previous), ...Object.keys(current)]);
   const out: ProjectMetricChange[] = [];
   for (const key of [...keys].sort()) {
     const from = previous[key as keyof ProjectMetrics];
