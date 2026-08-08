@@ -41,11 +41,15 @@ describe("InsightService", () => {
     expect(diff?.toId).toBe(b.id);
   });
 
-  it("returns undefined when comparing missing snapshot ids", () => {
-    const service = new InsightService();
-    const snap = service.snapshot();
-    expect(service.compareSnapshots(snap.id, "missing")).toBeUndefined();
-    expect(service.compareSnapshots("missing", snap.id)).toBeUndefined();
+  it("throws SNAPSHOT_NOT_FOUND when comparing missing snapshot ids", () => {
+    try {
+      getInsightService().compareSnapshots("missing", "also-missing");
+      throw new Error("Expected compareSnapshots to throw");
+    } catch (error) {
+      expect(error).toMatchObject({
+        message: "Snapshot not found: missing",
+      });
+    }
   });
 
   it("shared singleton returns the same instance across calls", () => {

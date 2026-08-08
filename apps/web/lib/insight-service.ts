@@ -1,7 +1,7 @@
 /**
  * Insight service — framework-friendly adapter around @insight/runtime.
  */
-import { HistoryAnalyzer } from "@insight/runtime";
+import { HistoryAnalyzer, InsightErrors } from "@insight/runtime";
 import type { Project, Report, ReportLens } from "@insight/core";
 import type { Snapshot, RuntimeResult } from "@insight/runtime";
 import { InMemorySnapshotRepository, InsightRuntime, createSnapshot } from "@insight/runtime";
@@ -86,10 +86,15 @@ export class InsightService {
   compareSnapshots(
     fromId: string,
     toId: string,
-  ): import("@insight/runtime").HistoryDiff | undefined {
+  ): import("@insight/runtime").HistoryDiff {
     const from = this.repository.get(fromId);
     const to = this.repository.get(toId);
-    if (from === undefined || to === undefined) return undefined;
+    if (from === undefined) {
+      throw InsightErrors.snapshotNotFound(fromId);
+    }
+    if (to === undefined) {
+      throw InsightErrors.snapshotNotFound(toId);
+    }
     return this.historyAnalyzer.compare(from, to);
   }
 }

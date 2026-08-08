@@ -5,7 +5,7 @@ import type { Project, Narrative, Evidence, Report } from "@insight/core";
 import type { KnowledgeGraph } from "@insight/knowledge";
 
 const REFERENCE_DATE = "2026-08-07T00:00:00.000Z";
-const EXECUTION_ID = "exec-1723032000000-1";
+const EXECUTION_ID = "exec-000001";
 
 const mockProject: Project = {
   id: "proj-1",

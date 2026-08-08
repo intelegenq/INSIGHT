@@ -123,7 +123,7 @@ describe("validateReferenceDate", () => {
   it("rejects unparseable date", () => {
     const result = validateReferenceDate("2026-13-45T00:00:00.000Z", "referenceDate");
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.message).toContain("valid date");
+    if (!result.ok) expect(result.error.message).toContain("must be a valid date in ISO-8601 format");
   });
 
   it("rejects non-string", () => {
@@ -257,16 +257,16 @@ describe("validateExecutionId", () => {
 
 describe("validateSnapshotId", () => {
   it("accepts valid snapshot ID", () => {
-    const result = validateSnapshotId("snap-exec-1723032000000-1-abcdef01");
+    const result = validateSnapshotId("snapshot-2026-08-07T00:00:00.000Z-abcdef01");
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value).toBe("snap-exec-1723032000000-1-abcdef01");
+    if (result.ok) expect(result.value).toBe("snapshot-2026-08-07T00:00:00.000Z-abcdef01");
   });
 
   it("rejects invalid format", () => {
     const result = validateSnapshotId("snap-invalid");
     expect(result.ok).toBe(false);
     if (!result.ok)
-      expect(result.error.message).toContain("snap-exec-<timestamp>-<counter>-<8-char-hex>");
+      expect(result.error.message).toContain("snapshotId must match format");
   });
 });
 

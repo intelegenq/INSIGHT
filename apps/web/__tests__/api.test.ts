@@ -17,7 +17,7 @@ describe("API routes", () => {
 
   describe("GET /api/projects", () => {
     it("returns the expected shape", async () => {
-      const response = await listProjects();
+      const response = await listProjects(new Request("http://localhost/api/projects"));
       expect(response.status).toBe(200);
       const body = await readJson<{ projects: unknown[]; count: number }>(response);
       expect(Array.isArray(body.projects)).toBe(true);
@@ -40,13 +40,13 @@ describe("API routes", () => {
       const response = await getReports(request);
       expect(response.status).toBe(400);
       const body = await readJson<{ error: { message: string } }>(response);
-      expect(body.error.message).toMatch(/Invalid lens/);
+      expect(body.error.message).toMatch(/lens must be one of: ecosystem, defi, infrastructure/);
     });
   });
 
   describe("GET /api/snapshots", () => {
     it("returns empty list initially", async () => {
-      const response = await listSnapshots();
+      const response = await listSnapshots(new Request("http://localhost/api/snapshots"));
       expect(response.status).toBe(200);
       const body = await readJson<{ snapshots: unknown[]; count: number }>(response);
       expect(body.snapshots).toEqual([]);
@@ -56,7 +56,7 @@ describe("API routes", () => {
 
   describe("POST /api/snapshots", () => {
     it("creates a snapshot and returns 201", async () => {
-      const response = await createSnapshot();
+      const response = await createSnapshot(new Request("http://localhost/api/snapshots", { method: "POST" }));
       expect(response.status).toBe(201);
       const body = await readJson<{ snapshot: { id: string; referenceDate: string } }>(response);
       expect(typeof body.snapshot.id).toBe("string");
@@ -64,8 +64,8 @@ describe("API routes", () => {
     });
 
     it("persists the snapshot so subsequent GET returns it", async () => {
-      await createSnapshot();
-      const list = await listSnapshots();
+      await createSnapshot(new Request("http://localhost/api/snapshots", { method: "POST" }));
+      const list = await listSnapshots(new Request("http://localhost/api/snapshots"));
       const body = await readJson<{ count: number }>(list);
       expect(body.count).toBe(1);
     });
@@ -90,7 +90,7 @@ describe("API routes", () => {
       const service = getInsightService();
       service.snapshotAt("2026-01-01T00:00:00.000Z");
       service.snapshotAt("2026-01-02T00:00:00.000Z");
-      const list = await listSnapshots();
+      const list = await listSnapshots(new Request("http://localhost/api/snapshots"));
       const body = await readJson<{ snapshots: { id: string }[] }>(list);
       const ids = body.snapshots.map((s) => s.id);
       const request = new Request(`http://localhost/api/history?from=${ids[0]}&to=${ids[1]}`);
