@@ -4,3 +4,4 @@
 export type { RuntimeJob, ScheduledJob, ExecutionRecord, ExecutionStatus } from "./types";
 export { Scheduler, scheduler } from "./Scheduler";
 export { InsightRuntimeJob } from "./InsightRuntimeJob";
+export type { SchedulerOptions, Clock } from "./Scheduler";
