@@ -1,21 +1,10 @@
-/**
- * @insight/runtime/snapshot — createSnapshot helpers.
- *
- * These utilities convert runtime results into immutable snapshots.
- * They never read wall-clock time: every time-related field is supplied
- * by the caller.
- */
-
 import type { Evidence, Narrative, Project, Report } from "@insight/core";
 import type { KnowledgeGraph } from "@insight/knowledge";
 import type { RuntimeOptions, RuntimeResult } from "../types";
 import type { Snapshot } from "./Snapshot";
 import { buildSnapshotId, hashSnapshotContent } from "./Snapshot";
+import { assertValid, validateReferenceDate, validateExecutionId } from "../validation";
 
-/**
- * Arguments accepted by {@link createSnapshot}. Excludes the derived `id`
- * so callers cannot accidentally override the deterministic identifier.
- */
 export interface CreateSnapshotInput {
   referenceDate: string;
   options: RuntimeOptions;
@@ -25,59 +14,22 @@ export interface CreateSnapshotInput {
   evidence: readonly Evidence[];
   report: Report;
   knowledgeGraph: KnowledgeGraph;
-  /** Optional: identifier of the ExecutionRecord that produced this result. */
   executionId?: string;
-  /** Optional: job identifier (Scheduler job id). */
   jobId?: string;
 }
 
-/**
- * Build a snapshot from raw inputs. The id is derived deterministically from
- * the reference date and a content hash.
- */
 export function createSnapshot(input: CreateSnapshotInput): Snapshot {
+  assertValid(validateReferenceDate(input.referenceDate), "createSnapshot");
+  if (input.executionId !== undefined) assertValid(validateExecutionId(input.executionId), "createSnapshot");
   const base = toBaseSnapshot(input);
   const id = buildSnapshotId(input.referenceDate, hashSnapshotContent(base));
   return Object.freeze({ ...base, id, createdAt: input.referenceDate }) as Snapshot;
 }
 
-/**
- * Convert a {@link RuntimeResult} into a snapshot. The reference date is
- * read from `RuntimeResult.timestamp` (which itself comes from the runtime's
- * `referenceDate` option — never wall-clock).
- */
-export function snapshotFromRuntimeResult(
-  result: RuntimeResult,
-  options: RuntimeOptions,
-  jobId?: string,
-  executionId?: string,
-): Snapshot {
-  return createSnapshot({
-    referenceDate: result.timestamp,
-    options,
-    summary: result.summary,
-    projects: result.projects,
-    narratives: result.narratives,
-    evidence: result.evidence,
-    report: result.report,
-    knowledgeGraph: result.knowledgeGraph,
-    ...(jobId !== undefined ? { jobId } : {}),
-    ...(executionId !== undefined ? { executionId } : {}),
-  });
+export function snapshotFromRuntimeResult(result: RuntimeResult, options: RuntimeOptions, jobId?: string, executionId?: string): Snapshot {
+  return createSnapshot({ referenceDate: result.timestamp, options, summary: result.summary, projects: result.projects, narratives: result.narratives, evidence: result.evidence, report: result.report, knowledgeGraph: result.knowledgeGraph, ...(jobId !== undefined ? { jobId } : {}), ...(executionId !== undefined ? { executionId } : {}) });
 }
 
 function toBaseSnapshot(input: CreateSnapshotInput): Omit<Snapshot, "id"> {
-  return {
-    referenceDate: input.referenceDate,
-    createdAt: input.referenceDate,
-    options: input.options,
-    summary: input.summary,
-    projects: input.projects,
-    narratives: input.narratives,
-    evidence: input.evidence,
-    report: input.report,
-    knowledgeGraph: input.knowledgeGraph,
-    ...(input.executionId !== undefined ? { executionId: input.executionId } : {}),
-    ...(input.jobId !== undefined ? { jobId: input.jobId } : {}),
-  };
+  return { referenceDate: input.referenceDate, createdAt: input.referenceDate, options: input.options, summary: input.summary, projects: input.projects, narratives: input.narratives, evidence: input.evidence, report: input.report, knowledgeGraph: input.knowledgeGraph, ...(input.executionId !== undefined ? { executionId: input.executionId } : {}), ...(input.jobId !== undefined ? { jobId: input.jobId } : {}) };
 }
