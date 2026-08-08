@@ -1,5 +1,5 @@
 import { getInsightService } from "../../../lib/insight-service";
-import { errorResponse, getErrorMessage, ok } from "../../../lib/api";
+import { errorFromUnknown, ok } from "../../../lib/api";
 
 /**
  * GET /api/projects
@@ -13,6 +13,6 @@ export async function GET(): Promise<Response> {
     const projects = service.listProjects();
     return ok({ projects, count: projects.length });
   } catch (error) {
-    return errorResponse(getErrorMessage(error), 500);
+    return errorFromUnknown(error);
   }
 }
