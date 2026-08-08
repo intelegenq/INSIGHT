@@ -26,6 +26,12 @@ The quality gate is configured in `.github/workflows/ci.yml` and is intended to 
 - Turbo test tasks do not declare fabricated output directories.
 - The determinism guard is limited to runtime report and snapshot identity code.
 
+## M22: Source health monitoring
+
+- Data providers can be checked through a deterministic source health monitor.
+- Source health reports are stable, sorted by provider id, and include healthy/unavailable counts.
+- Failed provider health checks are represented as unavailable entries instead of aborting the whole report.
+
 ## Verification note
 
 Changes were applied to main through the connected GitHub repository API. A local checkout was unavailable because the environment lacks the Git HTTPS transport helper, and the fallback archive download failed during TLS negotiation. CI remains the authoritative typecheck, test, formatting, lint, and build verification.

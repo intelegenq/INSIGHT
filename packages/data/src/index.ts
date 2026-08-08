@@ -117,6 +117,15 @@ export type {
   NormalizeResult,
 } from "./evidence/EvidenceTypes";
 
+/* ── Source health monitoring ────────────────────────────────────────── */
+export { SourceHealthMonitor, checkSourceHealth } from "./monitoring/SourceHealthMonitor";
+export type {
+  SourceHealthEntry,
+  SourceHealthMonitorOptions,
+  SourceHealthReport,
+  SourceHealthStatus,
+} from "./monitoring/SourceHealthMonitor";
+
 /* ── Normalization layer ──────────────────────────────────────────────── */
 export {
   isCanonicalEvidence,
