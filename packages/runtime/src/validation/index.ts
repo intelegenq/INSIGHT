@@ -175,9 +175,8 @@ export function validateSnapshotId(value: unknown): ValidationResult<string> {
   const result = validateRequiredString(value, "snapshotId");
   if (!result.ok) return result;
   const isLegacyExecutionSnapshot = /^snap-exec-\d+-\d+-[0-9a-f]{8}$/.test(result.value);
-  const isCanonicalSnapshot = /^snapshot-\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z-[0-9a-f]{8}$/.test(
-    result.value,
-  );
+  const isCanonicalSnapshot =
+    /^snapshot-\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z-[0-9a-f]{8}$/.test(result.value);
   if (!isLegacyExecutionSnapshot && !isCanonicalSnapshot)
     return {
       ok: false,
