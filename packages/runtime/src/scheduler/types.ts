@@ -1,10 +1,8 @@
 /**
  * @insight/runtime/scheduler — minimal scheduler abstraction.
- *
- * Framework-free job registration and execution layer above InsightRuntime.
- * No cron, no timers, no I/O — pure deterministic execution.
  */
 import type { RuntimeOptions, RuntimeResult } from "../types";
+import type { ErrorCode } from "../errors";
 
 /**
  * RuntimeJob — a single unit of work that produces a RuntimeResult.
@@ -60,6 +58,18 @@ export interface ExecutionRecord {
 
   /** ISO timestamp when execution completed (if finished). */
   completedAt?: string;
+
+  /** Duration in milliseconds, if the clock source can derive it. */
+  durationMs?: number;
+
+  /** Retry count, when execution was retried by a caller. */
+  retryCount?: number;
+
+  /** Snapshot identifier created by the execution, when applicable. */
+  snapshotId?: string;
+
+  /** Structured failure code for failed executions. */
+  errorCode?: ErrorCode;
 
   /** Runtime result (available when completed). */
   result?: RuntimeResult;
