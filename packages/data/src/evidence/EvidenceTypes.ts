@@ -18,6 +18,8 @@ export interface EvidenceSource {
   endpoint?: string;
   /** Optional: raw request parameters for traceability. */
   requestParams?: Record<string, unknown>;
+  /** Optional chain this source reports on (defaults to Solana when absent). */
+  chain?: import("@insight/core").ChainId;
 }
 
 /** A single normalized evidence item from any provider. */
@@ -32,6 +34,8 @@ export interface EvidenceItem<T = unknown> {
   data: T;
   /** Optional: human-readable description for debugging. */
   description?: string;
+  /** Optional chain this evidence was observed on (defaults to Solana). */
+  chain?: import("@insight/core").ChainId;
 }
 
 /** Collection of evidence items gathered in a single collection run. */

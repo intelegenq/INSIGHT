@@ -21,6 +21,20 @@ export type {
   ReportSections,
 } from "./types";
 
+/* ── M28: Multi-chain contracts ─────────────────────────────────────── */
+export type { ChainId, ChainInfo } from "./chains";
+export {
+  SOLANA,
+  ETHEREUM,
+  CHAINS,
+  DEFAULT_CHAIN,
+  chainOf,
+  chainInfo,
+  evidenceKey,
+  sameChain,
+  dedupeByChain,
+} from "./chains";
+
 /* ── M25: Authentication & Saved Research ───────────────────────────── */
 export type {
   AuthSession,

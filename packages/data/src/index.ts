@@ -126,6 +126,10 @@ export type {
   SourceHealthStatus,
 } from "./monitoring/SourceHealthMonitor";
 
+/* ── M28: Multi-chain health gating (adapter over SourceHealthMonitor) ── */
+export { chainHealthGates, isChainEnabled, chainForProvider } from "./evidence/ChainHealth";
+export type { ChainHealthGate } from "./evidence/ChainHealth";
+
 /* ── Normalization layer ──────────────────────────────────────────────── */
 export {
   isCanonicalEvidence,

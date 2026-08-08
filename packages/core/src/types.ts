@@ -6,6 +6,8 @@
  * and future services.
  */
 
+import type { ChainId } from "./chains";
+
 /** How much a piece of evidence can currently be trusted. */
 export type EvidenceStatus = "demo" | "verified" | "pending" | "draft";
 
@@ -15,6 +17,8 @@ export interface EvidenceSource {
   id: string;
   /** Human-readable source name. */
   name: string;
+  /** Optional chain this source reports on (defaults to Solana when absent). */
+  chain?: ChainId;
 }
 
 /** A single citable signal backing a claim. */
@@ -27,6 +31,8 @@ export interface Evidence {
   observedAt: string;
   /** Optional pointer to the underlying artifact (URL, tx, file). */
   reference?: string;
+  /** Optional chain this evidence was observed on (defaults to Solana). */
+  chain?: ChainId;
 }
 
 /** Optional structured confidence range for a generated statement. */
@@ -57,6 +63,8 @@ export interface Project {
   metrics: ProjectMetrics;
   /** Identifiers of the evidence backing this project's view. */
   evidenceIds: string[];
+  /** Optional primary chain for the project (defaults to Solana). */
+  chain?: ChainId;
   /** ISO-8601 timestamp of the last update. */
   updatedAt: string;
 }
