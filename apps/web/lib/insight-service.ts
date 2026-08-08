@@ -21,6 +21,7 @@ import {
   InMemorySnapshotRepository,
   InsightRuntime,
   createSnapshot,
+  InsightErrors,
 } from "@insight/runtime";
 import { projectRepository } from "@insight/data";
 
@@ -116,8 +117,11 @@ export class InsightService {
   compareSnapshots(fromId: string, toId: string): import("@insight/runtime").HistoryDiff | undefined {
     const from = this.repository.get(fromId);
     const to = this.repository.get(toId);
-    if (from === undefined || to === undefined) {
-      return undefined;
+    if (from === undefined) {
+      throw InsightErrors.snapshotNotFound(fromId);
+    }
+    if (to === undefined) {
+      throw InsightErrors.snapshotNotFound(toId);
     }
     return this.historyAnalyzer.compare(from, to);
   }
