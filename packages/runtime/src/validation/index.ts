@@ -172,7 +172,7 @@ export function validateSnapshotId(value: unknown): ValidationResult<string> {
     return {
       ok: false,
       error: InsightErrors.validationError(
-        "snapshotId must match format: snap-exec---<8-char-hex> (timestamp and counter segments required)",
+        "snapshotId must match format: snap-exec---<8-char-hex> (timestamp and counter segments required; e.g. snap-exec-<timestamp>-<counter>-<8-char-hex>)",
         { field: "snapshotId", value: result.value },
       ),
     };
