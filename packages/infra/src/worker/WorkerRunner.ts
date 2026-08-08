@@ -6,7 +6,12 @@
  * (SIGTERM/SIGINT), and reports per-iteration outcomes. It is agnostic to the
  * job's implementation — producers wire it to `RefreshEngine`/`Scheduler` or
  * any poller. Kept dependency-free so it runs in a plain Node container.
+ *
+ * M27: accepts an optional {@link ObservabilitySink} to emit structured
+ * per-iteration logs/metrics without coupling the loop to any collector.
  */
+import type { ObservabilitySink } from "../observability/observability";
+import { noopSink } from "../observability/observability";
 
 export interface WorkerSpec {
   /** Human-readable worker name. */
@@ -24,6 +29,8 @@ export interface WorkerRunOptions {
   signal: AbortSignal;
   /** Log sink; defaults to console. */
   log?: (line: string) => void;
+  /** M27: structured observability sink for per-iteration logs/metrics. */
+  sink?: ObservabilitySink;
 }
 
 /** Continuously run a worker until the abort signal fires. */
@@ -34,6 +41,7 @@ export async function runWorkerLoop(
   const intervalMs = spec.intervalMs ?? 5_000;
   const maxFailures = spec.maxFailures ?? 10;
   const log = options.log ?? ((line: string) => console.log(`[worker:${spec.name}] ${line}`));
+  const sink = options.sink ?? noopSink;
 
   let runs = 0;
   let failures = 0;
@@ -41,14 +49,24 @@ export async function runWorkerLoop(
 
   while (!options.signal.aborted && failures < maxFailures) {
     const startedAt = new Date().toISOString();
+    sink.log({ severity: "info", message: "worker iteration start", timestamp: startedAt, attributes: { worker: spec.name, attempt } });
     try {
       const status = await spec.handle({ attempt, startedAt });
       attempt += 1;
       runs += 1;
+      sink.metric({ name: "worker.run", delta: 1, timestamp: startedAt, attributes: { worker: spec.name, status } });
       log(`ok (${status}) #${attempt}`);
     } catch (error) {
       failures += 1;
       attempt += 1;
+      sink.metric({ name: "worker.failure", delta: 1, timestamp: startedAt, attributes: { worker: spec.name } });
+      sink.log({
+        severity: "error",
+        message: "worker iteration failed",
+        timestamp: startedAt,
+        attributes: { worker: spec.name, attempt },
+        error: { message: error instanceof Error ? error.message : String(error) },
+      });
       log(`failed (${error instanceof Error ? error.message : String(error)}) #${attempt}`);
     }
     // Poll the signal before sleeping to stop promptly on shutdown.
