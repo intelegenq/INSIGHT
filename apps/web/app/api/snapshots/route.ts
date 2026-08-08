@@ -1,7 +1,7 @@
 import { getInsightService } from "../../../lib/insight-service";
 import { errorFromUnknown, ok, requestIdFromRequest } from "../../../lib/api";
 
-export async function GET(request?: Request): Promise<Response> {
+async function getSnapshots(request?: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
   try {
     const service = getInsightService();
@@ -12,7 +12,7 @@ export async function GET(request?: Request): Promise<Response> {
   }
 }
 
-export async function POST(request?: Request): Promise<Response> {
+async function createSnapshot(request?: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
   try {
     const service = getInsightService();
@@ -25,3 +25,6 @@ export async function POST(request?: Request): Promise<Response> {
     return errorFromUnknown(error, requestId);
   }
 }
+
+export const GET: (request: Request) => Promise<Response> = getSnapshots;
+export const POST: (request: Request) => Promise<Response> = createSnapshot;
