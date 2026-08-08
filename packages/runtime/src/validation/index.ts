@@ -81,7 +81,7 @@ export function validateReferenceDate(
     return {
       ok: false,
       error: InsightErrors.validationError(
-        `${fieldName} must be a valid ISO-8601 timestamp (e.g., 2026-08-07T00:00:00.000Z)`,
+        `${fieldName} must be a valid date in ISO-8601 format (e.g., 2026-08-07T00:00:00.000Z)`,
         { field: fieldName, value: dateStr },
       ),
     };
@@ -148,11 +148,13 @@ export function validatePositiveInteger(
 export function validateExecutionId(value: unknown): ValidationResult<string> {
   const result = validateRequiredString(value, "executionId");
   if (!result.ok) return result;
-  if (!/^exec-[0-9a-z]{6}$/.test(result.value))
+  const isCounterId = /^exec-[0-9a-z]{6}$/.test(result.value);
+  const isTimestampCounterId = /^exec-\d+-\d+$/.test(result.value);
+  if (!isCounterId && !isTimestampCounterId)
     return {
       ok: false,
       error: InsightErrors.validationError(
-        "executionId must match format: exec-<counter-in-base36>",
+        "executionId must match format: exec-<counter-in-base36> or exec-<timestamp>-<counter>",
         { field: "executionId", value: result.value },
       ),
     };
@@ -162,11 +164,15 @@ export function validateExecutionId(value: unknown): ValidationResult<string> {
 export function validateSnapshotId(value: unknown): ValidationResult<string> {
   const result = validateRequiredString(value, "snapshotId");
   if (!result.ok) return result;
-  if (!/^snapshot-\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z-[0-9a-f]{8}$/.test(result.value))
+  const isLegacyExecutionSnapshot = /^snap-exec-\d+-\d+-[0-9a-f]{8}$/.test(result.value);
+  const isCanonicalSnapshot = /^snapshot-\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z-[0-9a-f]{8}$/.test(
+    result.value,
+  );
+  if (!isLegacyExecutionSnapshot && !isCanonicalSnapshot)
     return {
       ok: false,
       error: InsightErrors.validationError(
-        "snapshotId must match format: snapshot-<ISO timestamp>-<8-char-hex>",
+        "snapshotId must match format: snap-exec---<8-char-hex> (timestamp and counter segments required)",
         { field: "snapshotId", value: result.value },
       ),
     };
