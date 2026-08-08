@@ -20,6 +20,8 @@ Repository: qwertyIQ/Insight
 
 ## M21: Production quality gate
 
+The quality gate is configured in `.github/workflows/ci.yml` and is intended to run on pull requests and pushes to main.
+
 - CI runs formatting, lint, typecheck, tests, determinism guard, and build.
 - Turbo test tasks do not declare fabricated output directories.
 - The determinism guard is limited to runtime report and snapshot identity code.
