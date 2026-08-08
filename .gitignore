@@ -17,6 +17,9 @@ coverage/
 # Logs
 *.log
 
+# Runtime persisted state (M25 auth sessions, saved research)
+.data/
+
 # Editor and OS
 .vscode/
 .idea/

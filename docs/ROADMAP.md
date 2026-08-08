@@ -24,7 +24,7 @@
 
 ## Phase 4 — Production hardening
 
-- [ ] Authentication and saved research
+- [x] Authentication and saved research (M25 — Authentication & Saved Research)
 - [ ] PostgreSQL, cache, object storage, and workers
 - [ ] Observability, evaluation, and security controls
 - [ ] Multi-chain expansion only after Solana quality is proven
