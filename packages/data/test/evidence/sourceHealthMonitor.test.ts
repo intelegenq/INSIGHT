@@ -45,7 +45,11 @@ describe("SourceHealthMonitor", () => {
   });
 
   it("checks all providers and returns healthy status", async () => {
-    const provider = createMockProvider("healthy", { id: "healthy", name: "Healthy", available: true });
+    const provider = createMockProvider("healthy", {
+      id: "healthy",
+      name: "Healthy",
+      available: true,
+    });
     monitor.addProvider("healthy", provider);
 
     const result = await monitor.checkAll();
@@ -60,7 +64,12 @@ describe("SourceHealthMonitor", () => {
   });
 
   it("reports unhealthy provider when health check fails", async () => {
-    const provider = createMockProvider("unhealthy", { id: "unhealthy", name: "Unhealthy", available: false, note: "down" });
+    const provider = createMockProvider("unhealthy", {
+      id: "unhealthy",
+      name: "Unhealthy",
+      available: false,
+      note: "down",
+    });
     monitor.addProvider("unhealthy", provider);
 
     const result = await monitor.checkAll();
@@ -71,7 +80,11 @@ describe("SourceHealthMonitor", () => {
   });
 
   it("handles provider throwing error", async () => {
-    const provider = createMockProvider("throwing", { id: "throwing", name: "Throwing", available: true }, true);
+    const provider = createMockProvider(
+      "throwing",
+      { id: "throwing", name: "Throwing", available: true },
+      true,
+    );
     monitor.addProvider("throwing", provider);
 
     const result = await monitor.checkAll();
@@ -82,7 +95,12 @@ describe("SourceHealthMonitor", () => {
   });
 
   it("handles provider timeout", async () => {
-    const provider = createMockProvider("slow", { id: "slow", name: "Slow", available: true }, false, 100);
+    const provider = createMockProvider(
+      "slow",
+      { id: "slow", name: "Slow", available: true },
+      false,
+      100,
+    );
     monitor.addProvider("slow", provider);
 
     // Very short timeout to force timeout
@@ -95,7 +113,12 @@ describe("SourceHealthMonitor", () => {
   });
 
   it("checks single provider", async () => {
-    const provider = createMockProvider("single", { id: "single", name: "Single", available: true, note: "ok" });
+    const provider = createMockProvider("single", {
+      id: "single",
+      name: "Single",
+      available: true,
+      note: "ok",
+    });
     monitor.addProvider("single", provider);
 
     const record = await monitor.checkProvider("single");
@@ -114,7 +137,11 @@ describe("SourceHealthMonitor", () => {
   });
 
   it("tracks health history", async () => {
-    const provider = createMockProvider("history", { id: "history", name: "History", available: true });
+    const provider = createMockProvider("history", {
+      id: "history",
+      name: "History",
+      available: true,
+    });
     monitor.addProvider("history", provider);
 
     await monitor.checkAll();
@@ -136,7 +163,11 @@ describe("SourceHealthMonitor", () => {
   });
 
   it("returns latest health for provider", async () => {
-    const provider = createMockProvider("latest", { id: "latest", name: "Latest", available: true });
+    const provider = createMockProvider("latest", {
+      id: "latest",
+      name: "Latest",
+      available: true,
+    });
     monitor.addProvider("latest", provider);
 
     await monitor.checkAll();

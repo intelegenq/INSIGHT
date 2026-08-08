@@ -123,7 +123,8 @@ describe("validateReferenceDate", () => {
   it("rejects unparseable date", () => {
     const result = validateReferenceDate("2026-13-45T00:00:00.000Z", "referenceDate");
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.message).toContain("must be a valid date in ISO-8601 format");
+    if (!result.ok)
+      expect(result.error.message).toContain("must be a valid date in ISO-8601 format");
   });
 
   it("rejects non-string", () => {
@@ -265,8 +266,7 @@ describe("validateSnapshotId", () => {
   it("rejects invalid format", () => {
     const result = validateSnapshotId("snap-invalid");
     expect(result.ok).toBe(false);
-    if (!result.ok)
-      expect(result.error.message).toContain("snapshotId must match format");
+    if (!result.ok) expect(result.error.message).toContain("snapshotId must match format");
   });
 });
 

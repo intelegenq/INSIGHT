@@ -18,7 +18,12 @@ function makeProject(overrides: Partial<Project> & Pick<Project, "id" | "name">)
   return {
     category: "defi",
     description: "Test protocol",
-    metrics: { tvl: 200_000_000, volume24h: 50_000_000, activeUsers24h: 1000, developerActivity: 30 },
+    metrics: {
+      tvl: 200_000_000,
+      volume24h: 50_000_000,
+      activeUsers24h: 1000,
+      developerActivity: 30,
+    },
     evidenceIds: ["e1"],
     updatedAt: REFERENCE_DATE,
     ...overrides,
@@ -76,7 +81,11 @@ function makeReport(overrides: Partial<Report> = {}): Report {
   };
 }
 
-function makeScoredProject(project: Project, health: ProjectHealth, evidence: Evidence[]): ScoredProject {
+function makeScoredProject(
+  project: Project,
+  health: ProjectHealth,
+  evidence: Evidence[],
+): ScoredProject {
   return { project, health, evidence };
 }
 
@@ -94,10 +103,20 @@ describe("ExplanationEngine", () => {
       const reasons = explainProjectHealth(project, health, evidence);
 
       expect(reasons.length).toBeGreaterThan(0);
-      expect(reasons.some(r => r.includes("Moderate TVL ($200.0M)") || r.includes("Strong TVL ($200.0M)") || r.includes("Strong TVL") || r.includes("Moderate TVL"))).toBe(true);
-      expect(reasons.some(r => r.includes("verified evidence"))).toBe(true);
-      expect(reasons.some(r => r.includes("Low risk") || r.includes("Moderate risk"))).toBe(true);
-      expect(reasons.some(r => r.includes("Positive momentum") || r.includes("momentum"))).toBe(true);
+      expect(
+        reasons.some(
+          (r) =>
+            r.includes("Moderate TVL ($200.0M)") ||
+            r.includes("Strong TVL ($200.0M)") ||
+            r.includes("Strong TVL") ||
+            r.includes("Moderate TVL"),
+        ),
+      ).toBe(true);
+      expect(reasons.some((r) => r.includes("verified evidence"))).toBe(true);
+      expect(reasons.some((r) => r.includes("Low risk") || r.includes("Moderate risk"))).toBe(true);
+      expect(reasons.some((r) => r.includes("Positive momentum") || r.includes("momentum"))).toBe(
+        true,
+      );
     });
 
     it("generates explanations for a project with demo evidence", () => {
@@ -107,8 +126,10 @@ describe("ExplanationEngine", () => {
 
       const reasons = explainProjectHealth(project, health, evidence);
 
-      expect(reasons.some(r => r.includes("demo evidence"))).toBe(true);
-      expect(reasons.some(r => r.includes("Elevated risk") || r.includes("Moderate risk"))).toBe(true);
+      expect(reasons.some((r) => r.includes("demo evidence"))).toBe(true);
+      expect(reasons.some((r) => r.includes("Elevated risk") || r.includes("Moderate risk"))).toBe(
+        true,
+      );
     });
 
     it("handles missing TVL gracefully", () => {
@@ -118,21 +139,29 @@ describe("ExplanationEngine", () => {
 
       const reasons = explainProjectHealth(project, health, evidence);
 
-      expect(reasons.some(r => r.includes("No TVL data"))).toBe(true);
+      expect(reasons.some((r) => r.includes("No TVL data"))).toBe(true);
     });
   });
 
   describe("explainNarrative", () => {
     it("generates explanations for a narrative with projects and evidence", () => {
       const narrative = makeNarrative();
-      const projects = [makeProject({ id: "p1", name: "Lending" }), makeProject({ id: "p2", name: "DEX" })];
-      const evidence = [makeEvidence("e1"), makeEvidence("e2"), makeEvidence("e3"), makeEvidence("e4")];
+      const projects = [
+        makeProject({ id: "p1", name: "Lending" }),
+        makeProject({ id: "p2", name: "DEX" }),
+      ];
+      const evidence = [
+        makeEvidence("e1"),
+        makeEvidence("e2"),
+        makeEvidence("e3"),
+        makeEvidence("e4"),
+      ];
 
       const reasons = explainNarrative(narrative, projects, evidence);
 
-      expect(reasons.some(r => r.includes("DeFi narrative identified"))).toBe(true);
-      expect(reasons.some(r => r.includes("Lending, DEX"))).toBe(true);
-      expect(reasons.some(r => r.includes("4 evidence item(s)"))).toBe(true);
+      expect(reasons.some((r) => r.includes("DeFi narrative identified"))).toBe(true);
+      expect(reasons.some((r) => r.includes("Lending, DEX"))).toBe(true);
+      expect(reasons.some((r) => r.includes("4 evidence item(s)"))).toBe(true);
     });
 
     it("handles narrative with no projects", () => {
@@ -142,7 +171,7 @@ describe("ExplanationEngine", () => {
 
       const reasons = explainNarrative(narrative, projects, evidence);
 
-      expect(reasons.some(r => r.includes("0 project(s)"))).toBe(true);
+      expect(reasons.some((r) => r.includes("0 project(s)"))).toBe(true);
     });
   });
 
@@ -166,9 +195,9 @@ describe("ExplanationEngine", () => {
 
       const reasons = explainSignal(signal, evidenceById);
 
-      expect(reasons.some(r => r.includes("85%") || r.includes("confidence: 85%"))).toBe(true);
-      expect(reasons.some(r => r.includes("High confidence"))).toBe(true);
-      expect(reasons.some(r => r.includes("supports"))).toBe(true);
+      expect(reasons.some((r) => r.includes("85%") || r.includes("confidence: 85%"))).toBe(true);
+      expect(reasons.some((r) => r.includes("High confidence"))).toBe(true);
+      expect(reasons.some((r) => r.includes("supports"))).toBe(true);
     });
 
     it("handles low confidence signals", () => {
@@ -184,7 +213,7 @@ describe("ExplanationEngine", () => {
 
       const reasons = explainSignal(signal, evidenceById);
 
-      expect(reasons.some(r => r.includes("Low confidence"))).toBe(true);
+      expect(reasons.some((r) => r.includes("Low confidence"))).toBe(true);
     });
   });
 
@@ -192,8 +221,12 @@ describe("ExplanationEngine", () => {
     it("generates explanations for a report with traceability", () => {
       const report = makeReport();
       const projects = [
-        makeScoredProject(makeProject({ id: "p1", name: "Lending" }), makeHealth({ health: 80 }), [makeEvidence("e1")]),
-        makeScoredProject(makeProject({ id: "p2", name: "DEX" }), makeHealth({ health: 70 }), [makeEvidence("e2")]),
+        makeScoredProject(makeProject({ id: "p1", name: "Lending" }), makeHealth({ health: 80 }), [
+          makeEvidence("e1"),
+        ]),
+        makeScoredProject(makeProject({ id: "p2", name: "DEX" }), makeHealth({ health: 70 }), [
+          makeEvidence("e2"),
+        ]),
       ];
       const narratives = [makeDerivedNarrative(makeNarrative(), 25)];
       const evidenceById = new Map([
@@ -204,11 +237,11 @@ describe("ExplanationEngine", () => {
 
       const reasons = explainReport(report, projects, narratives, evidenceById, lens);
 
-      expect(reasons.some(r => r.includes('"defi" lens') || r.includes("defi lens"))).toBe(true);
-      expect(reasons.some(r => r.includes("DeFi · DeFi brief"))).toBe(true);
-      expect(reasons.some(r => r.includes("Driven by DeFi narrative"))).toBe(true);
-      expect(reasons.some(r => r.includes("Lending"))).toBe(true);
-      expect(reasons.some(r => r.includes("evidence reference(s)"))).toBe(true);
+      expect(reasons.some((r) => r.includes('"defi" lens') || r.includes("defi lens"))).toBe(true);
+      expect(reasons.some((r) => r.includes("DeFi · DeFi brief"))).toBe(true);
+      expect(reasons.some((r) => r.includes("Driven by DeFi narrative"))).toBe(true);
+      expect(reasons.some((r) => r.includes("Lending"))).toBe(true);
+      expect(reasons.some((r) => r.includes("evidence reference(s)"))).toBe(true);
     });
 
     it("marks demo reports", () => {
@@ -220,7 +253,7 @@ describe("ExplanationEngine", () => {
 
       const reasons = explainReport(report, projects, narratives, evidenceById, lens);
 
-      expect(reasons.some(r => r.includes("demo/synthetic data"))).toBe(true);
+      expect(reasons.some((r) => r.includes("demo/synthetic data"))).toBe(true);
     });
   });
 
@@ -241,7 +274,10 @@ describe("ExplanationEngine", () => {
 
     it("formats narrative explanation", () => {
       const narrative = makeNarrative({ name: "Test Narrative", trend: "up", change: "+15%" });
-      const projects = [makeProject({ id: "p1", name: "P1" }), makeProject({ id: "p2", name: "P2" })];
+      const projects = [
+        makeProject({ id: "p1", name: "P1" }),
+        makeProject({ id: "p2", name: "P2" }),
+      ];
       const evidence = [makeEvidence("e1"), makeEvidence("e2")];
 
       const result = formatNarrativeExplanation(narrative, projects, evidence);
@@ -271,10 +307,15 @@ describe("ExplanationEngine", () => {
     it("formats report explanation", () => {
       const report = makeReport();
       const projects = [
-        makeScoredProject(makeProject({ id: "p1", name: "Lending" }), makeHealth({ health: 80 }), [makeEvidence("e1")]),
+        makeScoredProject(makeProject({ id: "p1", name: "Lending" }), makeHealth({ health: 80 }), [
+          makeEvidence("e1"),
+        ]),
       ];
       const narratives = [makeDerivedNarrative(makeNarrative(), 25)];
-      const evidenceById = new Map([["e1", makeEvidence("e1", "verified")], ["e2", makeEvidence("e2", "verified")]]);
+      const evidenceById = new Map([
+        ["e1", makeEvidence("e1", "verified")],
+        ["e2", makeEvidence("e2", "verified")],
+      ]);
       const lens: ReportLens = "defi";
 
       const result = formatReportExplanation(report, projects, narratives, evidenceById, lens);

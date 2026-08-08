@@ -56,7 +56,9 @@ describe("API routes", () => {
 
   describe("POST /api/snapshots", () => {
     it("creates a snapshot and returns 201", async () => {
-      const response = await createSnapshot(new Request("http://localhost/api/snapshots", { method: "POST" }));
+      const response = await createSnapshot(
+        new Request("http://localhost/api/snapshots", { method: "POST" }),
+      );
       expect(response.status).toBe(201);
       const body = await readJson<{ snapshot: { id: string; referenceDate: string } }>(response);
       expect(typeof body.snapshot.id).toBe("string");

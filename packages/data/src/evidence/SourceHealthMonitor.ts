@@ -60,7 +60,10 @@ export class SourceHealthMonitor {
         try {
           const healthPromise = provider.health();
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error(`health check timeout after ${this.config.timeoutMs}ms`)), this.config.timeoutMs)
+            setTimeout(
+              () => reject(new Error(`health check timeout after ${this.config.timeoutMs}ms`)),
+              this.config.timeoutMs,
+            ),
           );
           const health = await Promise.race([healthPromise, timeoutPromise]);
           const durationMs = Date.now() - providerStart;
@@ -84,14 +87,14 @@ export class SourceHealthMonitor {
           records.push(record);
           this.healthHistory.push(record);
         }
-      }
+      },
     );
 
     await Promise.all(checkPromises);
 
     const durationMs = Date.now() - startTime;
-    const healthy = records.filter(r => r.available).length;
-    const unhealthy = records.filter(r => !r.available).length;
+    const healthy = records.filter((r) => r.available).length;
+    const unhealthy = records.filter((r) => !r.available).length;
 
     return {
       providers: records,
@@ -115,7 +118,10 @@ export class SourceHealthMonitor {
     try {
       const healthPromise = provider.health();
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`health check timeout after ${this.config.timeoutMs}ms`)), this.config.timeoutMs)
+        setTimeout(
+          () => reject(new Error(`health check timeout after ${this.config.timeoutMs}ms`)),
+          this.config.timeoutMs,
+        ),
       );
       const health = await Promise.race([healthPromise, timeoutPromise]);
       const durationMs = Date.now() - providerStart;
@@ -143,7 +149,7 @@ export class SourceHealthMonitor {
 
   getHealthHistory(providerId?: string): ProviderHealthRecord[] {
     if (providerId) {
-      return this.healthHistory.filter(r => r.id === providerId);
+      return this.healthHistory.filter((r) => r.id === providerId);
     }
     return [...this.healthHistory];
   }
@@ -154,7 +160,7 @@ export class SourceHealthMonitor {
   }
 
   getLatestHealth(providerId: string): ProviderHealthRecord | undefined {
-    const history = this.healthHistory.filter(r => r.id === providerId);
+    const history = this.healthHistory.filter((r) => r.id === providerId);
     return history.length > 0 ? history[history.length - 1] : undefined;
   }
 }

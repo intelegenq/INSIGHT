@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import type { DataProvider, ProviderFetch, RawProject, RawEvidence, RawNarrative } from "@insight/data";
+import type {
+  DataProvider,
+  ProviderFetch,
+  RawProject,
+  RawEvidence,
+  RawNarrative,
+} from "@insight/data";
 import type { RuntimeOptions, RuntimeResult, RuntimeSummary } from "@insight/runtime";
 import { RefreshEngine, createRefreshEngine, DEFAULT_REFRESH_OPTIONS } from "@insight/runtime";
 import { Scheduler } from "@insight/runtime";
@@ -19,7 +25,9 @@ function createMockProvider(
     name,
     fetchProjects: vi.fn().mockResolvedValue({ data: projects, asOf: "2026-08-08T00:00:00.000Z" }),
     fetchEvidence: vi.fn().mockResolvedValue({ data: evidence, asOf: "2026-08-08T00:00:00.000Z" }),
-    fetchNarratives: vi.fn().mockResolvedValue({ data: narratives, asOf: "2026-08-08T00:00:00.000Z" }),
+    fetchNarratives: vi
+      .fn()
+      .mockResolvedValue({ data: narratives, asOf: "2026-08-08T00:00:00.000Z" }),
     health: vi.fn().mockResolvedValue({ id, name, available: true, note: "test provider" }),
   };
 }
@@ -75,8 +83,18 @@ describe("RefreshEngine", () => {
   beforeEach(() => {
     scheduler = new Scheduler();
     providers = new Map([
-      ["coingecko", createMockProvider("coingecko", "CoinGecko", [{ id: "btc", name: "Bitcoin", category: "crypto" }])],
-      ["defillama", createMockProvider("defillama", "DefiLlama", [{ id: "uniswap", name: "Uniswap", category: "defi" }])],
+      [
+        "coingecko",
+        createMockProvider("coingecko", "CoinGecko", [
+          { id: "btc", name: "Bitcoin", category: "crypto" },
+        ]),
+      ],
+      [
+        "defillama",
+        createMockProvider("defillama", "DefiLlama", [
+          { id: "uniswap", name: "Uniswap", category: "defi" },
+        ]),
+      ],
     ]);
     defaultOptions = {
       referenceDate: "2026-08-08",
@@ -261,13 +279,16 @@ describe("RefreshEngine", () => {
 
     vi.spyOn(engine.getRuntime(), "analyze").mockReturnValue(mockResult);
 
-    return engine.getScheduler().execute(engine.getJobId()).then(() => {
-      expect(engine.getStats().totalExecutions).toBe(1);
+    return engine
+      .getScheduler()
+      .execute(engine.getJobId())
+      .then(() => {
+        expect(engine.getStats().totalExecutions).toBe(1);
 
-      engine.clearHistory();
+        engine.clearHistory();
 
-      expect(engine.getStats().totalExecutions).toBe(0);
-    });
+        expect(engine.getStats().totalExecutions).toBe(0);
+      });
   });
 
   it("getStats returns correct stats", () => {
@@ -330,9 +351,7 @@ describe("RefreshEngine", () => {
 describe("createRefreshEngine factory", () => {
   it("creates engine with provided config", () => {
     const scheduler = new Scheduler();
-    const providers = new Map([
-      ["test", createMockProvider("test", "Test Provider")],
-    ]);
+    const providers = new Map([["test", createMockProvider("test", "Test Provider")]]);
     const defaultOptions: RuntimeOptions = {
       referenceDate: "2026-08-08",
       lens: "ecosystem",

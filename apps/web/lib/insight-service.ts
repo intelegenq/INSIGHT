@@ -83,10 +83,7 @@ export class InsightService {
     return this.repository.get(id);
   }
 
-  compareSnapshots(
-    fromId: string,
-    toId: string,
-  ): import("@insight/runtime").HistoryDiff {
+  compareSnapshots(fromId: string, toId: string): import("@insight/runtime").HistoryDiff {
     const from = this.repository.get(fromId);
     const to = this.repository.get(toId);
     if (from === undefined) {
