@@ -109,3 +109,10 @@
 - [x] Quality verdict inclusion — PDF export includes M30 ReportVerdict (quality, evidence stats, verified flag) (M40)
 - [x] Export PDF button on reports page — opens printable HTML in new tab with auto-print (M40)
 - [x] Inline CSS with print media query — no external dependencies, optimized for browser print-to-PDF (M40)
+
+## Phase 16 — Dashboard customization
+
+- [x] Dashboard API — GET /api/dashboard aggregates pulse, timeline, top projects, and narratives in one response (M41)
+- [x] Dashboard UI — /dashboard page with section toggles, reordering, and localStorage persistence (M41)
+- [x] Customizable sections — pulse, top projects, narratives, timeline can be toggled and reordered (M41)
+- [x] Navigation — dashboard link added to nav across all pages (M41)

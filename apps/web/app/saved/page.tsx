@@ -80,6 +80,7 @@ export default function SavedPage() {
           <span className="nav-active">Saved</span>
           <Link href="/search">Search</Link>
           <Link href="/compare">Compare</Link>
+          <Link href="/dashboard">Dashboard</Link>
         </div>
       </nav>
 

@@ -1570,3 +1570,65 @@ footer {
     padding: 10px 8px;
   }
 }
+
+/* ── M41: Dashboard customization styles ────────────────────────── */
+.dashboard-hero {
+  max-width: 1200px;
+  margin: auto;
+  padding: 96px 32px 40px;
+}
+.dashboard-settings {
+  border-top: 1px solid var(--line);
+}
+.dashboard-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+.dashboard-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+.dashboard-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+}
+.dashboard-toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--violet);
+  cursor: pointer;
+}
+.dashboard-reorder {
+  display: flex;
+  gap: 8px;
+}
+.dashboard-move-btn {
+  padding: 8px 12px;
+  font-size: 16px;
+  min-width: 40px;
+}
+.dashboard-move-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+@media (max-width: 700px) {
+  .dashboard-hero {
+    padding: 64px 20px 32px;
+  }
+  .dashboard-setting-row {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+}

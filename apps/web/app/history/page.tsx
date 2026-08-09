@@ -87,6 +87,7 @@ export default function HistoryPage() {
           <Link href="/saved">Saved</Link>
           <Link href="/search">Search</Link>
           <Link href="/compare">Compare</Link>
+          <Link href="/dashboard">Dashboard</Link>
         </div>
       </nav>
 

@@ -90,6 +90,14 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - The reports page "Export PDF" button opens the printable HTML in a new browser tab and auto-triggers the print dialog.
 - Uses existing getReport(), getEvaluatedReport(), and resolveEvidenceIds() — no new data, no AI generation, no new infrastructure.
 
+## Dashboard customization boundary (M41)
+
+- GET /api/dashboard aggregates pulse metrics, timeline, top projects (by TVL), and narratives into a single response — uses existing getPulse, getTimeline, listProjects, and getNarratives.
+- The /dashboard page is a client-side component with a settings panel for toggling section visibility and reordering sections via up/down buttons.
+- Section configuration (visible + order) is persisted to localStorage and restored on page load — preferences survive across sessions.
+- Default layout: Pulse → Top Projects → Narratives → Research Timeline (all visible, sequential order).
+- Uses only existing Insight data contracts — no new data sources, no AI, no external services.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel

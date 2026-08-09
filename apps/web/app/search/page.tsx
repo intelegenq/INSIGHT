@@ -125,6 +125,7 @@ export default function SearchPage() {
           <Link href="/history">History</Link>
           <Link href="/search">Search</Link>
           <Link href="/compare">Compare</Link>
+          <Link href="/dashboard">Dashboard</Link>
         </div>
         <Link className="ghost-button" href="/reports">
           Research mode <span>↗</span>
