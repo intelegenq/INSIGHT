@@ -13,6 +13,7 @@
 /* ── PostgreSQL / relational store ─────────────────────────────────── */
 export type { SqlClient, SqlRow, SqlResult } from "./sql/SqlClient";
 export { PostgresSnapshotRepository } from "./sql/PostgresSnapshotRepository";
+export { getSharedSqlClient, resetSharedSqlClient } from "./sql/SharedSqlClient";
 
 /* ── Redis / KV cache & queue ──────────────────────────────────────── */
 export type { KvBackend, KvCacheOptions } from "./kv/KvCache";
@@ -23,16 +24,8 @@ export type { ObjectStore, ObjectStoreEntry } from "./object/ObjectStore";
 export { InMemoryObjectStore } from "./object/ObjectStore";
 
 /* ── Docker-compatible workers ─────────────────────────────────────── */
-export type {
-  WorkerSpec,
-  WorkerRunOptions,
-  WorkerRunner,
-} from "./worker/WorkerRunner";
-export {
-  createWorkerRunner,
-  runWorkerLoop,
-  drainShutdownSignal,
-} from "./worker/WorkerRunner";
+export type { WorkerSpec, WorkerRunOptions, WorkerRunner } from "./worker/WorkerRunner";
+export { createWorkerRunner, runWorkerLoop, drainShutdownSignal } from "./worker/WorkerRunner";
 
 /* ── Env-backed injection point ────────────────────────────────────── */
 export { resolveInfraConfig, isInMemory, type InfraConfig } from "./config";
@@ -47,24 +40,12 @@ export type {
   Severity,
   Clock,
 } from "./observability/observability";
-export {
-  noopSink,
-  InMemorySink,
-  systemClock,
-} from "./observability/observability";
+export { noopSink, InMemorySink, systemClock } from "./observability/observability";
 export { Counter, Gauge } from "./observability/metrics";
 
 /* ── M27: Deterministic evaluation (reports/evidence) ──────────────── */
-export type {
-  EvidenceVerdict,
-  ReportVerdict,
-  ReportQuality,
-} from "./evaluation/evaluation";
-export {
-  evaluateEvidence,
-  evaluateReport,
-  meetsVerifiedFloor,
-} from "./evaluation/evaluation";
+export type { EvidenceVerdict, ReportVerdict, ReportQuality } from "./evaluation/evaluation";
+export { evaluateEvidence, evaluateReport, meetsVerifiedFloor } from "./evaluation/evaluation";
 
 /* ── M27: Security controls (input validation, secrets, authZ, limits) ── */
 export {

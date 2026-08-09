@@ -32,7 +32,7 @@ import {
   drainShutdownSignal,
   resolveInfraConfig,
   assembleInfra,
-  InMemorySqlClient,
+  getSharedSqlClient,
   type WorkerSpec,
 } from "@insight/infra";
 
@@ -82,9 +82,9 @@ export function createIngestionWorkerSpec(options: IngestionWorkerOptions = {}):
     repository,
     autoRegister: true,
   });
-
-  // Resolve snapshot persistence: explicit override > infra-resolved
-  const persister = options.snapshotPersister ?? resolveSnapshotPersister();
+  // Resolve snapshot persistence: explicit override > infra-resolved (async)
+  let persister = options.snapshotPersister;
+  const persisterPromise = persister ? undefined : resolveSnapshotPersister();
 
   const spec: WorkerSpec = {
     name: "insight-ingestion",
@@ -96,9 +96,14 @@ export function createIngestionWorkerSpec(options: IngestionWorkerOptions = {}):
         throw new Error(result.error ?? "Refresh failed");
       }
 
+      // Resolve persister on first call (lazy async)
+      if (!persister && persisterPromise) {
+        persister = await persisterPromise;
+      }
+
       // Persist the refresh result as a snapshot so it survives restarts
       // and is available to the web app via the API routes.
-      if (result.result) {
+      if (result.result && persister) {
         const snapshot = snapshotFromRuntimeResult(
           result.result,
           {
@@ -119,17 +124,19 @@ export function createIngestionWorkerSpec(options: IngestionWorkerOptions = {}):
 
 /**
  * Resolve the snapshot persistence backend from environment config.
- * When INSIGHT_POSTGRES_URL is set, uses PostgresSnapshotRepository via
- * assembleInfra. Otherwise falls back to InMemorySqlClient so the worker
- * still persists (in-memory, non-durable) for dev/test.
+ * Uses getSharedSqlClient() so worker and web app share the same Postgres
+ * connection pool in production. In dev/test, falls back to in-memory.
  */
-function resolveSnapshotPersister(): { save: (snapshot: Snapshot) => Promise<Snapshot> } {
+async function resolveSnapshotPersister(): Promise<{
+  save: (snapshot: Snapshot) => Promise<Snapshot>;
+  list: () => Promise<Snapshot[]>;
+  get: (id: string) => Promise<Snapshot | undefined>;
+}> {
+  const sql = await getSharedSqlClient();
   const config = resolveInfraConfig();
-  const sql = new InMemorySqlClient();
   const services = assembleInfra({ config, sql });
-  // Initialize the schema (idempotent) so save() works on first call
   const repo = services.snapshotRepository;
-  repo.initialize().catch(() => {
+  await repo.initialize().catch(() => {
     // Swallow — save() will fail gracefully if schema isn't ready
   });
   return repo;

@@ -16,10 +16,12 @@
   },
   "dependencies": {
     "@insight/core": "workspace:*",
-    "@insight/runtime": "workspace:*"
+    "@insight/runtime": "workspace:*",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "@types/pg": "^8.15.0",
     "typescript": "^5.9.2",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^3.2.4"
