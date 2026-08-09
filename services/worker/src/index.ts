@@ -5,12 +5,13 @@
  * (infra), backed by production providers (data). The worker:
  *   1. Resolves live providers from environment credentials
  *   2. Constructs a CompositeRepository + RefreshEngine
- *   3. Runs the worker loop on an interval, executing refresh cycles
- *   4. Shuts down gracefully on SIGTERM/SIGINT
+ *   3. Persists refresh results via assembleInfra (PostgresSnapshotRepository)
+ *   4. Runs the worker loop on an interval, executing refresh cycles
+ *   5. Shuts down gracefully on SIGTERM/SIGINT
  *
- * This replaces the stub docker/worker-entry.mjs with real wiring.
- * Tests inject mock providers + mock transport to verify the wiring
- * without touching the network.
+ * Refresh state survives restart: snapshots are stored in Postgres (or
+ * the in-memory SQL fallback in dev/test) so the web app can serve
+ * the latest refreshed data across restarts.
  */
 import {
   resolveProductionProviders,
@@ -18,8 +19,22 @@ import {
   type DataProvider,
   type ProjectRepository,
 } from "@insight/data";
-import { RefreshEngine, DEFAULT_REFRESH_OPTIONS, type RefreshResult } from "@insight/runtime";
-import { createWorkerRunner, drainShutdownSignal, type WorkerSpec } from "@insight/infra";
+import {
+  RefreshEngine,
+  DEFAULT_REFRESH_OPTIONS,
+  createSnapshot,
+  snapshotFromRuntimeResult,
+  type RefreshResult,
+  type Snapshot,
+} from "@insight/runtime";
+import {
+  createWorkerRunner,
+  drainShutdownSignal,
+  resolveInfraConfig,
+  assembleInfra,
+  InMemorySqlClient,
+  type WorkerSpec,
+} from "@insight/infra";
 
 export interface IngestionWorkerOptions {
   /** Override provider list (tests). Defaults to env-resolved production providers. */
@@ -32,6 +47,8 @@ export interface IngestionWorkerOptions {
   maxFailures?: number;
   /** Refresh options for the engine. Defaults to DEFAULT_REFRESH_OPTIONS. */
   refreshOptions?: typeof DEFAULT_REFRESH_OPTIONS;
+  /** Override snapshot persistence (tests). Defaults to infra-resolved. */
+  snapshotPersister?: { save: (snapshot: Snapshot) => Promise<Snapshot> };
 }
 
 export interface IngestionWorkerResult {
@@ -66,6 +83,9 @@ export function createIngestionWorkerSpec(options: IngestionWorkerOptions = {}):
     autoRegister: true,
   });
 
+  // Resolve snapshot persistence: explicit override > infra-resolved
+  const persister = options.snapshotPersister ?? resolveSnapshotPersister();
+
   const spec: WorkerSpec = {
     name: "insight-ingestion",
     intervalMs: options.intervalMs ?? readIntervalFromEnv(),
@@ -75,11 +95,44 @@ export function createIngestionWorkerSpec(options: IngestionWorkerOptions = {}):
       if (!result.success) {
         throw new Error(result.error ?? "Refresh failed");
       }
+
+      // Persist the refresh result as a snapshot so it survives restarts
+      // and is available to the web app via the API routes.
+      if (result.result) {
+        const snapshot = snapshotFromRuntimeResult(
+          result.result,
+          {
+            referenceDate: result.result.timestamp,
+            ...options.refreshOptions,
+          },
+          engine.getJobId(),
+        );
+        await persister.save(snapshot);
+      }
+
       return `refresh ok attempt=${ctx.attempt} duration=${result.durationMs}ms`;
     },
   };
 
   return { spec, engine, providers: providerNames };
+}
+
+/**
+ * Resolve the snapshot persistence backend from environment config.
+ * When INSIGHT_POSTGRES_URL is set, uses PostgresSnapshotRepository via
+ * assembleInfra. Otherwise falls back to InMemorySqlClient so the worker
+ * still persists (in-memory, non-durable) for dev/test.
+ */
+function resolveSnapshotPersister(): { save: (snapshot: Snapshot) => Promise<Snapshot> } {
+  const config = resolveInfraConfig();
+  const sql = new InMemorySqlClient();
+  const services = assembleInfra({ config, sql });
+  // Initialize the schema (idempotent) so save() works on first call
+  const repo = services.snapshotRepository;
+  repo.initialize().catch(() => {
+    // Swallow — save() will fail gracefully if schema isn't ready
+  });
+  return repo;
 }
 
 /**
@@ -95,7 +148,7 @@ export async function runIngestionWorker(
 
   const { runs, failures } = await runner.run({
     signal: controller.signal,
-    log: (line) => console.log(`[ingestion-worker] ${line}`),
+    log: (line: string) => console.log(`[ingestion-worker] ${line}`),
   });
 
   return { providers, runs, failures };

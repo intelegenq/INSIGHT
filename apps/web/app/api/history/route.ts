@@ -40,7 +40,7 @@ export async function GET(request: Request): Promise<Response> {
           toResult.error.details,
           requestId,
         );
-      const diff = getInsightService().compareSnapshots(fromResult.value, toResult.value);
+      const diff = await getInsightService().compareSnapshots(fromResult.value, toResult.value);
       if (diff === undefined)
         return errorResponse(
           "NOT_FOUND",
@@ -51,7 +51,7 @@ export async function GET(request: Request): Promise<Response> {
         );
       return ok({ diff });
     }
-    const diff = getInsightService().compareSnapshots(fromId, toId);
+    const diff = await getInsightService().compareSnapshots(fromId, toId);
     if (diff === undefined)
       return errorResponse(
         "NOT_FOUND",

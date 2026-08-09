@@ -7,7 +7,7 @@ export async function GET(request?: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
   try {
     const service = getInsightService();
-    const projects = service.listProjects();
+    const projects = await service.listProjects();
     return ok({ projects, count: projects.length });
   } catch (error) {
     return errorFromUnknown(error, requestId);

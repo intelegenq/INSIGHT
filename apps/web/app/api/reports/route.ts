@@ -16,7 +16,7 @@ export async function GET(request: Request): Promise<Response> {
         lensResult.error.details,
         requestId,
       );
-    const report = getInsightService().getReport(lensResult.value);
+    const report = await getInsightService().getReport(lensResult.value);
     if (report === undefined)
       return errorResponse(
         "NOT_FOUND",

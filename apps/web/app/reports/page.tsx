@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import type { ReportLens } from "@insight/core";
-import { projectRepository } from "@insight/data";
+import { useEffect, useMemo, useState } from "react";
+import type { Report, ReportLens, Evidence } from "@insight/core";
 
 const lensLabels: Record<ReportLens, string> = {
   ecosystem: "Ecosystem",
@@ -13,15 +12,49 @@ const lensLabels: Record<ReportLens, string> = {
 
 const lensOptions: ReportLens[] = ["ecosystem", "defi", "infrastructure"];
 
+const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "";
+
 export default function ReportsPage() {
   const [lens, setLens] = useState<ReportLens>("ecosystem");
   const [isEvidenceOpen, setEvidenceOpen] = useState(true);
+  const [report, setReport] = useState<Report | undefined>(undefined);
+  const [evidence, setEvidence] = useState<Evidence[]>([]);
 
-  const report = useMemo(() => projectRepository.getReport(lens), [lens]);
-  const evidence = useMemo(
-    () => (report ? projectRepository.resolveEvidenceIds(report.evidenceIds) : []),
-    [report],
-  );
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReport() {
+      try {
+        const res = await fetch(`${baseUrl}/api/reports?lens=${lens}`);
+        if (!res.ok) {
+          setReport(undefined);
+          setEvidence([]);
+          return;
+        }
+        const data = (await res.json()) as { report: Report };
+        if (cancelled) return;
+        setReport(data.report);
+        // Fetch evidence for the report
+        const evidenceRes = await fetch(
+          `${baseUrl}/api/evidence?ids=${data.report.evidenceIds.join(",")}`,
+        );
+        if (evidenceRes.ok) {
+          const evidenceData = (await evidenceRes.json()) as { evidence: Evidence[] };
+          if (!cancelled) setEvidence(evidenceData.evidence);
+        } else {
+          if (!cancelled) setEvidence([]);
+        }
+      } catch {
+        if (!cancelled) {
+          setReport(undefined);
+          setEvidence([]);
+        }
+      }
+    }
+    loadReport();
+    return () => {
+      cancelled = true;
+    };
+  }, [lens]);
 
   return (
     <main>
@@ -35,20 +68,18 @@ export default function ReportsPage() {
           <Link href="/narratives">Narratives</Link>
           <Link href="/reports">Reports</Link>
         </div>
-        <span className="demo-chip">Demo mode</span>
       </nav>
 
       <section className="report-hero">
         <div>
-          <p className="eyebrow">REPORT ENGINE / DEMO</p>
+          <p className="eyebrow">REPORT ENGINE</p>
           <h1>
             Build a brief.
             <br />
             <em>Keep the evidence.</em>
           </h1>
           <p className="hero-copy">
-            Choose a research lens to preview how Insight will present a concise, inspectable memo.
-            No external API or live data is used here.
+            Choose a research lens to preview how Insight presents a concise, inspectable memo.
           </p>
         </div>
         <aside className="report-controls" aria-label="Report controls">
@@ -64,9 +95,6 @@ export default function ReportsPage() {
               </button>
             ))}
           </div>
-          <p>
-            This changes the demo memo only. A future version will retain cited source snapshots.
-          </p>
         </aside>
       </section>
 
@@ -74,7 +102,7 @@ export default function ReportsPage() {
         <article className="memo">
           <div className="memo-meta">
             <span>INSIGHT RESEARCH MEMO</span>
-            <span>07 AUG 2026 · DEMO</span>
+            {report && <span>{new Date(report.generatedAt).toLocaleDateString()}</span>}
           </div>
           {report && (
             <>

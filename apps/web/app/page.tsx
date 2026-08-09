@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { projectRepository } from "@insight/data";
-import type { NarrativeTrend } from "@insight/core";
+import type { PulseMetric, TimelineEvent } from "@insight/data";
+import type { Narrative } from "@insight/core";
 
-function trendTone(trend: NarrativeTrend): string {
+function trendTone(trend: string): string {
   switch (trend) {
     case "up":
       return "positive";
@@ -11,10 +11,33 @@ function trendTone(trend: NarrativeTrend): string {
   }
 }
 
-export default function Home() {
-  const pulse = projectRepository.getPulse();
-  const timelines = projectRepository.getTimeline();
-  const narratives = projectRepository.getNarratives();
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`);
+  return (await res.json()) as T;
+}
+
+export default async function Home() {
+  // Fetch all data through API routes — no direct projectRepository import
+  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
+  const [pulseData, projectsData, narrativesData] = await Promise.all([
+    fetchJson<{ pulse: { asOf: string; metrics: PulseMetric[] }; timeline: TimelineEvent[] }>(
+      `${baseUrl}/api/pulse`,
+    ),
+    fetchJson<{
+      projects: {
+        id: string;
+        name: string;
+        category: string;
+        description: string;
+        metrics: { tvl?: number };
+      }[];
+    }>(`${baseUrl}/api/projects`),
+    fetchJson<{ narratives: Narrative[] }>(`${baseUrl}/api/narratives`),
+  ]);
+
+  const { pulse, timeline: timelines } = pulseData;
+  const narratives = narrativesData.narratives;
 
   return (
     <main>
@@ -34,23 +57,22 @@ export default function Home() {
       </nav>
 
       <section className="hero" id="top">
-        <p className="eyebrow">SOLANA INTELLIGENCE / DEMO</p>
+        <p className="eyebrow">SOLANA INTELLIGENCE</p>
         <h1>
           See the signal.
           <br />
           <em>Understand the story.</em>
         </h1>
         <p className="hero-copy">
-          Insight turns ecosystem activity into calm, evidence-aware research. This initial view
-          uses clearly labeled illustrative data while live collectors are being built.
+          Insight turns ecosystem activity into calm, evidence-aware research.
         </p>
         <div className="hero-actions">
           <a className="primary-button" href="#pulse">
             Explore today&apos;s pulse <span>↓</span>
           </a>
-          <a className="text-link" href="/reports">
+          <Link className="text-link" href="/reports">
             View sample brief →
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -60,11 +82,7 @@ export default function Home() {
             <p className="eyebrow">ECOSYSTEM PULSE</p>
             <h2 id="pulse-title">A quieter way to read the day.</h2>
           </div>
-          <p className="as-of">
-            Demo snapshot · {pulse.asOf}
-            <br />
-            Not live market data
-          </p>
+          <p className="as-of">Snapshot · {pulse.asOf}</p>
         </div>
         <div className="metric-grid">
           {pulse.metrics.map((metric) => (
@@ -98,7 +116,7 @@ export default function Home() {
           <h2 id="narratives-title">What deserves a closer look.</h2>
           <p className="section-copy">
             Narratives combine signals into research starting points—not trading recommendations.
-            Each future result will expose its evidence and time range.
+            Each result exposes its evidence and time range.
           </p>
         </div>
         <div className="narrative-list">
@@ -145,7 +163,7 @@ export default function Home() {
 
       <section className="report-callout" id="reports">
         <div>
-          <p className="eyebrow">REPORT ENGINE / DEMO</p>
+          <p className="eyebrow">REPORT ENGINE</p>
           <h2>From scattered signals to a defensible brief.</h2>
           <p>
             Preview a structured research memo with an executive summary, evidence log, catalysts,

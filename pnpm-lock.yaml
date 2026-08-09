@@ -26,6 +26,9 @@ importers:
       '@insight/data':
         specifier: workspace:*
         version: link:../../packages/data
+      '@insight/infra':
+        specifier: workspace:*
+        version: link:../../packages/infra
       '@insight/knowledge':
         specifier: workspace:*
         version: link:../../packages/knowledge

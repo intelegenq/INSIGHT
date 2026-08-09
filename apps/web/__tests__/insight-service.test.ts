@@ -6,17 +6,19 @@ describe("InsightService", () => {
     resetInsightService();
   });
 
-  it("exposes deterministic project list", () => {
+  it("exposes deterministic project list", async () => {
     const a = new InsightService();
     const b = new InsightService();
-    expect(JSON.stringify(a.listProjects())).toBe(JSON.stringify(b.listProjects()));
+    const aProjects = await a.listProjects();
+    const bProjects = await b.listProjects();
+    expect(JSON.stringify(aProjects)).toBe(JSON.stringify(bProjects));
   });
 
-  it("captures snapshots and lists them in insertion order", () => {
+  it("captures snapshots and lists them in insertion order", async () => {
     const service = new InsightService();
-    const s1 = service.snapshot();
-    const s2 = service.snapshot();
-    const list = service.listSnapshots();
+    const s1 = await service.snapshot();
+    const s2 = await service.snapshot();
+    const list = await service.listSnapshots();
     // Two snapshots with identical content produce the same deterministic id,
     // so the repository stores a single entry (idempotent save).
     expect(list.length).toBeGreaterThanOrEqual(1);
@@ -24,26 +26,26 @@ describe("InsightService", () => {
     expect(s2.id).toBe(s1.id);
   });
 
-  it("retrieves snapshots by id", () => {
+  it("retrieves snapshots by id", async () => {
     const service = new InsightService();
-    const snap = service.snapshot();
-    expect(service.getSnapshot(snap.id)?.id).toBe(snap.id);
-    expect(service.getSnapshot("missing")).toBeUndefined();
+    const snap = await service.snapshot();
+    expect((await service.getSnapshot(snap.id))?.id).toBe(snap.id);
+    expect(await service.getSnapshot("missing")).toBeUndefined();
   });
 
-  it("compares snapshots via HistoryAnalyzer", () => {
+  it("compares snapshots via HistoryAnalyzer", async () => {
     const service = new InsightService();
-    const a = service.snapshot();
-    const b = service.snapshot();
-    const diff = service.compareSnapshots(a.id, b.id);
+    const a = await service.snapshot();
+    const b = await service.snapshot();
+    const diff = await service.compareSnapshots(a.id, b.id);
     expect(diff).toBeDefined();
     expect(diff?.fromId).toBe(a.id);
     expect(diff?.toId).toBe(b.id);
   });
 
-  it("throws SNAPSHOT_NOT_FOUND when comparing missing snapshot ids", () => {
+  it("throws SNAPSHOT_NOT_FOUND when comparing missing snapshot ids", async () => {
     try {
-      getInsightService().compareSnapshots("missing", "also-missing");
+      await getInsightService().compareSnapshots("missing", "also-missing");
       throw new Error("Expected compareSnapshots to throw");
     } catch (error) {
       expect(error).toMatchObject({
@@ -58,11 +60,11 @@ describe("InsightService", () => {
     expect(second).toBe(first);
   });
 
-  it("snapshot reports a deterministic id across runs", () => {
+  it("snapshot reports a deterministic id across runs", async () => {
     const a = new InsightService();
     const b = new InsightService();
-    const idA = a.snapshot().id;
-    const idB = b.snapshot().id;
+    const idA = (await a.snapshot()).id;
+    const idB = (await b.snapshot()).id;
     expect(idA).toBe(idB);
   });
 });

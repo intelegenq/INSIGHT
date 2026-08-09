@@ -13,6 +13,7 @@
   "dependencies": {
     "@insight/core": "workspace:*",
     "@insight/data": "workspace:*",
+    "@insight/infra": "workspace:*",
     "@insight/knowledge": "workspace:*",
     "@insight/runtime": "workspace:*",
     "next": "^15.5.2",

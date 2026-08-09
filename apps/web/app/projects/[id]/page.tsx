@@ -1,13 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { projectRepository } from "@insight/data";
+import type { Project, Evidence } from "@insight/core";
+
+async function fetchProject(
+  id: string,
+): Promise<{ project: Project; evidence: Evidence[] } | null> {
+  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
+  const res = await fetch(`${baseUrl}/api/projects/${id}`, { cache: "no-store" });
+  if (!res.ok) return null;
+  return (await res.json()) as { project: Project; evidence: Evidence[] };
+}
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = projectRepository.getProject(id);
-  if (project === undefined) notFound();
+  const data = await fetchProject(id);
+  if (data === null) notFound();
 
-  const evidence = projectRepository.resolveEvidenceIds(project.evidenceIds);
+  const { project, evidence } = data;
 
   return (
     <main>

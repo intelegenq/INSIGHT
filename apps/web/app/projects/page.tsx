@@ -1,8 +1,16 @@
 import Link from "next/link";
-import { projectRepository } from "@insight/data";
+import type { Project } from "@insight/core";
 
-export default function ProjectsPage() {
-  const projects = projectRepository.getProjects();
+async function fetchProjects(): Promise<Project[]> {
+  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
+  const res = await fetch(`${baseUrl}/api/projects`, { cache: "no-store" });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { projects: Project[] };
+  return data.projects;
+}
+
+export default async function ProjectsPage() {
+  const projects = await fetchProjects();
 
   return (
     <main>

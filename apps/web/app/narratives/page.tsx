@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { projectRepository } from "@insight/data";
-import type { NarrativeTrend } from "@insight/core";
+import type { Narrative, NarrativeTrend } from "@insight/core";
 
 function trendLabel(trend: NarrativeTrend): string {
   switch (trend) {
@@ -28,8 +27,16 @@ function trendClass(trend: NarrativeTrend): string {
   }
 }
 
-export default function NarrativesPage() {
-  const narratives = projectRepository.getNarratives();
+async function fetchNarratives(): Promise<Narrative[]> {
+  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
+  const res = await fetch(`${baseUrl}/api/narratives`, { cache: "no-store" });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { narratives: Narrative[] };
+  return data.narratives;
+}
+
+export default async function NarrativesPage() {
+  const narratives = await fetchNarratives();
 
   return (
     <main>
