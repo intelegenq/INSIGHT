@@ -1,0 +1,74 @@
+{
+  "report": {
+    "id": "r-ecosystem-demo",
+    "lens": "ecosystem",
+    "title": "Solana Ecosystem Overview",
+    "sections": {
+      "thesis": "The Solana ecosystem shows healthy growth in DeFi TVL with active lending and DEX activity. Validator participation remains strong with low delinquency rates.",
+      "catalyst": "Liquid staking adoption continues to accelerate, driven by protocol-level incentives. DEX aggregation volume is trending up.",
+      "risk": "This report is generated from Insight's deterministic data pipeline. When operating in demo mode, all data is illustrative."
+    },
+    "evidenceIds": ["ev-001", "ev-002", "ev-003", "ev-004", "ev-005", "ev-006"],
+    "confidence": "illustrative",
+    "generatedAt": "2026-08-09T22:00:00.000Z",
+    "isDemo": true
+  },
+  "evidence": [
+    {
+      "id": "ev-001",
+      "source": { "id": "helius", "name": "Helius", "chain": "solana" },
+      "note": "Jupiter TVL verified on-chain at $500M",
+      "status": "verified",
+      "observedAt": "2026-08-09T20:00:00.000Z",
+      "reference": "https://solscan.io/tx/abc",
+      "chain": "solana"
+    },
+    {
+      "id": "ev-002",
+      "source": { "id": "defillama", "name": "DeFiLlama", "chain": "solana" },
+      "note": "Lending protocol TVL at $1.24B across 3 pools",
+      "status": "verified",
+      "observedAt": "2026-08-09T20:00:00.000Z",
+      "chain": "solana"
+    },
+    {
+      "id": "ev-003",
+      "source": { "id": "coingecko", "name": "CoinGecko", "chain": "solana" },
+      "note": "SOL price at $145.20, 24h volume $2.1B",
+      "status": "verified",
+      "observedAt": "2026-08-09T20:00:00.000Z",
+      "chain": "solana"
+    },
+    {
+      "id": "ev-004",
+      "source": { "id": "solana-rpc", "name": "Solana RPC", "chain": "solana" },
+      "note": "Epoch 712: 1,800 active validators, 12 delinquent, average commission 7.2%",
+      "status": "verified",
+      "observedAt": "2026-08-09T20:00:00.000Z",
+      "chain": "solana"
+    },
+    {
+      "id": "ev-005",
+      "source": { "id": "solana-rpc", "name": "Solana RPC", "chain": "solana" },
+      "note": "Inflation: total 5.1%, validator 4.6%, foundation 0.5%",
+      "status": "verified",
+      "observedAt": "2026-08-09T20:00:00.000Z",
+      "chain": "solana"
+    },
+    {
+      "id": "ev-006",
+      "source": { "id": "solana-rpc", "name": "Solana RPC", "chain": "solana" },
+      "note": "2,100 cluster nodes, ~3,200 TPS",
+      "status": "verified",
+      "observedAt": "2026-08-09T20:00:00.000Z",
+      "chain": "solana"
+    }
+  ],
+  "quality": {
+    "verdict": "illustrative",
+    "evidenceCount": 6,
+    "verifiedCount": 6,
+    "demoCount": 0,
+    "isDemoReport": true
+  }
+}
