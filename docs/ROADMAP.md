@@ -62,3 +62,11 @@
 - [x] Report artifact retrieval — GET /api/reports/[id]/artifact from ObjectStore (M33)
 - [x] Save button on reports page — POST /api/saved integration (M33)
 - [x] Export/download UI — markdown and JSON download buttons on reports page (M33)
+
+## Phase 9 — Knowledge graph surfacing
+
+- [x] Graph API — GET /api/graph returns graph overview with entity/relationship summaries (M34)
+- [x] Entity detail API — GET /api/graph/[id] returns entity with outbound/inbound edges and connections (M34)
+- [x] Graph UI — /graph page with entity browser, kind filtering, and entity detail panel (M34)
+- [x] Assistant graph context — GraphDataSource wired into /api/assistant route (M34)
+- [x] Cache invalidation — knowledge graph cache invalidated on new snapshots (M34)

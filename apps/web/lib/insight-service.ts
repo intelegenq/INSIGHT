@@ -286,6 +286,32 @@ export class InsightService {
     return runtimeResultToTimeline(result, this.referenceDate);
   }
 
+  /**
+   * M34: Get the knowledge graph from the latest snapshot or live runtime.
+   * Surfaces the existing knowledge graph that was previously built but
+   * never exposed through the API/UI.
+   */
+  async getKnowledgeGraph(): Promise<import("@insight/knowledge").KnowledgeGraph> {
+    await this.ready();
+    const cache = await this.getCache();
+    const cached =
+      await cache.get<import("@insight/knowledge").KnowledgeGraph>("insight:knowledge-graph");
+    if (cached !== undefined) return cached;
+
+    let graph: import("@insight/knowledge").KnowledgeGraph;
+    const snapshots = await this.snapshotRepository.list();
+    if (snapshots.length > 0) {
+      const latest = snapshots[snapshots.length - 1];
+      graph =
+        latest?.knowledgeGraph ??
+        this.runtime.analyze({ referenceDate: this.referenceDate }).knowledgeGraph;
+    } else {
+      graph = this.runtime.analyze({ referenceDate: this.referenceDate }).knowledgeGraph;
+    }
+    await cache.set("insight:knowledge-graph", graph);
+    return graph;
+  }
+
   async snapshot(): Promise<Snapshot> {
     const result = this.run();
     const snapshot = createSnapshot({
@@ -302,6 +328,7 @@ export class InsightService {
     const cache = await this.getCache();
     await cache.delete("insight:projects");
     await cache.delete("insight:narratives");
+    await cache.delete("insight:knowledge-graph");
     for (const lens of ["ecosystem", "defi", "infrastructure"]) {
       await cache.delete(`insight:report:${lens}`);
     }

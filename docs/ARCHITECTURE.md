@@ -41,6 +41,14 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - GET /api/reports/[id]/artifact retrieves persisted report artifacts from ObjectStore.
 - Reports page includes export (MD/JSON) and save buttons wired to existing API routes.
 
+## Knowledge graph surfacing boundary (M34)
+
+- GET /api/graph returns the full knowledge graph: entity/relationship summaries and serialized entities/relationships.
+- GET /api/graph/[id] resolves a single entity with its outbound and inbound edges and connected entities.
+- The /graph page provides an interactive entity browser with kind filtering and a detail panel showing neighborhood connections.
+- The AI assistant route now wires GraphDataSource so the AI context includes knowledge graph entities and relationship counts.
+- The knowledge graph cache key is invalidated on new snapshots, ensuring stale graph data is never served.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel

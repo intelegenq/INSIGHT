@@ -2,7 +2,7 @@ import { getInsightService } from "../../../lib/insight-service";
 import { errorFromUnknown, errorResponse, ok, requestIdFromRequest } from "../../../lib/api";
 import { createAIProvider } from "@insight/ai";
 import { AssistantService } from "@insight/ai";
-import type { InsightDataSource } from "@insight/ai";
+import type { InsightDataSource, GraphDataSource } from "@insight/ai";
 
 /**
  * POST /api/assistant — ask the AI assistant a question about Insight data.
@@ -44,8 +44,14 @@ export async function POST(request: Request): Promise<Response> {
       getReport: (lens) => service.getReport(lens as never),
     };
 
+    // M34: Wire the knowledge graph data source so the AI assistant
+    // has access to graph entities and relationships as bounded context.
+    const graphDataSource: GraphDataSource = {
+      getKnowledgeGraph: () => service.getKnowledgeGraph(),
+    };
+
     // Create and call the assistant service
-    const assistant = new AssistantService(provider, dataSource);
+    const assistant = new AssistantService(provider, dataSource, graphDataSource);
     const response = await assistant.answer(message);
 
     return ok(response);
