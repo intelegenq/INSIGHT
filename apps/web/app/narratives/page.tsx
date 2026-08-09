@@ -76,22 +76,26 @@ export default async function NarrativesPage() {
         </div>
         <div className="narrative-grid">
           {narratives.map((n) => (
-            <article className="narrative-card" key={n.id}>
-              <div className="narrative-card-header">
-                <h3>{n.name}</h3>
-                <span className={`trend-badge ${trendClass(n.trend)}`}>{trendLabel(n.trend)}</span>
-              </div>
-              {n.change && <p className="change">{n.change}</p>}
-              <p className="note">{n.note}</p>
-              <div className="narrative-links">
-                {n.projectIds.length > 0 && (
-                  <span className="count">{n.projectIds.length} projects</span>
-                )}
-                {n.evidenceIds.length > 0 && (
-                  <span className="count">{n.evidenceIds.length} evidence</span>
-                )}
-              </div>
-            </article>
+            <Link href={`/narratives/${n.id}`} key={n.id} className="narrative-card-link">
+              <article className="narrative-card">
+                <div className="narrative-card-header">
+                  <h3>{n.name}</h3>
+                  <span className={`trend-badge ${trendClass(n.trend)}`}>
+                    {trendLabel(n.trend)}
+                  </span>
+                </div>
+                {n.change && <p className="change">{n.change}</p>}
+                <p className="note">{n.note}</p>
+                <div className="narrative-links">
+                  {n.projectIds.length > 0 && (
+                    <span className="count">{n.projectIds.length} projects</span>
+                  )}
+                  {n.evidenceIds.length > 0 && (
+                    <span className="count">{n.evidenceIds.length} evidence</span>
+                  )}
+                </div>
+              </article>
+            </Link>
           ))}
         </div>
       </section>

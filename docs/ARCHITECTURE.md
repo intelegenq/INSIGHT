@@ -55,6 +55,12 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - The /health page displays overall status (healthy/degraded/unavailable), per-provider cards with availability and notes, and a re-check button.
 - InsightService.checkSourceHealth() wires the existing checkSourceHealth function over the service's provider array — no new data sources, no duplicated monitoring.
 
+## Narrative detail boundary (M36)
+
+- GET /api/narratives/[id] returns a single narrative with its linked projects and resolved evidence records.
+- The /narratives/[id] page displays the narrative's trend, change, linked project cards (clickable to /projects/[id]), and supporting evidence log.
+- Narrative cards on /narratives are now clickable links to the detail page, completing the browse → drill-down loop described in PROJECT_MASTER.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel

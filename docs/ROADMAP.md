@@ -76,3 +76,9 @@
 - [x] Health API — GET /api/health returns provider health with overall status, per-provider detail, and summary (M35)
 - [x] Health UI — /health page with overall status badge, provider cards, and re-check button (M35)
 - [x] InsightService.checkSourceHealth() — wires existing SourceHealthMonitor through the service layer (M35)
+
+## Phase 11 — Narrative detail
+
+- [x] Narrative detail API — GET /api/narratives/[id] returns narrative with linked projects and resolved evidence (M36)
+- [x] Narrative detail UI — /narratives/[id] page with trend badge, linked project cards, and evidence log (M36)
+- [x] Narrative list links — narrative cards on /narratives are now clickable links to detail pages (M36)

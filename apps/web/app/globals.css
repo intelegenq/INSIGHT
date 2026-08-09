@@ -579,6 +579,10 @@ footer {
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 20px;
 }
+.narrative-card-link {
+  text-decoration: none;
+  color: inherit;
+}
 .narrative-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -587,6 +591,11 @@ footer {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transition: border-color 0.15s;
+  height: 100%;
+}
+.narrative-card-link:hover .narrative-card {
+  border-color: var(--violet);
 }
 .narrative-card-header {
   display: flex;
