@@ -16,6 +16,7 @@ COPY packages/knowledge/package.json packages/knowledge/
 COPY packages/intelligence/package.json packages/intelligence/
 COPY packages/data/package.json packages/data/
 COPY packages/infra/package.json packages/infra/
+COPY services/worker/package.json services/worker/
 RUN pnpm install --frozen-lockfile
 
 # Copy sources and build (typecheck guarantees valid output)
@@ -23,11 +24,11 @@ FROM deps AS build
 COPY . .
 RUN pnpm --filter @insight/infra build 2>/dev/null || true
 
-# Runtime image: run the worker entrypoint
+# Runtime image: run the M29 ingestion worker entrypoint
 FROM base AS runner
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages ./packages
-COPY docker/worker-entry.mjs ./worker-entry.mjs
+COPY --from=build /app/services ./services
 ENV NODE_ENV=production
-CMD ["node", "./worker-entry.mjs"]
+CMD ["node", "--import", "tsx", "./services/worker/src/main.ts"]

@@ -50,18 +50,24 @@ services:
     volumes:
       - minio_data:/data
 
-  # Example worker: runs the scheduled refresh loop using @insight/infra.
+  # M29: ingestion worker — wires live providers to RefreshEngine + WorkerRunner.
   # Real drivers resolve when INSIGHT_POSTGRES_URL/INSIGHT_REDIS_URL are set.
+  # Provider credentials (HELIUS_API_KEY, SOLANA_RPC_URL) enable live data ingestion.
   worker:
     build:
       context: .
-      dockerfile: infra/Dockerfile
+      dockerfile: docker/Dockerfile
     environment:
       INSIGHT_POSTGRES_URL: postgresql://insight:insight@postgres:5432/insight
       INSIGHT_REDIS_URL: redis://redis:6379
       INSIGHT_S3_ENDPOINT: http://minio:9000
       INSIGHT_S3_BUCKET: insight-artifacts
-      INSIGHT_WORKER_INTERVAL_MS: "5000"
+      INSIGHT_WORKER_INTERVAL_MS: "300000"
+      INSIGHT_WORKER_MAX_FAILURES: "10"
+      # Live provider credentials — supply via .env or docker secrets.
+      # When absent, worker falls back to demo data gracefully.
+      HELIUS_API_KEY: ${HELIUS_API_KEY:-}
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL:-https://api.mainnet-beta.solana.com}
     depends_on:
       postgres:
         condition: service_healthy

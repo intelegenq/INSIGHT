@@ -568,3 +568,160 @@ footer {
     flex-direction: column;
   }
 }
+
+/* ── M29: Narratives page ─────────────────────────────────────────── */
+.narratives-hero {
+  padding-top: 80px;
+  padding-bottom: 60px;
+}
+.narrative-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+.narrative-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.narrative-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+.trend-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.trend-up {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.trend-down {
+  background: #fbe9e7;
+  color: #c62828;
+}
+.trend-flat {
+  background: #f5f5f5;
+  color: #616161;
+}
+.trend-watch {
+  background: #fff8e1;
+  color: #f57f17;
+}
+.narrative-card .change {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+.narrative-card .note {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+.narrative-links {
+  display: flex;
+  gap: 16px;
+}
+.narrative-links .count {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── M29: Projects listing + detail pages ────────────────────────── */
+.project-hero {
+  padding-top: 80px;
+  padding-bottom: 40px;
+}
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+.project-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+.project-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.project-card:hover {
+  border-color: var(--violet);
+}
+.project-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 8px;
+}
+.project-card-header h3 {
+  font-size: 18px;
+  margin: 0;
+}
+.category-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.project-description {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+.project-metric {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+.project-card .arrow {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: var(--violet);
+  font-size: 18px;
+}
+
+/* ── M29: Evidence list (project detail) ──────────────────────────── */
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.evidence-item {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+.evidence-item h3 {
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+.evidence-item p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+.evidence-status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}

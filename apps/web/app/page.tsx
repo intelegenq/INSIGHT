@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { projectRepository } from "@insight/data";
 import type { NarrativeTrend } from "@insight/core";
 
@@ -23,12 +24,13 @@ export default function Home() {
         </a>
         <div className="nav-links">
           <a href="#pulse">Pulse</a>
+          <Link href="/projects">Projects</Link>
           <a href="#narratives">Narratives</a>
-          <a href="/reports">Reports</a>
+          <Link href="/reports">Reports</Link>
         </div>
-        <a className="ghost-button" href="/reports">
+        <Link className="ghost-button" href="/reports">
           Research mode <span>↗</span>
-        </a>
+        </Link>
       </nav>
 
       <section className="hero" id="top">
@@ -78,6 +80,18 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="section" aria-labelledby="projects-section-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">PROJECT INTELLIGENCE</p>
+            <h2 id="projects-section-title">Explore tracked protocols.</h2>
+          </div>
+          <Link className="ghost-button" href="/projects">
+            Browse all projects <span>→</span>
+          </Link>
+        </div>
+      </section>
+
       <section className="section two-column" id="narratives" aria-labelledby="narratives-title">
         <div>
           <p className="eyebrow">NARRATIVES</p>
@@ -109,9 +123,9 @@ export default function Home() {
             <p className="eyebrow">RESEARCH TIMELINE</p>
             <h2 id="timeline-title">Context, not just updates.</h2>
           </div>
-          <a className="ghost-button" href="/reports">
+          <Link className="ghost-button" href="/reports">
             Generate a brief →
-          </a>
+          </Link>
         </div>
         <div className="event-list">
           {timelines.map((event) => (
@@ -138,9 +152,9 @@ export default function Home() {
             risks, and an explicit confidence level.
           </p>
         </div>
-        <a className="primary-button light" href="/reports">
+        <Link className="primary-button light" href="/reports">
           Open report studio <span>→</span>
-        </a>
+        </Link>
       </section>
 
       <footer>

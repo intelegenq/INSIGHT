@@ -106,6 +106,14 @@ export type {
 export { MockHttpClient } from "./providers/mock/MockHttpClient";
 export type { MockHandler, MockResponse } from "./providers/mock/MockHttpClient";
 
+/* ── M29: Production provider wiring (environment-backed) ───────────── */
+export { resolveProductionProviders, hasLiveProviders } from "./providers/ProductionProviders";
+export type {
+  ProviderEnv,
+  ProductionProviderConfig,
+  TransportFactory,
+} from "./providers/ProductionProviders";
+
 /* ── Evidence layer ───────────────────────────────────────────────────── */
 export { EvidenceCollector } from "./evidence/EvidenceCollector";
 export { EvidenceNormalizer } from "./evidence/EvidenceNormalizer";

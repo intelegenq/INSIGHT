@@ -1,0 +1,31 @@
+{
+  "name": "@insight/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "M29 scheduled ingestion worker — wires production providers to RefreshEngine + WorkerRunner.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "node --loader ts-node/esm src/main.ts"
+  },
+  "dependencies": {
+    "@insight/core": "workspace:*",
+    "@insight/data": "workspace:*",
+    "@insight/runtime": "workspace:*",
+    "@insight/infra": "workspace:*",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.9.2",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^3.2.4"
+  }
+}

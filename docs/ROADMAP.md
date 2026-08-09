@@ -4,27 +4,35 @@
 
 - [x] pnpm workspace and Turborepo configuration
 - [x] Core product and engineering documentation
-- [ ] Web application scaffold and design system
-- [ ] Local quality checks and continuous integration
+- [x] Web application scaffold and design system
+- [x] Local quality checks and continuous integration
 
 ## Phase 2 — Contest MVP
 
-- [ ] Ecosystem pulse dashboard with transparent demo data
-- [ ] Project intelligence page
-- [ ] Narrative trend exploration
-- [ ] Cited report generation experience
-- [ ] Responsive deployment-ready UI
+- [x] Ecosystem pulse dashboard with transparent demo data
+- [x] Project intelligence page
+- [x] Narrative trend exploration
+- [x] Cited report generation experience
+- [x] Responsive deployment-ready UI
 
 ## Phase 3 — Intelligence services
 
-- [ ] Ingestion interfaces for on-chain and off-chain sources
-- [ ] Normalized evidence store and entity graph
-- [ ] Report and explanation engines
-- [ ] Scheduled refreshes and source health monitoring
+- [x] Ingestion interfaces for on-chain and off-chain sources
+- [x] Normalized evidence store and entity graph
+- [x] Report and explanation engines
+- [x] Scheduled refreshes and source health monitoring
 
 ## Phase 4 — Production hardening
 
 - [x] Authentication and saved research (M25 — Authentication & Saved Research)
-- [ ] PostgreSQL, cache, object storage, and workers
-- [ ] Observability, evaluation, and security controls
-- [ ] Multi-chain expansion only after Solana quality is proven
+- [x] PostgreSQL, cache, object storage, and workers (M26 — Database & Worker Infrastructure)
+- [x] Observability, evaluation, and security controls (M27 — Observability, Evaluation & Security)
+- [x] Multi-chain expansion only after Solana quality is proven (M28 — Multi-Chain Expansion)
+
+## Phase 5 — Production deployment
+
+- [x] Production provider wiring — environment-backed Helius/SolanaRPC/DeFiLlama/CoinGecko (M29)
+- [x] Scheduled ingestion worker — RefreshEngine + WorkerRunner (M29)
+- [x] Deployable production stack — docker-compose with live credential wiring (M29)
+- [x] Product UI capabilities — ecosystem pulse, project intelligence, narratives, cited reports (M29)
+- [x] API routes — pulse, projects, project detail, narratives, reports, refresh trigger (M29)

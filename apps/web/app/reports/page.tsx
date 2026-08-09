@@ -31,7 +31,8 @@ export default function ReportsPage() {
         </Link>
         <div className="nav-links">
           <Link href="/#pulse">Pulse</Link>
-          <Link href="/#narratives">Narratives</Link>
+          <Link href="/projects">Projects</Link>
+          <Link href="/narratives">Narratives</Link>
           <Link href="/reports">Reports</Link>
         </div>
         <span className="demo-chip">Demo mode</span>
