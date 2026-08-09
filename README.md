@@ -26,7 +26,7 @@ Insight was built specifically for the **Solana ecosystem reporting Mission**:
 | **Markdown report**               | `POST /api/reports/export` with `format: "markdown"`. Sample at `samples/sample-report.md`                                                                                                                                                                 |
 | **JSON report**                   | `POST /api/reports/export` with `format: "json"`. Sample at `samples/sample-report.json`                                                                                                                                                                   |
 | **PDF report**                    | `POST /api/reports/export` with `format: "pdf"` (printable HTML with inline CSS, auto-print)                                                                                                                                                               |
-| **AI natural-language interface** | `POST /api/assistant` + `/assistant` UI page. Grounded in Insight data only. Provider-agnostic (OpenRouter free models, NVIDIA NIM, or mock).                                                                                                              |
+| **AI natural-language interface** | `POST /api/assistant` + `/assistant` UI page. Grounded in Insight data only. Configurable LLM backend with deterministic offline fallback.                                                                                                                 |
 
 ---
 
@@ -72,18 +72,18 @@ AI Assistant (packages/ai/)
 
 ### Sources requiring credentials (optional)
 
-| Source         | Variable             | Data Collected                                         | Behavior if Absent                                                         |
-| -------------- | -------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| **Helius**     | `HELIUS_API_KEY`     | On-chain token accounts, program data via enhanced RPC | Helius provider skipped; Solana RPC still provides validator/epoch metrics |
-| **OpenRouter** | `OPENROUTER_API_KEY` | AI assistant natural-language answers                  | Mock provider gives deterministic offline answers                          |
-| **NVIDIA NIM** | `NVIDIA_NIM_API_KEY` | Alternative AI provider                                | Skipped; falls back to OpenRouter or mock                                  |
+| Source                      | Variable             | Data Collected                                         | Behavior if Absent                                                           |
+| --------------------------- | -------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| **Helius**                  | `HELIUS_API_KEY`     | On-chain token accounts, program data via enhanced RPC | Helius provider skipped; Solana RPC still provides validator/epoch metrics   |
+| **LLM backend**             | `OPENROUTER_API_KEY` | AI assistant natural-language answers                  | Deterministic offline mock provider gives grounded answers from Insight data |
+| **Alternative LLM backend** | `NVIDIA_NIM_API_KEY` | Alternative AI provider                                | Skipped; falls back to primary LLM backend or mock                           |
 
 ### Fallback behavior
 
 When credentials are absent, Insight degrades gracefully:
 
 - **No `HELIUS_API_KEY`** → Solana RPC still covers validators/stake/epoch/TPS/inflation
-- **No `AI_PROVIDER` / `OPENROUTER_API_KEY`** → Mock provider gives deterministic offline answers grounded in Insight data
+- **No `AI_PROVIDER` / `OPENROUTER_API_KEY`** → Deterministic offline mock provider gives grounded answers from Insight data
 - **No `INSIGHT_POSTGRES_URL`** → In-memory SQL fallback (snapshots reset on restart)
 - **No `INSIGHT_REDIS_URL`** → In-memory cache fallback
 - **`NEXT_PUBLIC_INSIGHT_DATA_MODE=demo`** → All live providers skipped; deterministic demo data only
@@ -184,15 +184,15 @@ All variables are read from `process.env`. Copy `apps/web/.env.example` to `apps
 
 ### AI Assistant
 
-| Variable              | Required | Default                                  | Purpose                                         |
-| --------------------- | -------- | ---------------------------------------- | ----------------------------------------------- |
-| `AI_PROVIDER`         | No       | `mock`                                   | Provider: `openrouter`, `nvidia-nim`, or `mock` |
-| `OPENROUTER_API_KEY`  | No       | (empty)                                  | OpenRouter API key for AI assistant             |
-| `OPENROUTER_BASE_URL` | No       | `https://openrouter.ai/api/v1`           | OpenRouter API base URL                         |
-| `OPENROUTER_MODEL`    | No       | `meta-llama/llama-3.3-70b-instruct:free` | OpenRouter model (free model by default)        |
-| `NVIDIA_NIM_API_KEY`  | No       | (empty)                                  | NVIDIA NIM API key (alternative AI provider)    |
-| `NVIDIA_NIM_BASE_URL` | No       | `https://integrate.api.nvidia.com/v1`    | NVIDIA NIM API base URL                         |
-| `NVIDIA_NIM_MODEL`    | No       | `meta/llama-3.1-70b-instruct`            | NVIDIA NIM model                                |
+| Variable              | Required | Default                                  | Purpose                                                      |
+| --------------------- | -------- | ---------------------------------------- | ------------------------------------------------------------ |
+| `AI_PROVIDER`         | No       | `mock`                                   | LLM backend selection: `openrouter`, `nvidia-nim`, or `mock` |
+| `OPENROUTER_API_KEY`  | No       | (empty)                                  | API key for primary LLM backend                              |
+| `OPENROUTER_BASE_URL` | No       | `https://openrouter.ai/api/v1`           | Primary LLM backend API URL                                  |
+| `OPENROUTER_MODEL`    | No       | `meta-llama/llama-3.3-70b-instruct:free` | Primary LLM backend model                                    |
+| `NVIDIA_NIM_API_KEY`  | No       | (empty)                                  | API key for alternative LLM backend                          |
+| `NVIDIA_NIM_BASE_URL` | No       | `https://integrate.api.nvidia.com/v1`    | Alternative LLM backend API URL                              |
+| `NVIDIA_NIM_MODEL`    | No       | `meta/llama-3.1-70b-instruct`            | Alternative LLM backend model                                |
 
 ---
 
@@ -305,12 +305,12 @@ The dashboard is a Next.js web app with 20 pages:
 - Answers include citations referencing evidence IDs
 - The AI does not browse the web, access external knowledge, or independently retrieve Solana facts
 
-**Provider configuration:**
+**Configuration:**
 
 - Default: `mock` (deterministic, offline, no API key needed)
-- OpenRouter: set `AI_PROVIDER=openrouter` and `OPENROUTER_API_KEY`. Default model is `meta-llama/llama-3.3-70b-instruct:free` (a free model)
-- NVIDIA NIM: set `AI_PROVIDER=nvidia-nim` and `NVIDIA_NIM_API_KEY`
+- Live LLM backend: set `AI_PROVIDER` and the corresponding API key in environment variables
 - If the AI provider fails, a deterministic fallback answer is generated from Insight's structured data
+- Provider-specific implementation details are internal — the assistant UI shows "connected" or "offline" status only
 
 ---
 
@@ -585,7 +585,7 @@ Insight covers:
 - **Maintainable architecture**: Monorepo with 7 packages, clear boundaries, pure functions
 - **Automated collection**: Worker + RefreshEngine + configurable interval
 - **Live hosted demo**: Deployable to Vercel (web) + Docker Compose (full stack)
-- **Minimal API-key dependency**: 3 of 4 data sources are public APIs; AI defaults to mock
+- **Minimal API-key dependency**: 3 of 4 data sources are public APIs; AI defaults to offline mock
 
 ---
 
@@ -593,7 +593,7 @@ Insight covers:
 
 - **Demo mode data is illustrative** — when no live credentials are configured, all metrics, projects, and narratives are deterministic demo data, not real ecosystem data
 - **Public Solana RPC is rate-limited** — for production use, a paid RPC endpoint (Helius, QuickNode) is recommended to avoid rate-limit errors
-- **AI assistant is a language interface only** — it translates Insight's structured data into natural language; it does not perform independent analysis, browse the web, or access external knowledge
+- **AI assistant is a language interface only** — it translates Insight's structured data into natural language; it does not perform independent analysis, browse the web, or access external knowledge. A live LLM backend requires an API key; without one, a deterministic offline mock provides grounded answers.
 - **No real-time streaming** — data refreshes on a scheduled interval (default 5 minutes), not on every block
 - **Snapshot persistence depends on infrastructure** — without PostgreSQL configured, snapshots are in-memory and reset on restart
 - **DeFiLlama and CoinGecko are rate-limited** — public APIs have rate limits; for high-frequency refresh, consider using paid tiers or caching strategies

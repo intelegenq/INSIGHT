@@ -147,7 +147,7 @@ describe("OpenRouter adapter", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     await expect(provider.complete({ systemPrompt: "t", userMessage: "q" })).rejects.toThrow(
-      "OpenRouter error 401",
+      "AI provider error 401",
     );
 
     vi.unstubAllGlobals();

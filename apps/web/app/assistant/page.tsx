@@ -418,7 +418,7 @@ function AssistantResponse({ data }: { data: AssistantApiResponse }) {
 
       {/* Metadata */}
       <div className="assistant-meta">
-        <span>Provider: {data.metadata.providerName}</span>
+        <span>AI: {data.metadata.providerUsed ? "connected" : "offline"}</span>
         <span>Context: {data.metadata.contextSize} items</span>
         <span>{data.metadata.hasSufficientData ? "✓ Sufficient data" : "⚠ Insufficient data"}</span>
         <span>{new Date(data.metadata.timestamp).toLocaleTimeString()}</span>

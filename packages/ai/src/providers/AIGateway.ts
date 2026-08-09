@@ -88,7 +88,7 @@ class OpenRouterProvider implements AIProvider {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`OpenRouter error ${response.status}: ${redactSecrets(text)}`);
+      throw new Error(`AI provider error ${response.status}: ${redactSecrets(text)}`);
     }
 
     const data = (await response.json()) as {
@@ -154,7 +154,7 @@ class NvidiaNimProvider implements AIProvider {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`NVIDIA NIM error ${response.status}: ${redactSecrets(text)}`);
+      throw new Error(`AI provider error ${response.status}: ${redactSecrets(text)}`);
     }
 
     const data = (await response.json()) as {
