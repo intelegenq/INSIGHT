@@ -36,3 +36,14 @@
 - [x] Deployable production stack — docker-compose with live credential wiring (M29)
 - [x] Product UI capabilities — ecosystem pulse, project intelligence, narratives, cited reports (M29)
 - [x] API routes — pulse, projects, project detail, narratives, reports, refresh trigger (M29)
+
+## Phase 6 — AI assistant
+
+- [x] AI domain contracts — AIProvider, AIRequest, AIResponse, structured response, citations (M31)
+- [x] AI gateway — OpenRouter + NVIDIA NIM adapters, mock provider, retry/timeout (M31)
+- [x] Insight context retrieval — deterministic context over existing data contracts (M31)
+- [x] Assistant service — question → context → AI → answer + citations (M31)
+- [x] Assistant API — POST /api/assistant with structured response (M31)
+- [x] Assistant UI — natural-language interface with citations and references (M31)
+- [x] Infrastructure activation — Redis cache, S3/MinIO object store, evaluation wired (M30)
+- [x] Deployment readiness — docker-compose web + worker + postgres + redis + minio (M30)

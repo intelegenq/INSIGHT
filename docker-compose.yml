@@ -67,6 +67,11 @@ services:
       # Live provider credentials — supply via .env or docker secrets.
       HELIUS_API_KEY: ${HELIUS_API_KEY:-}
       SOLANA_RPC_URL: ${SOLANA_RPC_URL:-https://api.mainnet-beta.solana.com}
+      # AI Assistant (M31)
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+      NVIDIA_NIM_API_KEY: ${NVIDIA_NIM_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

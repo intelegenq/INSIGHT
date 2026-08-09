@@ -20,6 +20,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@insight/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@insight/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -77,6 +80,40 @@ importers:
         version: 6.1.1(typescript@5.9.3)(vite@7.3.6(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.11))
       vitest:
         specifier: ^3.2.7
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.11)
+
+  packages/ai:
+    dependencies:
+      '@insight/core':
+        specifier: workspace:*
+        version: link:../core
+      '@insight/data':
+        specifier: workspace:*
+        version: link:../data
+      '@insight/infra':
+        specifier: workspace:*
+        version: link:../infra
+      '@insight/intelligence':
+        specifier: workspace:*
+        version: link:../intelligence
+      '@insight/knowledge':
+        specifier: workspace:*
+        version: link:../knowledge
+      '@insight/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vite-tsconfig-paths:
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@7.3.6(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.11))
+      vitest:
+        specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.11)
 
   packages/core:
@@ -2578,6 +2615,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0

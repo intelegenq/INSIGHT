@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@insight/ai": "workspace:*",
     "@insight/core": "workspace:*",
     "@insight/data": "workspace:*",
     "@insight/infra": "workspace:*",
