@@ -86,6 +86,7 @@ export default function HistoryPage() {
           <span className="nav-active">History</span>
           <Link href="/saved">Saved</Link>
           <Link href="/search">Search</Link>
+          <Link href="/compare">Compare</Link>
         </div>
       </nav>
 

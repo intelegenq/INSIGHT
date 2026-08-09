@@ -130,6 +130,7 @@ export default function ReportsPage() {
           <Link href="/history">History</Link>
           <Link href="/saved">Saved</Link>
           <Link href="/search">Search</Link>
+          <Link href="/compare">Compare</Link>
         </div>
       </nav>
 

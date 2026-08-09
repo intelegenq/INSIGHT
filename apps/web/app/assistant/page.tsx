@@ -100,6 +100,7 @@ export default function AssistantPage() {
             Assistant
           </Link>
           <Link href="/search">Search</Link>
+          <Link href="/compare">Compare</Link>
         </div>
       </nav>
 

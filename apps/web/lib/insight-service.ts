@@ -69,6 +69,17 @@ export interface EvaluatedReport {
   verdict: ReportVerdict;
 }
 
+/** M39: Uniform shape for cross-project comparison. */
+export interface ComparisonEntry {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  metrics: import("@insight/core").ProjectMetrics;
+  health?: import("@insight/intelligence").ProjectHealth;
+  evidenceCount: number;
+}
+
 export class InsightService {
   private readonly runtime: InsightRuntime;
   private readonly snapshotRepository: SyncSnapshotRepository | AsyncSnapshotRepository;
@@ -197,6 +208,36 @@ export class InsightService {
       referenceDate: this.referenceDate,
       bounds: DEFAULT_BOUNDS,
     });
+  }
+
+  /**
+   * M39: Compare multiple projects side by side.
+   *
+   * Returns each project's metrics, health scores, and evidence count
+   * in a uniform shape suitable for a comparison table. Uses existing
+   * listProjects, getProjectHealth, and resolveEvidenceIds — no new data.
+   */
+  async compareProjects(projectIds: readonly string[]): Promise<ComparisonEntry[]> {
+    await this.ready();
+    const allProjects = await this.listProjects();
+    const byId = new Map(allProjects.map((p) => [p.id, p]));
+    const entries: ComparisonEntry[] = [];
+    for (const id of projectIds) {
+      const project = byId.get(id);
+      if (project === undefined) continue;
+      const health = await this.getProjectHealth(id);
+      const evidence = await this.resolveEvidenceIds(project.evidenceIds);
+      entries.push({
+        id: project.id,
+        name: project.name,
+        category: project.category,
+        description: project.description,
+        metrics: project.metrics,
+        health,
+        evidenceCount: evidence.length,
+      });
+    }
+    return entries;
   }
 
   async resolveEvidenceIds(evidenceIds: readonly string[]): Promise<Evidence[]> {

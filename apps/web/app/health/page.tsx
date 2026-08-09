@@ -94,6 +94,7 @@ export default function HealthPage() {
           </Link>
           <Link href="/history">History</Link>
           <Link href="/search">Search</Link>
+          <Link href="/compare">Compare</Link>
         </div>
       </nav>
 

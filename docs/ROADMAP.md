@@ -95,3 +95,10 @@
 - [x] Search UI — /search page with query input, grouped result cards, and tips section (M38)
 - [x] InsightService.search() — deterministic text matching over existing data contracts (M38)
 - [x] Navigation — search link added to nav across all pages (M38)
+
+## Phase 14 — Cross-entity comparison
+
+- [x] Compare API — GET /api/compare?ids=id1,id2 returns uniform entries with metrics, health, and evidence count (M39)
+- [x] Compare UI — /compare page with checkbox selector, comparison table, best-value highlighting, and health score section (M39)
+- [x] InsightService.compareProjects() — wires existing listProjects, getProjectHealth, and resolveEvidenceIds (M39)
+- [x] Navigation — compare link added to nav across all pages (M39)

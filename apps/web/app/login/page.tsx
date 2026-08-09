@@ -49,6 +49,7 @@ export default function LoginPage() {
           <Link href="/reports">Reports</Link>
           <Link href="/assistant">Assistant</Link>
           <Link href="/search">Search</Link>
+          <Link href="/compare">Compare</Link>
         </div>
       </nav>
 

@@ -40,6 +40,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <Link href="/health">Health</Link>
           <Link href="/history">History</Link>
           <Link href="/search">Search</Link>
+          <Link href="/compare">Compare</Link>
         </div>
         <Link className="ghost-button" href="/reports">
           Research mode <span>↗</span>

@@ -75,6 +75,14 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - InsightService.search() uses existing listProjects(), getNarratives(), and snapshot/runtime evidence — no new data sources, no web search, no AI generation.
 - Search link is present in navigation across all pages.
 
+## Cross-entity comparison boundary (M39)
+
+- GET /api/compare?ids=id1,id2,... returns uniform entries with each project's metrics, health scores (from M37's scoreProject), and evidence count — minimum 2 IDs, maximum 10.
+- The /compare page provides a checkbox project selector, a side-by-side comparison table with best-value highlighting (higher is better for TVL/volume/health, lower is better for risk), and a health score section.
+- InsightService.compareProjects() uses existing listProjects(), getProjectHealth(), and resolveEvidenceIds() — no new data sources, no AI, no external services.
+- Not-found IDs are reported separately in the response without causing a 404 for the entire request.
+- Compare link is present in navigation across all pages.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel
