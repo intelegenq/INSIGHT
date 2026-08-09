@@ -99,6 +99,7 @@ export default function AssistantPage() {
           <Link href="/assistant" className="active">
             Assistant
           </Link>
+          <Link href="/search">Search</Link>
         </div>
       </nav>
 

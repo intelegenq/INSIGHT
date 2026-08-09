@@ -88,3 +88,10 @@
 - [x] Project health API — GET /api/projects/[id] now includes health, momentum, risk, and developer scores (M37)
 - [x] Health profile UI — /projects/[id] page shows a health profile section with four bounded score cards (M37)
 - [x] InsightService.getProjectHealth() — wires existing scoreProject from @insight/intelligence (M37)
+
+## Phase 13 — Global search
+
+- [x] Search API — GET /api/search?q=<query> returns grouped results across projects, narratives, and evidence (M38)
+- [x] Search UI — /search page with query input, grouped result cards, and tips section (M38)
+- [x] InsightService.search() — deterministic text matching over existing data contracts (M38)
+- [x] Navigation — search link added to nav across all pages (M38)

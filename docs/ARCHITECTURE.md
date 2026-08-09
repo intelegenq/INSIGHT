@@ -67,6 +67,14 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - The /projects/[id] page displays a health profile section with four bounded score cards (health 0–100, momentum −100 to +100, risk 0–100, developer 0–100).
 - InsightService.getProjectHealth() wires the existing scoreProject function over the service's project and resolved evidence — no new scoring logic.
 
+## Global search boundary (M38)
+
+- GET /api/search?q=<query> returns grouped results across projects, narratives, and evidence — deterministic text matching over existing Insight data, no external search service or AI.
+- Results are sorted by relevance tier: exact name match > name starts-with > name/description/note contains.
+- The /search page provides a client-side search form, grouped result cards with clickable links to project and narrative detail pages, and a tips section explaining searchable fields.
+- InsightService.search() uses existing listProjects(), getNarratives(), and snapshot/runtime evidence — no new data sources, no web search, no AI generation.
+- Search link is present in navigation across all pages.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel

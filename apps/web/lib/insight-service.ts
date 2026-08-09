@@ -341,6 +341,108 @@ export class InsightService {
     return checkSourceHealth(this.providers, { checkedAt });
   }
 
+  /**
+   * M38: Global search across projects, narratives, and evidence.
+   *
+   * Deterministic text matching over existing Insight data — no external
+   * search service, no AI, no web search. Matches on name, description,
+   * note, and source fields. Results are sorted by relevance tier:
+   * exact name > name contains > description/note contains.
+   */
+  async search(query: string): Promise<{
+    query: string;
+    projects: { id: string; name: string; category: string; description: string }[];
+    narratives: { id: string; name: string; trend: string; note: string }[];
+    evidence: { id: string; sourceName: string; note: string; status: string }[];
+    total: number;
+  }> {
+    await this.ready();
+    const q = query.trim().toLowerCase();
+    if (q.length === 0) {
+      return { query, projects: [], narratives: [], evidence: [], total: 0 };
+    }
+
+    const [projects, narratives] = await Promise.all([this.listProjects(), this.getNarratives()]);
+
+    // Resolve evidence from latest snapshot or runtime
+    let evidenceList: readonly Evidence[];
+    const snapshots = await this.snapshotRepository.list();
+    if (snapshots.length > 0) {
+      evidenceList = snapshots[snapshots.length - 1]?.evidence ?? [];
+    } else {
+      const result = this.runtime.analyze({ referenceDate: this.referenceDate });
+      evidenceList = result.evidence;
+    }
+
+    const matchedProjects = projects
+      .filter((p) => {
+        const name = p.name.toLowerCase();
+        const desc = p.description.toLowerCase();
+        const cat = p.category.toLowerCase();
+        return name.includes(q) || desc.includes(q) || cat.includes(q);
+      })
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aExact = aName === q ? 0 : 1;
+        const bExact = bName === q ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
+        const aStarts = aName.startsWith(q) ? 0 : 1;
+        const bStarts = bName.startsWith(q) ? 0 : 1;
+        return aStarts - bStarts;
+      })
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        description: p.description,
+      }));
+
+    const matchedNarratives = narratives
+      .filter((n) => {
+        const name = n.name.toLowerCase();
+        const note = n.note.toLowerCase();
+        return name.includes(q) || note.includes(q);
+      })
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aExact = aName === q ? 0 : 1;
+        const bExact = bName === q ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
+        const aStarts = aName.startsWith(q) ? 0 : 1;
+        const bStarts = bName.startsWith(q) ? 0 : 1;
+        return aStarts - bStarts;
+      })
+      .map((n) => ({
+        id: n.id,
+        name: n.name,
+        trend: n.trend,
+        note: n.note,
+      }));
+
+    const matchedEvidence = evidenceList
+      .filter((e) => {
+        const note = e.note.toLowerCase();
+        const sourceName = e.source.name.toLowerCase();
+        return note.includes(q) || sourceName.includes(q);
+      })
+      .map((e) => ({
+        id: e.id,
+        sourceName: e.source.name,
+        note: e.note,
+        status: e.status,
+      }));
+
+    return {
+      query,
+      projects: matchedProjects,
+      narratives: matchedNarratives,
+      evidence: matchedEvidence,
+      total: matchedProjects.length + matchedNarratives.length + matchedEvidence.length,
+    };
+  }
+
   async snapshot(): Promise<Snapshot> {
     const result = this.run();
     const snapshot = createSnapshot({

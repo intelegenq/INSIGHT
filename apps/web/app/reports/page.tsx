@@ -129,6 +129,7 @@ export default function ReportsPage() {
           <Link href="/assistant">Assistant</Link>
           <Link href="/history">History</Link>
           <Link href="/saved">Saved</Link>
+          <Link href="/search">Search</Link>
         </div>
       </nav>
 

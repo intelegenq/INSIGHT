@@ -126,6 +126,7 @@ export default function GraphPage() {
             Graph
           </Link>
           <Link href="/history">History</Link>
+          <Link href="/search">Search</Link>
         </div>
       </nav>
 

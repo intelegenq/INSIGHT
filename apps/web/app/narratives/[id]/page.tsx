@@ -63,6 +63,7 @@ export default async function NarrativeDetailPage({ params }: { params: Promise<
           <Link href="/graph">Graph</Link>
           <Link href="/health">Health</Link>
           <Link href="/history">History</Link>
+          <Link href="/search">Search</Link>
         </div>
       </nav>
 

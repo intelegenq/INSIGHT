@@ -78,6 +78,7 @@ export default function SavedPage() {
           <Link href="/assistant">Assistant</Link>
           <Link href="/history">History</Link>
           <span className="nav-active">Saved</span>
+          <Link href="/search">Search</Link>
         </div>
       </nav>
 

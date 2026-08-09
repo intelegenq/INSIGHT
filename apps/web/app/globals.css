@@ -1364,3 +1364,92 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── M38: Global search page styles ─────────────────────────────── */
+.search-hero {
+  max-width: 1200px;
+  margin: auto;
+  padding: 96px 32px 40px;
+}
+.search-form {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.search-input {
+  flex: 1;
+  min-width: 280px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 17px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus {
+  border-color: var(--violet);
+}
+.search-submit {
+  cursor: pointer;
+  border: none;
+}
+.search-status,
+.search-error,
+.search-empty {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.search-error {
+  color: #c62828;
+}
+.search-group {
+  margin-top: 40px;
+}
+.search-group-title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+.narrative-card-link {
+  display: block;
+}
+.narrative-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  transition: border-color 0.15s;
+}
+.narrative-card-link:hover .narrative-card {
+  border-color: var(--violet);
+}
+.narrative-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.narrative-card-header h4 {
+  margin: 0;
+  font-size: 17px;
+}
+.narrative-note {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .search-hero {
+    padding: 64px 20px 32px;
+  }
+  .search-form {
+    flex-direction: column;
+  }
+}

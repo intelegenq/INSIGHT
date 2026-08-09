@@ -48,6 +48,7 @@ export default function LoginPage() {
           <Link href="/narratives">Narratives</Link>
           <Link href="/reports">Reports</Link>
           <Link href="/assistant">Assistant</Link>
+          <Link href="/search">Search</Link>
         </div>
       </nav>
 
