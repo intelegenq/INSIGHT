@@ -60,7 +60,7 @@ export default function ReportsPage() {
   }, [lens]);
 
   const handleExport = useCallback(
-    async (format: "markdown" | "json") => {
+    async (format: "markdown" | "json" | "pdf") => {
       setExporting(true);
       try {
         const res = await fetch(`${baseUrl}/api/reports/export`, {
@@ -70,16 +70,31 @@ export default function ReportsPage() {
         });
         if (!res.ok) throw new Error(`Export failed: ${res.status}`);
         const data = (await res.json()) as { content: string; reportId: string };
-        // Trigger download
-        const blob = new Blob([data.content], {
-          type: format === "json" ? "application/json" : "text/markdown",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `insight-report-${data.reportId}.${format === "json" ? "json" : "md"}`;
-        a.click();
-        URL.revokeObjectURL(url);
+
+        if (format === "pdf") {
+          // M40: Open printable HTML in a new tab for browser print-to-PDF
+          const blob = new Blob([data.content], { type: "text/html" });
+          const url = URL.createObjectURL(blob);
+          const win = window.open(url, "_blank");
+          if (win) {
+            win.onload = () => {
+              setTimeout(() => win.print(), 250);
+            };
+          }
+          // Revoke after a delay to allow the new tab to load
+          setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        } else {
+          // Trigger download for markdown/json
+          const blob = new Blob([data.content], {
+            type: format === "json" ? "application/json" : "text/markdown",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `insight-report-${data.reportId}.${format === "json" ? "json" : "md"}`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
       } catch {
         // ignore
       } finally {
@@ -204,6 +219,13 @@ export default function ReportsPage() {
                   disabled={exporting}
                 >
                   Export JSON
+                </button>
+                <button
+                  className="ghost-button"
+                  onClick={() => void handleExport("pdf")}
+                  disabled={exporting}
+                >
+                  Export PDF
                 </button>
                 <button
                   className="primary-button"

@@ -102,3 +102,10 @@
 - [x] Compare UI — /compare page with checkbox selector, comparison table, best-value highlighting, and health score section (M39)
 - [x] InsightService.compareProjects() — wires existing listProjects, getProjectHealth, and resolveEvidenceIds (M39)
 - [x] Navigation — compare link added to nav across all pages (M39)
+
+## Phase 15 — Report PDF export
+
+- [x] PDF format on /api/reports/export — POST with format:"pdf" returns self-contained printable HTML (M40)
+- [x] Quality verdict inclusion — PDF export includes M30 ReportVerdict (quality, evidence stats, verified flag) (M40)
+- [x] Export PDF button on reports page — opens printable HTML in new tab with auto-print (M40)
+- [x] Inline CSS with print media query — no external dependencies, optimized for browser print-to-PDF (M40)

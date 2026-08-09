@@ -83,6 +83,13 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - Not-found IDs are reported separately in the response without causing a 404 for the entire request.
 - Compare link is present in navigation across all pages.
 
+## Report PDF export boundary (M40)
+
+- POST /api/reports/export with format:"pdf" returns a self-contained HTML document with inline CSS, optimized for browser print-to-PDF — no external dependencies, no server-side PDF library.
+- The PDF HTML includes: report header with metadata, executive summary, catalyst and risk sections, a quality verdict box (from M30's evaluateReport with quality label, evidence stats, and verified flag), and an evidence table with status badges.
+- The reports page "Export PDF" button opens the printable HTML in a new browser tab and auto-triggers the print dialog.
+- Uses existing getReport(), getEvaluatedReport(), and resolveEvidenceIds() — no new data, no AI generation, no new infrastructure.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel
