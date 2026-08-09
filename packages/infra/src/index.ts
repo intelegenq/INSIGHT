@@ -15,6 +15,9 @@ export type { SqlClient, SqlRow, SqlResult } from "./sql/SqlClient";
 export { PostgresSnapshotRepository } from "./sql/PostgresSnapshotRepository";
 export { getSharedSqlClient, resetSharedSqlClient } from "./sql/SharedSqlClient";
 
+/* ── M30: Shared cache + object store (process-wide singletons) ────── */
+export { getSharedCache, getSharedObjectStore, resetSharedInfra } from "./SharedInfra";
+
 /* ── Redis / KV cache & queue ──────────────────────────────────────── */
 export type { KvBackend, KvCacheOptions } from "./kv/KvCache";
 export { KvCache, InMemoryKvBackend } from "./kv/KvCache";

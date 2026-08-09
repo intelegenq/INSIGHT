@@ -1,15 +1,16 @@
 /**
  * Insight service — framework-friendly adapter around @insight/runtime.
  *
- * Production-hardened: wires production providers + shared infra-backed
- * snapshot storage. Key guarantees:
- *   1. Shared persistence: uses getSharedSqlClient() so worker-written
- *      snapshots are visible to the web app (real Postgres in production,
- *      in-memory in dev/test).
- *   2. Readiness: async initialization ensures live provider data is loaded
- *      before any API request is served — no fire-and-forget race.
- *   3. No demo bypasses: pulse/timeline/evidence all flow through the
- *      live/snapshot pipeline, not direct projectRepository imports.
+ * M30: wires KvCache (Redis), ObjectStore (S3/MinIO), and evaluation
+ * (evaluateReport/evaluateEvidence) into the production pipeline.
+ *
+ * Production-hardened guarantees:
+ *   1. Shared persistence: getSharedSqlClient() for Postgres snapshots.
+ *   2. Shared cache: getSharedCache() for API response caching.
+ *   3. Shared object store: getSharedObjectStore() for report artifacts.
+ *   4. Readiness: async init ensures live data is loaded before requests.
+ *   5. No demo bypasses: all data flows through the live/snapshot pipeline.
+ *   6. Evaluation: reports carry quality verdicts from evaluateReport.
  */
 import { HistoryAnalyzer, InsightErrors } from "@insight/runtime";
 import type { Project, Report, ReportLens, Evidence, Narrative } from "@insight/core";
@@ -32,7 +33,13 @@ import {
   resolveInfraConfig,
   assembleInfra,
   getSharedSqlClient,
+  getSharedCache,
+  getSharedObjectStore,
   PostgresSnapshotRepository,
+  evaluateReport,
+  type ReportVerdict,
+  type KvCache,
+  type ObjectStore,
 } from "@insight/infra";
 
 /** Deterministic reference date for dev/test — production overrides via env. */
@@ -51,6 +58,15 @@ export interface InsightServiceOptions {
   providers?: DataProvider[];
   /** Override snapshot repository (tests). Defaults to infra-resolved. */
   snapshotRepository?: SyncSnapshotRepository | AsyncSnapshotRepository;
+  /** Override cache (tests). Defaults to shared infra-resolved. */
+  cache?: KvCache;
+  /** Override object store (tests). Defaults to shared infra-resolved. */
+  objectStore?: ObjectStore;
+}
+
+export interface EvaluatedReport {
+  report: Report;
+  verdict: ReportVerdict;
 }
 
 export class InsightService {
@@ -62,6 +78,10 @@ export class InsightService {
   private readonly compositeRepo: CompositeRepository;
   /** Resolves when live provider data has been loaded (or failed gracefully). */
   private readonly readyPromise: Promise<void>;
+  /** Lazily-resolved shared cache (Redis in production, in-memory in dev). */
+  private cachePromise: Promise<KvCache> | undefined;
+  /** Lazily-resolved shared object store (S3/MinIO in production, in-memory in dev). */
+  private objectStorePromise: Promise<ObjectStore> | undefined;
 
   constructor(options: InsightServiceOptions = {}) {
     this.referenceDate = options.referenceDate ?? resolveReferenceDate();
@@ -70,28 +90,10 @@ export class InsightService {
     const providers = options.providers ?? resolveProductionProviders();
     this.isLive = providers.some((p) => p.id !== "demo");
 
-    // Build a CompositeRepository from resolved providers so the runtime
-    // reads from live data when available. In demo mode the composite repo
-    // is functionally equivalent to the default projectRepository.
     this.compositeRepo = new CompositeRepository({ providers });
 
     // Readiness: load live provider data before serving requests.
-    // In dev/test (demo providers), load is instant (static data).
-    // In production (live providers), load fetches from APIs — we await
-    // it so the first API request doesn't hit empty/demo data.
-    // If load fails, the composite repo serves whatever data it has and
-    // the pipeline falls back to demo data from the demo provider.
-    if (this.isLive) {
-      this.readyPromise = this.compositeRepo.load().catch(() => {
-        // Swallow — pipeline will fall back to demo data via the demo
-        // provider that's always included as the last provider.
-      });
-    } else {
-      // Demo mode: no async load needed (CompositeRepository with demo
-      // providers seeds synchronously when fromStatic is used, or load()
-      // resolves instantly for static payloads).
-      this.readyPromise = this.compositeRepo.load().catch(() => {});
-    }
+    this.readyPromise = this.compositeRepo.load().catch(() => {});
 
     this.runtime = InsightRuntime.create(this.compositeRepo);
 
@@ -99,17 +101,8 @@ export class InsightService {
     if (options.snapshotRepository) {
       this.snapshotRepository = options.snapshotRepository;
     } else {
-      // Use shared SqlClient so worker and web share the same Postgres pool.
-      // This is async but we need a sync reference — we create an
-      // InMemorySnapshotRepository as a temporary sync fallback and replace
-      // it when the async shared client resolves. However, for the
-      // PostgresSnapshotRepository to work, we need the SqlClient.
-      // Pattern: create the snapshot repo synchronously with InMemorySqlClient,
-      // then the shared client is resolved on first async API call.
       const config = resolveInfraConfig();
       if (config.postgresUrl) {
-        // Production path: use shared Postgres client. Since the shared
-        // client is async, we store a lazy wrapper that resolves on first use.
         this.snapshotRepository = new LazySnapshotRepository(async () => {
           const sql = await getSharedSqlClient();
           const repo = new PostgresSnapshotRepository(sql);
@@ -119,6 +112,16 @@ export class InsightService {
       } else {
         this.snapshotRepository = new InMemorySnapshotRepository();
       }
+    }
+
+    // Cache: explicit override > shared infra-resolved
+    if (options.cache) {
+      this.cachePromise = Promise.resolve(options.cache);
+    }
+
+    // Object store: explicit override > shared infra-resolved
+    if (options.objectStore) {
+      this.objectStorePromise = Promise.resolve(options.objectStore);
     }
 
     this.historyAnalyzer = new HistoryAnalyzer();
@@ -134,20 +137,42 @@ export class InsightService {
     await this.readyPromise;
   }
 
+  /** Resolve the shared cache (lazy, async). */
+  private async getCache(): Promise<KvCache> {
+    if (this.cachePromise === undefined) {
+      this.cachePromise = getSharedCache();
+    }
+    return this.cachePromise;
+  }
+
+  /** Resolve the shared object store (lazy, async). */
+  private async getObjectStore(): Promise<ObjectStore> {
+    if (this.objectStorePromise === undefined) {
+      this.objectStorePromise = getSharedObjectStore();
+    }
+    return this.objectStorePromise;
+  }
+
   run(): RuntimeResult {
     return this.runtime.analyze({ referenceDate: this.referenceDate });
   }
 
   async listProjects(): Promise<Project[]> {
     await this.ready();
-    // Try the snapshot store first (may have persisted live data from worker)
+    // Check cache first
+    const cache = await this.getCache();
+    const cached = await cache.get<Project[]>("insight:projects");
+    if (cached !== undefined) return cached;
+
     const snapshots = await this.snapshotRepository.list();
+    let projects: Project[];
     if (snapshots.length > 0) {
-      const latest = snapshots[snapshots.length - 1];
-      return [...(latest?.projects ?? [])];
+      projects = [...(snapshots[snapshots.length - 1]?.projects ?? [])];
+    } else {
+      projects = this.runtime.analyze({ referenceDate: this.referenceDate }).projects;
     }
-    // Fallback: run the pipeline fresh (uses the wired composite repo)
-    return this.runtime.analyze({ referenceDate: this.referenceDate }).projects;
+    await cache.set("insight:projects", projects);
+    return projects;
   }
 
   async getProject(projectId: string): Promise<Project | undefined> {
@@ -157,7 +182,6 @@ export class InsightService {
 
   async resolveEvidenceIds(evidenceIds: readonly string[]): Promise<Evidence[]> {
     await this.ready();
-    // Try snapshot store first for live evidence
     const snapshots = await this.snapshotRepository.list();
     if (snapshots.length > 0) {
       const latest = snapshots[snapshots.length - 1];
@@ -165,7 +189,6 @@ export class InsightService {
       const byId = new Map(evidenceList.map((e) => [e.id, e]));
       return evidenceIds.map((id) => byId.get(id)).filter((e): e is Evidence => e !== undefined);
     }
-    // Fallback: resolve from the composite repo's evidence (runtime pipeline)
     const result = this.runtime.analyze({ referenceDate: this.referenceDate });
     const byId = new Map(result.evidence.map((e) => [e.id, e]));
     return evidenceIds.map((id) => byId.get(id)).filter((e): e is Evidence => e !== undefined);
@@ -173,51 +196,91 @@ export class InsightService {
 
   async getReport(lens: ReportLens = "ecosystem"): Promise<Report | undefined> {
     await this.ready();
-    // Try the snapshot store for a matching report
+    // Check cache first
+    const cache = await this.getCache();
+    const cacheKey = `insight:report:${lens}`;
+    const cached = await cache.get<Report>(cacheKey);
+    if (cached !== undefined) return cached;
+
+    let report: Report | undefined;
     const snapshots = await this.snapshotRepository.list();
     if (snapshots.length > 0) {
       const latest = snapshots[snapshots.length - 1];
-      if (latest?.report.lens === lens) return latest.report;
-      // No matching lens in latest snapshot — run fresh
-      return this.runtime.analyze({ referenceDate: this.referenceDate, lens }).report;
+      if (latest?.report.lens === lens) {
+        report = latest.report;
+      } else {
+        report = this.runtime.analyze({ referenceDate: this.referenceDate, lens }).report;
+      }
+    } else {
+      report = this.runtime.analyze({ referenceDate: this.referenceDate, lens }).report;
     }
-    // No snapshots: run the pipeline fresh
-    return this.runtime.analyze({ referenceDate: this.referenceDate, lens }).report;
+
+    if (report) {
+      // Persist report artifact to object store
+      const objectStore = await this.getObjectStore();
+      const artifactKey = `reports/${report.id}.json`;
+      await objectStore.put({
+        key: artifactKey,
+        body: new TextEncoder().encode(JSON.stringify(report)),
+        contentType: "application/json",
+      });
+
+      await cache.set(cacheKey, report);
+    }
+    return report;
+  }
+
+  /**
+   * M30: Get a report with its quality evaluation verdict.
+   * Runs evaluateReport against the report's backing evidence.
+   */
+  async getEvaluatedReport(lens: ReportLens = "ecosystem"): Promise<EvaluatedReport | undefined> {
+    const report = await this.getReport(lens);
+    if (report === undefined) return undefined;
+
+    const evidence = await this.resolveEvidenceIds(report.evidenceIds);
+    const verdict = evaluateReport({
+      reportId: report.id,
+      confidence: report.confidence,
+      evidence,
+    });
+    return { report, verdict };
   }
 
   async getNarratives(): Promise<Narrative[]> {
     await this.ready();
+    const cache = await this.getCache();
+    const cached = await cache.get<Narrative[]>("insight:narratives");
+    if (cached !== undefined) return cached;
+
     const snapshots = await this.snapshotRepository.list();
+    let narratives: Narrative[];
     if (snapshots.length > 0) {
-      return [...(snapshots[snapshots.length - 1]?.narratives ?? [])];
+      narratives = [...(snapshots[snapshots.length - 1]?.narratives ?? [])];
+    } else {
+      narratives = this.runtime.analyze({ referenceDate: this.referenceDate }).narratives;
     }
-    return this.runtime.analyze({ referenceDate: this.referenceDate }).narratives;
+    await cache.set("insight:narratives", narratives);
+    return narratives;
   }
 
   async getPulse(): Promise<PulseSnapshot> {
     await this.ready();
-    // When live snapshots exist, derive a pulse from the snapshot data
     const snapshots = await this.snapshotRepository.list();
     if (snapshots.length > 0) {
       const latest = snapshots[snapshots.length - 1];
-      if (latest) {
-        return snapshotToPulse(latest);
-      }
+      if (latest) return snapshotToPulse(latest);
     }
-    // Fallback: run the pipeline fresh and derive pulse from the result
     const result = this.runtime.analyze({ referenceDate: this.referenceDate });
     return runtimeResultToPulse(result, this.referenceDate);
   }
 
   async getTimeline(): Promise<TimelineEvent[]> {
     await this.ready();
-    // Timeline is an editorial view — derive from snapshot or runtime result
     const snapshots = await this.snapshotRepository.list();
     if (snapshots.length > 0) {
       const latest = snapshots[snapshots.length - 1];
-      if (latest) {
-        return snapshotToTimeline(latest);
-      }
+      if (latest) return snapshotToTimeline(latest);
     }
     const result = this.runtime.analyze({ referenceDate: this.referenceDate });
     return runtimeResultToTimeline(result, this.referenceDate);
@@ -235,6 +298,13 @@ export class InsightService {
       report: result.report,
       knowledgeGraph: result.knowledgeGraph,
     });
+    // Invalidate caches on new snapshot
+    const cache = await this.getCache();
+    await cache.delete("insight:projects");
+    await cache.delete("insight:narratives");
+    for (const lens of ["ecosystem", "defi", "infrastructure"]) {
+      await cache.delete(`insight:report:${lens}`);
+    }
     return this.snapshotRepository.save(snapshot);
   }
 
@@ -267,21 +337,15 @@ export class InsightService {
   ): Promise<import("@insight/runtime").HistoryDiff> {
     const from = await this.snapshotRepository.get(fromId);
     const to = await this.snapshotRepository.get(toId);
-    if (from === undefined) {
-      throw InsightErrors.snapshotNotFound(fromId);
-    }
-    if (to === undefined) {
-      throw InsightErrors.snapshotNotFound(toId);
-    }
+    if (from === undefined) throw InsightErrors.snapshotNotFound(fromId);
+    if (to === undefined) throw InsightErrors.snapshotNotFound(toId);
     return this.historyAnalyzer.compare(from, to);
   }
 }
 
 /**
  * LazySnapshotRepository — wraps an async factory that produces the real
- * AsyncSnapshotRepository on first use. All methods await the factory
- * before delegating. This lets InsightService construct synchronously
- * while deferring the async Postgres client resolution to first API call.
+ * AsyncSnapshotRepository on first use.
  */
 class LazySnapshotRepository implements AsyncSnapshotRepository {
   private delegatePromise: Promise<AsyncSnapshotRepository> | undefined;
@@ -359,7 +423,6 @@ function snapshotToPulse(snapshot: Snapshot): PulseSnapshot {
   };
 }
 
-/** Derive a PulseSnapshot from a fresh RuntimeResult. */
 function runtimeResultToPulse(result: RuntimeResult, referenceDate: string): PulseSnapshot {
   return {
     asOf: referenceDate,
@@ -393,7 +456,6 @@ function runtimeResultToPulse(result: RuntimeResult, referenceDate: string): Pul
   };
 }
 
-/** Derive a timeline from a snapshot's projects and narratives. */
 function snapshotToTimeline(snapshot: Snapshot): TimelineEvent[] {
   return snapshot.projects.slice(0, 8).map((p, i) => ({
     id: `timeline-${i}-${p.id}`,
@@ -404,7 +466,6 @@ function snapshotToTimeline(snapshot: Snapshot): TimelineEvent[] {
   }));
 }
 
-/** Derive a timeline from a fresh RuntimeResult. */
 function runtimeResultToTimeline(result: RuntimeResult, referenceDate: string): TimelineEvent[] {
   return result.projects.slice(0, 8).map((p, i) => ({
     id: `timeline-${i}-${p.id}`,

@@ -7,7 +7,7 @@ apps/web             Presentation and user interaction
 packages/core        Domain entities, scoring, evidence, and report contracts
 packages/shared      Small framework-independent helpers
 packages/ui          Design tokens and reusable UI components
-services (future)    Collectors, schedulers, AI orchestration, and API workers
+services/worker      Scheduled collectors, AI orchestration, and API workers
 ```
 
 ## Boundaries
