@@ -51,6 +51,7 @@ export default async function Home() {
           <a href="#narratives">Narratives</a>
           <Link href="/reports">Reports</Link>
           <Link href="/assistant">Assistant</Link>
+          <Link href="/history">History</Link>
         </div>
         <Link className="ghost-button" href="/reports">
           Research mode <span>↗</span>

@@ -67,6 +67,9 @@ export default function ReportsPage() {
           <Link href="/projects">Projects</Link>
           <Link href="/narratives">Narratives</Link>
           <Link href="/reports">Reports</Link>
+          <Link href="/assistant">Assistant</Link>
+          <Link href="/history">History</Link>
+          <Link href="/saved">Saved</Link>
         </div>
       </nav>
 

@@ -27,6 +27,13 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - The assistant service refuses or qualifies when Insight lacks sufficient data.
 - Context retrieval uses only existing Insight contracts (projects, evidence, narratives, reports, knowledge graph) — no web search or external retrieval.
 
+## Analyst workflow boundary (M32)
+
+- Auth UI: login and register pages with session cookies, wiring existing M25 auth API routes.
+- Saved research dashboard: consumed existing M25 /api/saved CRUD routes for reports, narratives, projects, and sessions.
+- Snapshot history: consumed existing /api/snapshots and /api/history routes for timeline and diff visualization.
+- All analyst workflow pages are client-side React, consistent with existing UI design.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel

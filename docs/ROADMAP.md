@@ -47,3 +47,10 @@
 - [x] Assistant UI — natural-language interface with citations and references (M31)
 - [x] Infrastructure activation — Redis cache, S3/MinIO object store, evaluation wired (M30)
 - [x] Deployment readiness — docker-compose web + worker + postgres + redis + minio (M30)
+
+## Phase 7 — Analyst workflow
+
+- [x] Auth UI — login and register pages with session cookie management (M32)
+- [x] Saved research dashboard — saved reports, narratives, projects, and sessions (M32)
+- [x] Snapshot history — timeline view with snapshot diff comparison (M32)
+- [x] Navigation — auth-aware nav with History and Saved links across all pages (M32)
