@@ -116,3 +116,13 @@
 - [x] Dashboard UI — /dashboard page with section toggles, reordering, and localStorage persistence (M41)
 - [x] Customizable sections — pulse, top projects, narratives, timeline can be toggled and reordered (M41)
 - [x] Navigation — dashboard link added to nav across all pages (M41)
+
+## Phase 17 — Snapshot history timeline visualization
+
+- [x] Chronological timeline rail — visual nodes sorted by referenceDate with connecting line (M42)
+- [x] Per-snapshot metric cards — projects, narratives, evidence, graph entities for selected snapshot (M42)
+- [x] Delta bar — change counts between selected snapshot and compare base (M42)
+- [x] Diff detail — summary counts, project metric changes table, narrative trend changes table (M42)
+- [x] Navigation — earlier/later buttons to browse between historical states (M42)
+- [x] Compare base selector — dropdown to pick which snapshot to diff against (M42)
+- [x] Responsive timeline — horizontal scroll on mobile, adaptive grids (M42)

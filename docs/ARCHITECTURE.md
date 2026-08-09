@@ -98,6 +98,16 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - Default layout: Pulse → Top Projects → Narratives → Research Timeline (all visible, sequential order).
 - Uses only existing Insight data contracts — no new data sources, no AI, no external services.
 
+## Snapshot history timeline boundary (M42)
+
+- The /history page is rewritten as a visual timeline: chronological snapshot rail with dot nodes, connecting line, per-node project count and delta from previous snapshot.
+- Clicking a timeline node selects it as the active snapshot — 4 metric cards show projects, narratives, evidence, and graph entity counts.
+- A delta bar shows the change between the selected snapshot and a compare base (defaults to the previous snapshot), with up/down/flat color coding.
+- A compare-base dropdown lets the analyst pick which snapshot to diff against; the existing /api/history?from=&to= endpoint is used unchanged.
+- The diff detail section renders summary count cards (added/removed/changed/narratives), a project metric changes table with direction arrows, and a narrative trend changes table.
+- Earlier/Later navigation buttons let the analyst browse between historical states without the dropdown.
+- All data comes from existing listSnapshots() and compareSnapshots() — no new API routes, no new data, no AI.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel
