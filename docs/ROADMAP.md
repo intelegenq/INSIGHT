@@ -70,3 +70,9 @@
 - [x] Graph UI — /graph page with entity browser, kind filtering, and entity detail panel (M34)
 - [x] Assistant graph context — GraphDataSource wired into /api/assistant route (M34)
 - [x] Cache invalidation — knowledge graph cache invalidated on new snapshots (M34)
+
+## Phase 10 — Source health monitoring
+
+- [x] Health API — GET /api/health returns provider health with overall status, per-provider detail, and summary (M35)
+- [x] Health UI — /health page with overall status badge, provider cards, and re-check button (M35)
+- [x] InsightService.checkSourceHealth() — wires existing SourceHealthMonitor through the service layer (M35)

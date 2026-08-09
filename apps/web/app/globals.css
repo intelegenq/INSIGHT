@@ -1286,3 +1286,72 @@ footer {
     max-height: none;
   }
 }
+
+/* ── M35: Source health page styles ─────────────────────────────── */
+.health-hero {
+  max-width: 1200px;
+  margin: auto;
+  padding: 96px 32px 40px;
+}
+.overall-status-row {
+  margin-top: 24px;
+}
+.health-status {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.health-status.healthy {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.health-status.degraded {
+  background: #fff8e1;
+  color: #f57f17;
+}
+.health-status.unavailable {
+  background: #fbe9e7;
+  color: #c62828;
+}
+.provider-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+.provider-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+}
+.provider-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.provider-card-header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.provider-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.provider-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .health-hero {
+    padding: 64px 20px 32px;
+  }
+  .provider-list {
+    grid-template-columns: 1fr;
+  }
+}

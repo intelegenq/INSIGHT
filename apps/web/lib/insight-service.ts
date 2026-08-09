@@ -76,6 +76,7 @@ export class InsightService {
   private readonly referenceDate: string;
   private readonly isLive: boolean;
   private readonly compositeRepo: CompositeRepository;
+  private readonly providers: DataProvider[];
   /** Resolves when live provider data has been loaded (or failed gracefully). */
   private readonly readyPromise: Promise<void>;
   /** Lazily-resolved shared cache (Redis in production, in-memory in dev). */
@@ -89,6 +90,7 @@ export class InsightService {
     // Resolve providers: explicit override > env credentials > demo fallback
     const providers = options.providers ?? resolveProductionProviders();
     this.isLive = providers.some((p) => p.id !== "demo");
+    this.providers = providers;
 
     this.compositeRepo = new CompositeRepository({ providers });
 
@@ -310,6 +312,16 @@ export class InsightService {
     }
     await cache.set("insight:knowledge-graph", graph);
     return graph;
+  }
+
+  /**
+   * M35: Check the health of all configured data providers.
+   * Surfaces the existing SourceHealthMonitor through the API/UI.
+   */
+  async checkSourceHealth(): Promise<import("@insight/data").SourceHealthReport> {
+    const { checkSourceHealth } = await import("@insight/data");
+    const checkedAt = new Date().toISOString();
+    return checkSourceHealth(this.providers, { checkedAt });
   }
 
   async snapshot(): Promise<Snapshot> {

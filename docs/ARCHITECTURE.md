@@ -49,6 +49,12 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - The AI assistant route now wires GraphDataSource so the AI context includes knowledge graph entities and relationship counts.
 - The knowledge graph cache key is invalidated on new snapshots, ensuring stale graph data is never served.
 
+## Source health monitoring boundary (M35)
+
+- GET /api/health returns the health status of all configured data providers using the existing SourceHealthMonitor from @insight/data.
+- The /health page displays overall status (healthy/degraded/unavailable), per-provider cards with availability and notes, and a re-check button.
+- InsightService.checkSourceHealth() wires the existing checkSourceHealth function over the service's provider array — no new data sources, no duplicated monitoring.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel

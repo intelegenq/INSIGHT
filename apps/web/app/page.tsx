@@ -52,6 +52,7 @@ export default async function Home() {
           <Link href="/reports">Reports</Link>
           <Link href="/assistant">Assistant</Link>
           <Link href="/graph">Graph</Link>
+          <Link href="/health">Health</Link>
           <Link href="/history">History</Link>
         </div>
         <Link className="ghost-button" href="/reports">
