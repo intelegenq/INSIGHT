@@ -160,6 +160,7 @@ export default function DashboardPage() {
           <Link href="/search">Search</Link>
           <Link href="/compare">Compare</Link>
           <Link href="/dashboard">Dashboard</Link>
+          <Link href="/trends">Trends</Link>
         </div>
         <button className="ghost-button" onClick={() => setShowSettings(!showSettings)}>
           Customize <span>⚙</span>

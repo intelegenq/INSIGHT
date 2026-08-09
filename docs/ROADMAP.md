@@ -126,3 +126,13 @@
 - [x] Navigation — earlier/later buttons to browse between historical states (M42)
 - [x] Compare base selector — dropdown to pick which snapshot to diff against (M42)
 - [x] Responsive timeline — horizontal scroll on mobile, adaptive grids (M42)
+
+## Phase 18 — Project trend comparison over time
+
+- [x] Trend API — GET /api/trends/projects/[id] returns chronological data points with metrics + health scores (M43)
+- [x] InsightService.getProjectTrend() — walks all snapshots, computes scoreProject per point (M43)
+- [x] Trend UI — /trends page with project selector, sparkline charts for health/momentum/risk/developer, per-snapshot detail table (M43)
+- [x] TVL sparkline — large chart showing total value locked over time (M43)
+- [x] Trend direction arrows — up/down/flat indicators on health and momentum columns (M43)
+- [x] Navigation — trends link added to nav across all pages (M43)
+- [x] Responsive — project selector cards, scrollable tables, adaptive sparklines (M43)

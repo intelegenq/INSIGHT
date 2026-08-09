@@ -80,6 +80,14 @@ export interface ComparisonEntry {
   evidenceCount: number;
 }
 
+/** M43: A single data point in a project's trend across snapshots. */
+export interface ProjectTrendPoint {
+  snapshotId: string;
+  referenceDate: string;
+  metrics: import("@insight/core").ProjectMetrics;
+  health: import("@insight/intelligence").ProjectHealth;
+}
+
 export class InsightService {
   private readonly runtime: InsightRuntime;
   private readonly snapshotRepository: SyncSnapshotRepository | AsyncSnapshotRepository;
@@ -238,6 +246,43 @@ export class InsightService {
       });
     }
     return entries;
+  }
+
+  /**
+   * M43: Get a project's trend across all snapshots.
+   *
+   * Walks every snapshot chronologically, finds the project in each, and
+   * computes its metrics and health scores at that point in time. Uses
+   * existing listSnapshots, scoreProject, and snapshot evidence — no new
+   * data, no AI.
+   */
+  async getProjectTrend(projectId: string): Promise<ProjectTrendPoint[]> {
+    await this.ready();
+    const snapshots = await this.snapshotRepository.list();
+    // Sort chronologically
+    const sorted = [...snapshots].sort(
+      (a, b) => new Date(a.referenceDate).getTime() - new Date(b.referenceDate).getTime(),
+    );
+    const points: ProjectTrendPoint[] = [];
+    for (const snap of sorted) {
+      const project = snap.projects.find((p) => p.id === projectId);
+      if (project === undefined) continue;
+      const evidence = project.evidenceIds
+        .map((id) => snap.evidence.find((e) => e.id === id))
+        .filter((e): e is Evidence => e !== undefined);
+      const { scoreProject, DEFAULT_BOUNDS } = await import("@insight/intelligence");
+      const health = scoreProject(project, evidence, {
+        referenceDate: snap.referenceDate,
+        bounds: DEFAULT_BOUNDS,
+      });
+      points.push({
+        snapshotId: snap.id,
+        referenceDate: snap.referenceDate,
+        metrics: { ...project.metrics },
+        health,
+      });
+    }
+    return points;
   }
 
   async resolveEvidenceIds(evidenceIds: readonly string[]): Promise<Evidence[]> {

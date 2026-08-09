@@ -108,6 +108,15 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - Earlier/Later navigation buttons let the analyst browse between historical states without the dropdown.
 - All data comes from existing listSnapshots() and compareSnapshots() — no new API routes, no new data, no AI.
 
+## Project trend comparison boundary (M43)
+
+- GET /api/trends/projects/[id] returns an array of chronological trend points, each containing snapshotId, referenceDate, project metrics, and health scores computed via scoreProject at that snapshot's reference date.
+- InsightService.getProjectTrend() walks all snapshots chronologically, finds the project in each, resolves its evidence from that snapshot, and computes health — no new data, no AI, no new persistence.
+- The /trends page provides a project selector (clickable cards), 4 sparkline summary charts (health, momentum, risk, developer), a per-snapshot detail table with direction arrows, and a large TVL sparkline.
+- Sparklines are pure SVG — no external chart library, no client-side dependencies.
+- Trend points are bounded: health 0–100, momentum −100 to +100, risk 0–100, developer 0–100.
+- Uses existing listSnapshots, scoreProject, and snapshot evidence — no new API routes beyond the trend endpoint, no new data, no AI.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel
