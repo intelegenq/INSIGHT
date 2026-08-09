@@ -82,10 +82,11 @@ export class DefiLlamaProvider extends BaseProvider {
   }
 
   /**
-   * Fetch raw protocols from DeFiLlama.
+   * Fetch raw protocols from DeFiLlama — filtered to Solana-chain protocols.
    *
-   * Returns raw protocol data wrapped as RawProject for consistency
-   * with the provider interface.
+   * Populates structured metrics (tvl, volume24h) and evidence references
+   * so the pipeline can surface real TVL data in dashboards, comparisons,
+   * and health scores.
    */
   async fetchProjects(): Promise<ProviderFetch<RawProject>> {
     this.acquire();
@@ -99,22 +100,72 @@ export class DefiLlamaProvider extends BaseProvider {
       return { data: [], asOf: new Date().toISOString() };
     }
 
-    const protocols = response.data;
+    const allProtocols = response.data;
+    const asOf = new Date().toISOString();
 
-    // Map to RawProject (minimal: id, name, category, description)
-    const projects: RawProject[] = protocols.map((proto) => ({
-      id: `defillama-${proto.id}`,
-      name: proto.name,
-      category: proto.category ?? "defi",
-      description: `DeFi protocol on ${proto.chains?.join(", ") ?? "unknown chain"} — TVL: $${(proto.tvl ?? 0).toLocaleString()}`,
-    }));
+    // Filter to protocols present on Solana
+    const solanaProtocols = allProtocols.filter((p) => p.chains?.includes("Solana") ?? false);
 
-    return { data: projects, asOf: new Date().toISOString() };
+    // Map to RawProject with structured metrics
+    const projects: RawProject[] = solanaProtocols.map((proto) => {
+      const solanaTvl = proto.chainTvls?.["Solana"] ?? proto.tvl ?? 0;
+      const evidenceId = `defillama-${proto.id}-tvl`;
+      return {
+        id: `defillama-${proto.id}`,
+        name: proto.name,
+        category: proto.category ?? "defi",
+        description: `DeFi protocol on Solana — TVL: $${solanaTvl.toLocaleString()}`,
+        metrics: {
+          tvl: solanaTvl,
+          volume24h: proto.change24h ? solanaTvl * (proto.change24h / 100) : undefined,
+        },
+        evidenceIds: [evidenceId],
+        updatedAt: asOf,
+      };
+    });
+
+    return { data: projects, asOf };
   }
 
-  /** Stub — evidence ingestion not in scope for this milestone. */
+  /**
+   * Fetch evidence items — TVL evidence for each Solana protocol.
+   * Each evidence item records the source (DeFiLlama), the TVL value,
+   * and 24h/7d/30d change percentages for traceability.
+   */
   async fetchEvidence(): Promise<ProviderFetch<RawEvidence>> {
-    return Promise.resolve({ data: [], asOf: new Date().toISOString() });
+    this.acquire();
+
+    const response = await this.httpClient.get<RawDefiLlamaProtocol[]>({
+      url: this.buildUrl("/protocols"),
+      timeoutMs: this.timeout,
+    });
+
+    if (!response.ok || !Array.isArray(response.data)) {
+      return { data: [], asOf: new Date().toISOString() };
+    }
+
+    const asOf = new Date().toISOString();
+    const solanaProtocols = response.data.filter((p) => p.chains?.includes("Solana") ?? false);
+
+    const evidence: RawEvidence[] = solanaProtocols.map((proto) => {
+      const solanaTvl = proto.chainTvls?.["Solana"] ?? proto.tvl ?? 0;
+      const parts: string[] = [`TVL: $${solanaTvl.toLocaleString()}`];
+      if (proto.change24h !== undefined) parts.push(`24h: ${proto.change24h.toFixed(1)}%`);
+      if (proto.change7d !== undefined) parts.push(`7d: ${proto.change7d.toFixed(1)}%`);
+      if (proto.change30d !== undefined) parts.push(`30d: ${proto.change30d.toFixed(1)}%`);
+
+      return {
+        id: `defillama-${proto.id}-tvl`,
+        sourceId: "defillama",
+        sourceName: "DeFiLlama",
+        note: `${proto.name} — ${parts.join(", ")}`,
+        status: "verified",
+        observedAt: asOf,
+        reference: `https://defillama.com/protocol/${proto.id}`,
+      };
+    });
+
+    return { data: evidence, asOf };
   }
 
   /** Stub — narrative ingestion not in scope for this milestone. */

@@ -87,11 +87,11 @@ export class CoinGeckoProvider extends BaseProvider {
   }
 
   /**
-   * Fetch raw market data from CoinGecko.
+   * Fetch raw market data from CoinGecko — filtered to Solana ecosystem tokens.
    *
-   * Returns raw market assets wrapped as RawProject for consistency
-   * with the provider interface. Wrapped in withRetry so transient
-   * HTTP failures recover automatically within the configured policy.
+   * Populates structured metrics (volume24h as total_volume) and evidence
+   * references so the pipeline can surface real price/volume data in
+   * dashboards, comparisons, and health scores.
    */
   async fetchProjects(): Promise<ProviderFetch<RawProject>> {
     this.acquire();
@@ -101,8 +101,9 @@ export class CoinGeckoProvider extends BaseProvider {
         url: this.buildUrl("/coins/markets"),
         query: {
           vs_currency: "usd",
+          ids: "solana",
           order: "market_cap_desc",
-          per_page: "100",
+          per_page: "10",
           page: "1",
           sparkline: "false",
           price_change_percentage: "24h",
@@ -116,21 +117,82 @@ export class CoinGeckoProvider extends BaseProvider {
     }
 
     const assets = response.data;
+    const asOf = new Date().toISOString();
 
-    // Map to RawProject (minimal: id, name, category, description)
-    const projects: RawProject[] = assets.map((asset) => ({
-      id: `coingecko-${asset.id}`,
-      name: asset.name,
-      category: "market-asset",
-      description: `${asset.symbol.toUpperCase()} — $${asset.current_price?.toLocaleString() ?? "N/A"} | Market Cap: $${asset.market_cap?.toLocaleString() ?? "N/A"} | 24h Change: ${asset.price_change_percentage_24h?.toFixed(2) ?? "N/A"}%`,
-    }));
+    // Map to RawProject with structured metrics
+    const projects: RawProject[] = assets.map((asset) => {
+      const evidenceId = `coingecko-${asset.id}-market`;
+      return {
+        id: `coingecko-${asset.id}`,
+        name: asset.name,
+        category: "market-asset",
+        description: `${asset.symbol.toUpperCase()} — $${asset.current_price?.toLocaleString() ?? "N/A"} | Market Cap: $${asset.market_cap?.toLocaleString() ?? "N/A"} | 24h: ${asset.price_change_percentage_24h?.toFixed(2) ?? "N/A"}%`,
+        metrics: {
+          tvl: asset.market_cap,
+          volume24h: asset.total_volume,
+        },
+        evidenceIds: [evidenceId],
+        updatedAt: asset.last_updated ?? asOf,
+      };
+    });
 
-    return { data: projects, asOf: new Date().toISOString() };
+    return { data: projects, asOf };
   }
 
-  /** Stub — evidence ingestion not in scope for this milestone. */
+  /**
+   * Fetch evidence items — SOL price and market data from CoinGecko.
+   * Each evidence item records the source (CoinGecko), the SOL price,
+   * market cap, 24h volume, and price change for traceability.
+   */
   async fetchEvidence(): Promise<ProviderFetch<RawEvidence>> {
-    return Promise.resolve({ data: [], asOf: new Date().toISOString() });
+    this.acquire();
+
+    const response = await this.withRetry(() =>
+      this.httpClient.get<RawCoinGeckoMarketAsset[]>({
+        url: this.buildUrl("/coins/markets"),
+        query: {
+          vs_currency: "usd",
+          ids: "solana",
+          order: "market_cap_desc",
+          per_page: "10",
+          page: "1",
+          sparkline: "false",
+          price_change_percentage: "24h",
+        },
+        timeoutMs: this.timeout,
+      }),
+    );
+
+    if (!response.ok || !Array.isArray(response.data)) {
+      return { data: [], asOf: new Date().toISOString() };
+    }
+
+    const asOf = new Date().toISOString();
+    const evidence: RawEvidence[] = response.data.map((asset) => {
+      const parts: string[] = [
+        `Price: $${asset.current_price?.toLocaleString() ?? "N/A"}`,
+        `Market Cap: $${asset.market_cap?.toLocaleString() ?? "N/A"}`,
+        `24h Volume: $${asset.total_volume?.toLocaleString() ?? "N/A"}`,
+      ];
+      if (asset.price_change_percentage_24h !== undefined) {
+        parts.push(`24h Change: ${asset.price_change_percentage_24h.toFixed(2)}%`);
+      }
+      if (asset.circulating_supply !== undefined) {
+        parts.push(`Circulating Supply: ${asset.circulating_supply.toLocaleString()}`);
+      }
+
+      return {
+        id: `coingecko-${asset.id}-market`,
+        sourceId: "coingecko",
+        sourceName: "CoinGecko",
+        note: `${asset.name} (${asset.symbol.toUpperCase()}) — ${parts.join(", ")}`,
+        status: "verified",
+        observedAt: asset.last_updated ?? asOf,
+        reference: `https://www.coingecko.com/en/coins/${asset.id}`,
+      };
+    });
+
+    return { data: evidence, asOf };
   }
 
   /** Stub — narrative ingestion not in scope for this milestone. */

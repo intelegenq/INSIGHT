@@ -51,3 +51,7 @@ export type {
 } from "./signals/SignalTypes";
 
 export { SIGNAL_TYPES } from "./signals/SignalTypes";
+
+/* ── Anomaly Detection ──────────────────────────────────────────────── */
+export { detectAnomalies, detectEvidenceAnomalies } from "./anomalyDetector";
+export type { Anomaly, AnomalyThresholds } from "./anomalyDetector";

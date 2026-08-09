@@ -17,12 +17,12 @@ describe("DefiLlamaProvider", () => {
       name: "Uniswap",
       symbol: "UNI",
       category: "Dexes",
-      chains: ["Ethereum", "Arbitrum", "Optimism", "Polygon"],
+      chains: ["Ethereum", "Arbitrum", "Optimism", "Polygon", "Solana"],
       tvl: 4_500_000_000,
       change24h: 2.5,
       change7d: -1.2,
       change30d: 15.3,
-      chainTvls: { Ethereum: 3_000_000_000, Arbitrum: 1_000_000_000 },
+      chainTvls: { Ethereum: 3_000_000_000, Arbitrum: 1_000_000_000, Solana: 500_000_000 },
       module: "uniswap",
       twitter: "Uniswap",
       auditLinks: [],
@@ -39,12 +39,12 @@ describe("DefiLlamaProvider", () => {
       name: "Aave",
       symbol: "AAVE",
       category: "Lending",
-      chains: ["Ethereum", "Polygon", "Avalanche"],
+      chains: ["Ethereum", "Polygon", "Avalanche", "Solana"],
       tvl: 8_000_000_000,
       change24h: -0.5,
       change7d: 3.1,
       change30d: 8.7,
-      chainTvls: { Ethereum: 5_000_000_000, Polygon: 2_000_000_000 },
+      chainTvls: { Ethereum: 5_000_000_000, Polygon: 2_000_000_000, Solana: 1_000_000_000 },
       module: "aave",
       twitter: "AaveAave",
       auditLinks: [],
@@ -154,11 +154,13 @@ describe("DefiLlamaProvider", () => {
     expect(result.data[0]?.id).toBe("defillama-uniswap");
     expect(result.data[0]?.name).toBe("Uniswap");
     expect(result.data[0]?.category).toBe("Dexes");
-    expect(result.data[0]?.description).toContain("Ethereum");
+    expect(result.data[0]?.description).toContain("Solana");
     expect(result.data[0]?.description).toContain("TVL");
+    expect(result.data[0]?.metrics?.tvl).toBe(500_000_000);
     expect(result.data[1]?.id).toBe("defillama-aave");
     expect(result.data[1]?.name).toBe("Aave");
     expect(result.data[1]?.category).toBe("Lending");
+    expect(result.data[1]?.metrics?.tvl).toBe(1_000_000_000);
   });
 
   it("handles empty response", async () => {
