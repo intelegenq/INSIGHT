@@ -54,3 +54,11 @@
 - [x] Saved research dashboard — saved reports, narratives, projects, and sessions (M32)
 - [x] Snapshot history — timeline view with snapshot diff comparison (M32)
 - [x] Navigation — auth-aware nav with History and Saved links across all pages (M32)
+
+## Phase 8 — Report export & analyst integration
+
+- [x] Report export API — POST /api/reports/export with markdown + JSON formats (M33)
+- [x] Evaluated report API — GET /api/reports/evaluated exposing M30 quality verdicts (M33)
+- [x] Report artifact retrieval — GET /api/reports/[id]/artifact from ObjectStore (M33)
+- [x] Save button on reports page — POST /api/saved integration (M33)
+- [x] Export/download UI — markdown and JSON download buttons on reports page (M33)

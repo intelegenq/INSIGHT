@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import type { Report, ReportLens, Evidence } from "@insight/core";
 
 const lensLabels: Record<ReportLens, string> = {
@@ -19,6 +19,9 @@ export default function ReportsPage() {
   const [isEvidenceOpen, setEvidenceOpen] = useState(true);
   const [report, setReport] = useState<Report | undefined>(undefined);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
+  const [exporting, setExporting] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +58,62 @@ export default function ReportsPage() {
       cancelled = true;
     };
   }, [lens]);
+
+  const handleExport = useCallback(
+    async (format: "markdown" | "json") => {
+      setExporting(true);
+      try {
+        const res = await fetch(`${baseUrl}/api/reports/export`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lens, format }),
+        });
+        if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+        const data = (await res.json()) as { content: string; reportId: string };
+        // Trigger download
+        const blob = new Blob([data.content], {
+          type: format === "json" ? "application/json" : "text/markdown",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `insight-report-${data.reportId}.${format === "json" ? "json" : "md"}`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch {
+        // ignore
+      } finally {
+        setExporting(false);
+      }
+    },
+    [lens],
+  );
+
+  const handleSave = useCallback(async () => {
+    if (!report) return;
+    setSaveError("");
+    setSaved(false);
+    try {
+      const res = await fetch(`${baseUrl}/api/saved`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "report",
+          reportId: report.id,
+          lens: report.lens,
+          title: report.title,
+        }),
+      });
+      if (res.status === 401) {
+        setSaveError("Sign in to save research.");
+        return;
+      }
+      if (!res.ok) throw new Error("Save failed");
+      setSaved(true);
+    } catch {
+      setSaveError("Failed to save report.");
+    }
+  }, [report]);
 
   return (
     <main>
@@ -128,6 +187,30 @@ export default function ReportsPage() {
                 <span>Confidence</span>
                 <strong>{report.confidence}</strong>
                 <span>Not investment advice</span>
+              </div>
+              <div className="report-actions">
+                <button
+                  className="ghost-button"
+                  onClick={() => void handleExport("markdown")}
+                  disabled={exporting}
+                >
+                  {exporting ? "Exporting..." : "Export MD"}
+                </button>
+                <button
+                  className="ghost-button"
+                  onClick={() => void handleExport("json")}
+                  disabled={exporting}
+                >
+                  Export JSON
+                </button>
+                <button
+                  className="primary-button"
+                  onClick={() => void handleSave()}
+                  disabled={saved}
+                >
+                  {saved ? "✓ Saved" : "Save"}
+                </button>
+                {saveError && <span className="save-error">{saveError}</span>}
               </div>
             </>
           )}

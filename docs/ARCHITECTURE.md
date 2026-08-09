@@ -34,6 +34,13 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - Snapshot history: consumed existing /api/snapshots and /api/history routes for timeline and diff visualization.
 - All analyst workflow pages are client-side React, consistent with existing UI design.
 
+## Report export boundary (M33)
+
+- POST /api/reports/export generates shareable markdown or JSON exports with evidence citations.
+- GET /api/reports/evaluated exposes the M30 evaluation verdict (quality, evidence stats, verified flag).
+- GET /api/reports/[id]/artifact retrieves persisted report artifacts from ObjectStore.
+- Reports page includes export (MD/JSON) and save buttons wired to existing API routes.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel
