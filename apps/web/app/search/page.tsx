@@ -69,6 +69,10 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResults | null>(null);
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState("");
+  const [savedSearches, setSavedSearches] = useState<{ id: string; query: string; name: string }[]>(
+    [],
+  );
+  const [saveMsg, setSaveMsg] = useState("");
 
   const executeSearch = useCallback(async (q: string) => {
     if (q.trim().length === 0) {
@@ -101,7 +105,67 @@ export default function SearchPage() {
       setQuery(q);
       void executeSearch(q);
     }
+    // Load saved searches for quick re-run
+    void (async () => {
+      try {
+        const res = await fetch("/api/saved");
+        if (res.ok) {
+          const data = (await res.json()) as {
+            searches?: { id: string; query: string; name: string }[];
+          };
+          if (data.searches) setSavedSearches(data.searches);
+        }
+      } catch {
+        // ignore — not logged in
+      }
+    })();
   }, [executeSearch]);
+
+  const saveCurrentSearch = useCallback(async () => {
+    if (!query.trim()) return;
+    setSaveMsg("");
+    try {
+      const res = await fetch("/api/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "search", query }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { search: { id: string; query: string; name: string } };
+        setSavedSearches((prev) => {
+          if (prev.some((s) => s.id === data.search.id)) return prev;
+          return [data.search, ...prev];
+        });
+        setSaveMsg("Search saved ✓");
+        setTimeout(() => setSaveMsg(""), 3000);
+      } else if (res.status === 401) {
+        setSaveMsg("Sign in to save searches");
+        setTimeout(() => setSaveMsg(""), 3000);
+      }
+    } catch {
+      setSaveMsg("Failed to save");
+      setTimeout(() => setSaveMsg(""), 3000);
+    }
+  }, [query]);
+
+  const removeSavedSearch = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/saved?kind=search&id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setSavedSearches((prev) => prev.filter((s) => s.id !== id));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const rerunSearch = useCallback(
+    (q: string) => {
+      setQuery(q);
+      void executeSearch(q);
+    },
+    [executeSearch],
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,6 +247,14 @@ export default function SearchPage() {
                   : `No matches for "${results.query}"`}
               </h2>
             </div>
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={saveCurrentSearch}
+              disabled={query.trim().length === 0}
+            >
+              {saveMsg || "★ Save this search"}
+            </button>
           </div>
 
           {results.projects.length > 0 && (
@@ -257,6 +329,32 @@ export default function SearchPage() {
               <h2 id="search-tips-title">What you can search</h2>
             </div>
           </div>
+          {savedSearches.length > 0 && (
+            <div className="saved-searches-bar">
+              <h3 className="search-group-title">Saved searches</h3>
+              <div className="saved-search-chips">
+                {savedSearches.map((s) => (
+                  <span key={s.id} className="saved-search-chip">
+                    <button
+                      type="button"
+                      className="ghost-button chip-btn"
+                      onClick={() => rerunSearch(s.query)}
+                    >
+                      {s.name}
+                    </button>
+                    <button
+                      type="button"
+                      className="chip-remove"
+                      onClick={() => void removeSavedSearch(s.id)}
+                      aria-label={`Remove saved search ${s.name}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="metric-grid">
             <article className="metric-card">
               <span>Projects</span>

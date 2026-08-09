@@ -122,6 +122,12 @@ export default function TrendsPage() {
   const [trend, setTrend] = useState<TrendResponse | null>(null);
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState("");
+  const [overlayIds, setOverlayIds] = useState<string[]>([]);
+  const [overlayData, setOverlayData] = useState<Record<
+    string,
+    { name: string; points: TrendPoint[] }
+  > | null>(null);
+  const [overlayState, setOverlayState] = useState<LoadState>("idle");
 
   // Load available projects on mount
   useEffect(() => {
@@ -182,6 +188,30 @@ export default function TrendsPage() {
     setSelectedId(id);
     void loadTrend(id);
   };
+
+  const toggleOverlayProject = useCallback((id: string) => {
+    setOverlayIds((prev) => {
+      if (prev.includes(id)) return prev.filter((p) => p !== id);
+      if (prev.length >= 10) return prev;
+      return [...prev, id];
+    });
+  }, []);
+
+  const loadOverlay = useCallback(async () => {
+    if (overlayIds.length < 2) return;
+    setOverlayState("loading");
+    try {
+      const res = await fetch(`/api/trends/overlay?ids=${overlayIds.join(",")}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as {
+        projects: Record<string, { name: string; points: TrendPoint[] }>;
+      };
+      setOverlayData(data.projects);
+      setOverlayState("success");
+    } catch {
+      setOverlayState("error");
+    }
+  }, [overlayIds]);
 
   const points = trend?.points ?? [];
   const healthValues = points.map((p) => p.health.health);
@@ -426,6 +456,121 @@ export default function TrendsPage() {
           <p className="search-status">Loading…</p>
         </section>
       )}
+
+      {/* M45: Multi-project trend overlay */}
+      <section className="section" aria-labelledby="overlay-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">OVERLAY</p>
+            <h2 id="overlay-title">Compare multiple projects</h2>
+          </div>
+        </div>
+        <div className="trend-overlay-controls">
+          {projects.map((p) => (
+            <label key={p.id} className="checkbox-label" style={{ fontSize: 14 }}>
+              <input
+                type="checkbox"
+                checked={overlayIds.includes(p.id)}
+                onChange={() => toggleOverlayProject(p.id)}
+              />
+              {p.name}
+            </label>
+          ))}
+          <button
+            type="button"
+            className="primary-button"
+            onClick={loadOverlay}
+            disabled={overlayIds.length < 2 || overlayState === "loading"}
+          >
+            {overlayState === "loading" ? "Loading…" : "Compare trends"}
+          </button>
+        </div>
+
+        {overlayState === "success" && overlayData && (
+          <>
+            <div className="overlay-legend">
+              {Object.entries(overlayData).map(([pid, data], i) => {
+                const colors = [
+                  "var(--violet)",
+                  "#2e7d32",
+                  "#e65100",
+                  "#1565c0",
+                  "#c62828",
+                  "#6a1b9a",
+                  "#00838f",
+                  "#bf360c",
+                  "#455a64",
+                  "#827717",
+                ];
+                const color = colors[i % colors.length];
+                return (
+                  <span key={pid} className="overlay-legend-item">
+                    <span className="overlay-legend-dot" style={{ background: color }} />
+                    {data.name}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="overlay-chart">
+              <svg width={600} height={200} aria-label="Multi-project health score overlay">
+                {(() => {
+                  const allPoints = Object.values(overlayData).flatMap((d) => d.points);
+                  if (allPoints.length < 2)
+                    return (
+                      <text x={20} y={100} fill="var(--muted)">
+                        Not enough data points
+                      </text>
+                    );
+                  const dates = [...new Set(allPoints.map((p) => p.referenceDate))].sort();
+                  const width = 600;
+                  const height = 200;
+                  const stepX = dates.length > 1 ? width / (dates.length - 1) : 0;
+                  const colors = [
+                    "var(--violet)",
+                    "#2e7d32",
+                    "#e65100",
+                    "#1565c0",
+                    "#c62828",
+                    "#6a1b9a",
+                    "#00838f",
+                    "#bf360c",
+                    "#455a64",
+                    "#827717",
+                  ];
+                  return Object.entries(overlayData).map(([pid, data], i) => {
+                    const color = colors[i % colors.length];
+                    const vals = dates.map((d) => {
+                      const pt = data.points.find((p) => p.referenceDate === d);
+                      return pt?.health.health ?? null;
+                    });
+                    const pts = vals
+                      .map((v, j) =>
+                        v === null
+                          ? null
+                          : `${(j * stepX).toFixed(1)},${(height - (v / 100) * (height - 20) - 10).toFixed(1)}`,
+                      )
+                      .filter((p): p is string => p !== null)
+                      .join(" ");
+                    return (
+                      <polyline
+                        key={pid}
+                        points={pts}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth={2}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                    );
+                  });
+                })()}
+              </svg>
+            </div>
+          </>
+        )}
+
+        {overlayState === "error" && <p className="search-error">Failed to load overlay data.</p>}
+      </section>
 
       <footer>
         <Link className="brand" href="/">

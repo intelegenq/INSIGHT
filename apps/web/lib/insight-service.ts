@@ -285,6 +285,52 @@ export class InsightService {
     return points;
   }
 
+  /**
+   * M45: Get trend data for multiple projects simultaneously for overlay comparison.
+   * Returns a map of projectId → ProjectTrendPoint[] sorted chronologically.
+   */
+  async getMultiProjectTrend(
+    projectIds: readonly string[],
+  ): Promise<Record<string, { name: string; points: ProjectTrendPoint[] }>> {
+    await this.ready();
+    const snapshots = await this.snapshotRepository.list();
+    const sorted = [...snapshots].sort(
+      (a, b) => new Date(a.referenceDate).getTime() - new Date(b.referenceDate).getTime(),
+    );
+    const projects = await this.listProjects();
+    const result: Record<string, { name: string; points: ProjectTrendPoint[] }> = {};
+
+    for (const pid of projectIds) {
+      const projectInfo = projects.find((p) => p.id === pid);
+      result[pid] = {
+        name: projectInfo?.name ?? pid,
+        points: [],
+      };
+    }
+
+    for (const snap of sorted) {
+      for (const pid of projectIds) {
+        const project = snap.projects.find((p) => p.id === pid);
+        if (project === undefined) continue;
+        const evidence = project.evidenceIds
+          .map((id) => snap.evidence.find((e) => e.id === id))
+          .filter((e): e is Evidence => e !== undefined);
+        const { scoreProject, DEFAULT_BOUNDS } = await import("@insight/intelligence");
+        const health = scoreProject(project, evidence, {
+          referenceDate: snap.referenceDate,
+          bounds: DEFAULT_BOUNDS,
+        });
+        result[pid]!.points.push({
+          snapshotId: snap.id,
+          referenceDate: snap.referenceDate,
+          metrics: { ...project.metrics },
+          health,
+        });
+      }
+    }
+    return result;
+  }
+
   async resolveEvidenceIds(evidenceIds: readonly string[]): Promise<Evidence[]> {
     await this.ready();
     const snapshots = await this.snapshotRepository.list();
@@ -415,6 +461,97 @@ export class InsightService {
     }
     await cache.set("insight:knowledge-graph", graph);
     return graph;
+  }
+
+  /**
+   * M46: Get all evidence from all snapshots sorted chronologically by observedAt.
+   * Deduplicates evidence by ID across snapshots. Returns evidence with project
+   * and narrative associations where available.
+   */
+  async getEvidenceTimeline(filter?: {
+    status?: string;
+    sourceId?: string;
+    projectId?: string;
+  }): Promise<
+    Array<
+      {
+        evidence: Evidence;
+        projectIds: string[];
+        narrativeIds: string[];
+      } & { snapshotId: string }
+    >
+  > {
+    await this.ready();
+    const snapshots = await this.snapshotRepository.list();
+    const sorted = [...snapshots].sort(
+      (a, b) => new Date(a.referenceDate).getTime() - new Date(b.referenceDate).getTime(),
+    );
+
+    // Collect evidence with project/narrative associations, dedup by evidence ID
+    const evidenceMap = new Map<
+      string,
+      { evidence: Evidence; projectIds: Set<string>; narrativeIds: Set<string>; snapshotId: string }
+    >();
+
+    for (const snap of sorted) {
+      // Build reverse maps: evidence → projects, evidence → narratives
+      const evToProjects = new Map<string, string[]>();
+      for (const proj of snap.projects) {
+        for (const evId of proj.evidenceIds) {
+          const arr = evToProjects.get(evId) ?? [];
+          arr.push(proj.id);
+          evToProjects.set(evId, arr);
+        }
+      }
+      const evToNarratives = new Map<string, string[]>();
+      for (const nar of snap.narratives) {
+        for (const evId of nar.evidenceIds) {
+          const arr = evToNarratives.get(evId) ?? [];
+          arr.push(nar.id);
+          evToNarratives.set(evId, arr);
+        }
+      }
+
+      for (const ev of snap.evidence) {
+        if (evidenceMap.has(ev.id)) {
+          // Merge associations from later snapshots
+          const existing = evidenceMap.get(ev.id)!;
+          for (const pid of evToProjects.get(ev.id) ?? []) existing.projectIds.add(pid);
+          for (const nid of evToNarratives.get(ev.id) ?? []) existing.narrativeIds.add(nid);
+          continue;
+        }
+        evidenceMap.set(ev.id, {
+          evidence: ev,
+          projectIds: new Set(evToProjects.get(ev.id) ?? []),
+          narrativeIds: new Set(evToNarratives.get(ev.id) ?? []),
+          snapshotId: snap.id,
+        });
+      }
+    }
+
+    // Convert to array and sort by observedAt
+    let result = [...evidenceMap.values()].sort(
+      (a, b) =>
+        new Date(b.evidence.observedAt).getTime() - new Date(a.evidence.observedAt).getTime(),
+    );
+
+    // Apply filters
+    if (filter?.status && filter.status !== "all") {
+      result = result.filter((r) => r.evidence.status === filter.status);
+    }
+    if (filter?.sourceId && filter.sourceId !== "all") {
+      result = result.filter((r) => r.evidence.source.id === filter.sourceId);
+    }
+    if (filter?.projectId && filter.projectId !== "all") {
+      result = result.filter((r) => r.projectIds.has(filter.projectId!));
+    }
+
+    return result.map((r) => ({
+      evidence: r.evidence,
+      projectIds: [...r.projectIds],
+      narrativeIds: [...r.narrativeIds],
+      snapshotId: r.snapshotId,
+    }));
   }
 
   /**

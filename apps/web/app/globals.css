@@ -1869,3 +1869,260 @@ footer {
     padding: 16px;
   }
 }
+
+/* ── M44: Saved search chips ─────────────────────────────── */
+.saved-searches-bar {
+  margin-bottom: 24px;
+}
+.saved-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.saved-search-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 4px 2px 12px;
+}
+.chip-btn {
+  padding: 4px 8px;
+  font-size: 14px;
+  border: none;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+.chip-btn:hover {
+  color: var(--accent);
+}
+.chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--border);
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+}
+.chip-remove:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── M45: Multi-project trend overlay ────────────────────── */
+.trend-overlay-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.overlay-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+.overlay-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.overlay-legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.overlay-chart {
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+/* ── M46: Evidence timeline ──────────────────────────────── */
+.ev-timeline {
+  position: relative;
+  padding-left: 32px;
+}
+.ev-timeline::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.ev-timeline-item {
+  position: relative;
+  margin-bottom: 24px;
+}
+.ev-timeline-dot {
+  position: absolute;
+  left: -26px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--card);
+}
+.ev-timeline-dot.demo {
+  background: #ff9800;
+}
+.ev-timeline-dot.verified {
+  background: #4caf50;
+}
+.ev-timeline-dot.pending {
+  background: #2196f3;
+}
+.ev-timeline-dot.draft {
+  background: var(--muted);
+}
+.ev-timeline-date {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.ev-timeline-content {
+  padding: 12px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.ev-timeline-source {
+  font-weight: 600;
+  font-size: 15px;
+}
+.ev-timeline-note {
+  font-size: 14px;
+  color: var(--text);
+  margin-top: 4px;
+}
+.ev-timeline-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+/* ── M47: Research session detail ────────────────────────── */
+.session-detail-card {
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+.session-meta-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.session-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.session-items-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.session-add-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.session-add-form select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ── M48: Alert subscriptions ────────────────────────────── */
+.alert-card {
+  padding: 16px 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.alert-card-info {
+  flex: 1;
+}
+.alert-card-type {
+  font-weight: 600;
+  font-size: 15px;
+}
+.alert-card-target {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.alert-card-condition {
+  font-size: 13px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.alert-status-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.alert-status-active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.alert-status-triggered {
+  background: #fff3e0;
+  color: #e65100;
+}
+.alert-status-removed {
+  background: #ffebee;
+  color: #c62828;
+}
+.alert-trigger-log {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.alert-trigger-entry {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.alert-trigger-entry:last-child {
+  border-bottom: none;
+}

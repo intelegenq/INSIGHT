@@ -69,12 +69,46 @@ export interface ResearchSession {
   updatedAt: string;
 }
 
+/** A saved search query the user wants to revisit. */
+export interface SavedSearch {
+  id: string;
+  userId: string;
+  query: string;
+  name: string;
+  savedAt: string;
+}
+
+/** An alert subscription for a project or narrative. */
+export interface AlertSubscription {
+  id: string;
+  userId: string;
+  targetType: "project" | "narrative";
+  targetId: string;
+  targetName: string;
+  condition: "health_drop" | "health_rise" | "trend_change" | "new_evidence" | "tvl_change";
+  threshold?: number;
+  status: "active" | "triggered" | "removed";
+  createdAt: string;
+  triggeredAt?: string;
+  triggerHistory: AlertTrigger[];
+}
+
+/** A record of when an alert was triggered. */
+export interface AlertTrigger {
+  triggeredAt: string;
+  oldValue: number;
+  newValue: number;
+  description: string;
+}
+
 /** The full saved-research surface for one user. */
 export interface SavedResearch {
   reports: SavedReport[];
   narratives: SavedNarrative[];
   projects: SavedProject[];
   sessions: ResearchSession[];
+  searches: SavedSearch[];
+  alerts: AlertSubscription[];
 }
 
 export type { Report, Project, Narrative };

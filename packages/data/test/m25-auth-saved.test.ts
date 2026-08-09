@@ -2,10 +2,7 @@ import { mkdtempSync, existsSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import {
-  AuthenticationService,
-  AuthValidationError,
-} from "../src/auth/index";
+import { AuthenticationService, AuthValidationError } from "../src/auth/index";
 import { SavedResearchClient, summarize } from "../src/saved/index";
 
 let dataDir: string;
@@ -128,13 +125,154 @@ describe("SavedResearchClient", () => {
     const c = new SavedResearchClient({ dataDir, userId: "user_1" });
     c.saveReport("rep_1", "defi", "Brief");
     c.createSession({ title: "S", lens: "ecosystem" });
+    c.saveSearch("jupiter", "Jupiter search");
+    c.createAlert({
+      targetType: "project",
+      targetId: "proj-1",
+      targetName: "Jupiter",
+      condition: "health_drop",
+      threshold: 50,
+    });
     const summary = summarize({
       reports: c.listReports(),
       narratives: c.listNarratives(),
       projects: c.listProjects(),
       sessions: c.listSessions(),
+      searches: c.listSearches(),
+      alerts: c.listAlerts(),
     });
     expect(summary.reportCount).toBe(1);
     expect(summary.sessionCount).toBe(1);
+    expect(summary.searchCount).toBe(1);
+    expect(summary.alertCount).toBe(1);
+  });
+
+  it("saves and removes search queries", () => {
+    const c = new SavedResearchClient({ dataDir, userId: "user_1" });
+    const s1 = c.saveSearch("liquid staking", "LST search");
+    expect(s1.query).toBe("liquid staking");
+    expect(s1.name).toBe("LST search");
+    expect(c.listSearches()).toHaveLength(1);
+    // Duplicate query returns existing without creating a new entry
+    const s2 = c.saveSearch("liquid staking");
+    expect(s2.id).toBe(s1.id);
+    expect(c.listSearches()).toHaveLength(1);
+    // Remove
+    expect(c.removeSearch(s1.id)).toBe(true);
+    expect(c.listSearches()).toHaveLength(0);
+    expect(c.removeSearch(s1.id)).toBe(false);
+  });
+
+  it("rejects empty search query", () => {
+    const c = new SavedResearchClient({ dataDir, userId: "user_1" });
+    expect(() => c.saveSearch("")).toThrow();
+    expect(() => c.saveSearch("   ")).toThrow();
+  });
+
+  it("persists searches across instances", () => {
+    const a = new SavedResearchClient({ dataDir, userId: "user_1" });
+    a.saveSearch("jupiter", "Jup search");
+    const b = new SavedResearchClient({ dataDir, userId: "user_1" });
+    expect(b.listSearches()).toHaveLength(1);
+    expect(b.listSearches()[0]!.query).toBe("jupiter");
+  });
+
+  it("adds and removes projects from a session", () => {
+    const c = new SavedResearchClient({ dataDir, userId: "user_1" });
+    const session = c.createSession({ title: "DeFi research", lens: "defi" });
+    expect(session.projectIds).toHaveLength(0);
+
+    const updated = c.addProjectToSession(session.id, "proj-jup");
+    expect(updated!.projectIds).toContain("proj-jup");
+
+    // Adding same project again is idempotent
+    c.addProjectToSession(session.id, "proj-jup");
+    expect(c.getSession(session.id)!.projectIds).toHaveLength(1);
+
+    const removed = c.removeProjectFromSession(session.id, "proj-jup");
+    expect(removed!.projectIds).not.toContain("proj-jup");
+    expect(c.getSession(session.id)!.projectIds).toHaveLength(0);
+  });
+
+  it("adds and removes narratives from a session", () => {
+    const c = new SavedResearchClient({ dataDir, userId: "user_1" });
+    const session = c.createSession({ title: "LST research", lens: "ecosystem" });
+
+    c.addNarrativeToSession(session.id, "nar-lst");
+    expect(c.getSession(session.id)!.narrativeIds).toContain("nar-lst");
+
+    // Idempotent
+    c.addNarrativeToSession(session.id, "nar-lst");
+    expect(c.getSession(session.id)!.narrativeIds).toHaveLength(1);
+
+    c.removeNarrativeFromSession(session.id, "nar-lst");
+    expect(c.getSession(session.id)!.narrativeIds).not.toContain("nar-lst");
+  });
+
+  it("getSession returns undefined for non-existent session", () => {
+    const c = new SavedResearchClient({ dataDir, userId: "user_1" });
+    expect(c.getSession("nonexistent")).toBeUndefined();
+    expect(c.addProjectToSession("nonexistent", "proj-x")).toBeUndefined();
+    expect(c.removeProjectFromSession("nonexistent", "proj-x")).toBeUndefined();
+  });
+
+  it("creates and removes alert subscriptions", () => {
+    const c = new SavedResearchClient({ dataDir, userId: "user_1" });
+    const alert = c.createAlert({
+      targetType: "project",
+      targetId: "proj-jup",
+      targetName: "Jupiter",
+      condition: "health_drop",
+      threshold: 50,
+    });
+    expect(alert.id).toMatch(/^alert_/);
+    expect(alert.status).toBe("active");
+    expect(alert.condition).toBe("health_drop");
+    expect(alert.threshold).toBe(50);
+    expect(c.listAlerts()).toHaveLength(1);
+
+    expect(c.removeAlert(alert.id)).toBe(true);
+    expect(c.listAlerts()).toHaveLength(0);
+    expect(c.removeAlert(alert.id)).toBe(false);
+  });
+
+  it("records trigger events on alerts", () => {
+    const c = new SavedResearchClient({ dataDir, userId: "user_1" });
+    const alert = c.createAlert({
+      targetType: "narrative",
+      targetId: "nar-lst",
+      targetName: "Liquid Staking",
+      condition: "trend_change",
+    });
+    expect(alert.triggerHistory).toHaveLength(0);
+
+    const triggered = c.triggerAlert(alert.id, {
+      oldValue: 65,
+      newValue: 45,
+      description: "Health dropped from 65 to 45",
+    });
+    expect(triggered!.status).toBe("triggered");
+    expect(triggered!.triggeredAt).toBeTruthy();
+    expect(triggered!.triggerHistory).toHaveLength(1);
+    expect(triggered!.triggerHistory[0]!.description).toContain("Health dropped");
+
+    // Non-existent alert returns undefined
+    expect(
+      c.triggerAlert("nonexistent", { oldValue: 0, newValue: 0, description: "" }),
+    ).toBeUndefined();
+  });
+
+  it("persists alerts across instances", () => {
+    const a = new SavedResearchClient({ dataDir, userId: "user_1" });
+    a.createAlert({
+      targetType: "project",
+      targetId: "proj-1",
+      targetName: "Test",
+      condition: "tvl_change",
+      threshold: 10,
+    });
+    const b = new SavedResearchClient({ dataDir, userId: "user_1" });
+    expect(b.listAlerts()).toHaveLength(1);
+    expect(b.listAlerts()[0]!.condition).toBe("tvl_change");
   });
 });

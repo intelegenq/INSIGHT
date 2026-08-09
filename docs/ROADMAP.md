@@ -136,3 +136,45 @@
 - [x] Trend direction arrows — up/down/flat indicators on health and momentum columns (M43)
 - [x] Navigation — trends link added to nav across all pages (M43)
 - [x] Responsive — project selector cards, scrollable tables, adaptive sparklines (M43)
+
+## Phase 19 — Saved search subscriptions
+
+- [x] SavedSearch type — core domain type for persisted search queries (M44)
+- [x] SavedResearchClient.saveSearch/removeSearch/listSearches — file-backed persistence (M44)
+- [x] /api/saved search kind — POST and DELETE support for saved searches (M44)
+- [x] Search page save button — ★ Save this search on results page (M44)
+- [x] Saved search chips — quick re-run chips on search idle state (M44)
+- [x] Saved page searches section — saved searches displayed with re-run links (M44)
+
+## Phase 20 — Multi-project trend overlay
+
+- [x] Overlay API — GET /api/trends/overlay?ids=... returns multi-project trend data (M45)
+- [x] InsightService.getMultiProjectTrend() — walks all snapshots for multiple projects (M45)
+- [x] Overlay UI — checkbox project selector, compare button, multi-line SVG overlay chart (M45)
+- [x] Color-coded legend — per-project color dots with names (M45)
+- [x] Min 2 / max 10 project validation (M45)
+
+## Phase 21 — Evidence timeline
+
+- [x] Timeline API — GET /api/evidence/timeline returns all evidence chronologically (M46)
+- [x] InsightService.getEvidenceTimeline() — deduplicates evidence across snapshots, sorts by observedAt (M46)
+- [x] Project/narrative associations — each evidence entry includes linked project and narrative IDs (M46)
+- [x] Status and source filtering — query params for status, sourceId, projectId (M46)
+- [x] Timeline UI — /evidence page with vertical timeline rail, status-colored dots, filter controls (M46)
+- [x] Clickable links — evidence entries link to associated project and narrative detail pages (M46)
+
+## Phase 22 — Research session detail
+
+- [x] Session detail API — GET /api/sessions/[id] returns single session (M47)
+- [x] Session patch API — PATCH /api/sessions/[id] supports addProject, removeProject, addNarrative, removeNarrative (M47)
+- [x] SavedResearchClient session methods — getSession, addProjectToSession, removeProjectFromSession, addNarrativeToSession, removeNarrativeFromSession (M47)
+- [x] Session detail UI — /saved/[id] page with project/narrative lists, add/remove controls, back to saved (M47)
+
+## Phase 23 — Alert subscriptions
+
+- [x] AlertSubscription + AlertTrigger types — core domain types for alert subscriptions (M48)
+- [x] SavedResearchClient.createAlert/removeAlert/listAlerts/triggerAlert — file-backed persistence (M48)
+- [x] /api/saved alert kind — POST creates alerts, DELETE removes alerts (M48)
+- [x] Alert conditions — health_drop, health_rise, trend_change, new_evidence, tvl_change (M48)
+- [x] Trigger history — alerts record trigger events with old/new values and descriptions (M48)
+- [x] Alerts UI — /alerts page with create form, alert list, status badges, trigger history log (M48)

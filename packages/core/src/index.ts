@@ -37,12 +37,15 @@ export {
 
 /* ── M25: Authentication & Saved Research ───────────────────────────── */
 export type {
+  AlertSubscription,
+  AlertTrigger,
   AuthSession,
   ResearchSession,
   SavedNarrative,
   SavedProject,
   SavedReport,
   SavedResearch,
+  SavedSearch,
   User,
   UserCredential,
 } from "./auth";

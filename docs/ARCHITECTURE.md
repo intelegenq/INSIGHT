@@ -126,3 +126,47 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - Artifact storage: S3-compatible object storage
 
 This separates fast product iteration from worker portability.
+
+## Saved search subscriptions boundary (M44)
+
+- The SavedSearch type extends SavedResearch with a persisted search query: id, userId, query, name, savedAt.
+- SavedResearchClient.saveSearch() deduplicates by query string — repeated saves return the existing entry.
+- The /api/saved route accepts kind:"search" for POST (requires query) and DELETE (by saved-item id).
+- The GET /api/saved response now includes a searches array alongside reports, narratives, projects, and sessions.
+- The /search page provides a "Save this search" button on the results section and quick-access chips for saved searches on the idle state.
+- The /saved page includes a Searches section with clickable links that re-run the search via /search?q=.
+
+## Multi-project trend overlay boundary (M45)
+
+- GET /api/trends/overlay?ids=id1,id2,... returns a map of projectId → { name, points[] } with chronologically sorted trend points.
+- Minimum 2 IDs, maximum 10 — validated by the API route.
+- InsightService.getMultiProjectTrend() walks all snapshots for all requested projects in a single pass, computing health scores via scoreProject.
+- The /trends page overlay section provides checkbox project selection, a compare button, a color-coded legend, and a multi-line SVG chart overlaying health scores.
+- Uses existing listSnapshots, scoreProject, and snapshot evidence — no new data, no AI.
+
+## Evidence timeline boundary (M46)
+
+- GET /api/evidence/timeline returns all evidence from all snapshots, deduplicated by ID, sorted by observedAt descending.
+- Each evidence entry includes projectIds and narrativeIds — the projects and narratives that reference this evidence across snapshots.
+- Optional query params: status (demo/verified/pending/draft), sourceId, projectId for filtering.
+- InsightService.getEvidenceTimeline() builds reverse maps from evidence to projects and narratives by walking all snapshots.
+- The /evidence page renders a vertical timeline with status-colored dots, filter dropdowns for status and source, and clickable links to associated projects and narratives.
+- Uses existing snapshotRepository.list() — no new data, no AI.
+
+## Research session detail boundary (M47)
+
+- GET /api/sessions/[id] returns a single ResearchSession by id.
+- PATCH /api/sessions/[id] supports four actions: addProject, removeProject, addNarrative, removeNarrative — each updates the session's projectIds or narrativeIds array and refreshes updatedAt.
+- SavedResearchClient provides getSession(), addProjectToSession(), removeProjectFromSession(), addNarrativeToSession(), removeNarrativeFromSession() — all idempotent and file-backed.
+- The /saved/[id] page displays the session title, metadata, project and narrative lists with remove buttons, and add controls (dropdown + button) for adding new projects and narratives.
+- Session items link to their respective detail pages (/projects/[id] and /narratives/[id]).
+
+## Alert subscriptions boundary (M48)
+
+- AlertSubscription and AlertTrigger types extend SavedResearch with alert subscriptions: id, userId, targetType (project/narrative), targetId, targetName, condition, threshold, status, triggerHistory.
+- Alert conditions: health_drop, health_rise, trend_change, new_evidence, tvl_change — each with an optional numeric threshold.
+- SavedResearchClient.createAlert() creates a new active alert; triggerAlert() records a trigger event and sets status to "triggered"; removeAlert() deletes the alert.
+- The /api/saved route accepts kind:"alert" for POST (requires alert.targetType, alert.targetId, alert.condition) and DELETE (by alert id).
+- The /alerts page provides a create form (target type, target, condition, threshold), an alert list with status badges (active/triggered), trigger history log, and remove buttons.
+- Alerts link to their target's detail page (/projects/[id] or /narratives/[id]).
+- Uses existing SavedResearchClient file-backed persistence — no new infrastructure, no AI.

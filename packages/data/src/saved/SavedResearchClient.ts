@@ -11,11 +11,14 @@ import { randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type {
+  AlertSubscription,
+  AlertTrigger,
   ResearchSession,
   SavedNarrative,
   SavedProject,
   SavedReport,
   SavedResearch,
+  SavedSearch,
 } from "@insight/core";
 import type { ReportLens } from "@insight/core";
 
@@ -33,7 +36,7 @@ function newId(prefix: string): string {
 }
 
 function empty(): SavedResearch {
-  return { reports: [], narratives: [], projects: [], sessions: [] };
+  return { reports: [], narratives: [], projects: [], sessions: [], searches: [], alerts: [] };
 }
 
 /**
@@ -76,12 +79,22 @@ export class SavedResearchClient {
     );
   }
 
+  /** All saved searches, newest first. */
+  listSearches(): SavedSearch[] {
+    return [...this.data.searches].sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt));
+  }
+
   /** Save (or replace) a report reference. */
   saveReport(reportId: string, lens: ReportLens, title: string): SavedReport {
     const existing = this.data.reports.find((r) => r.reportId === reportId);
-    const saved: SavedReport =
-      existing ??
-      { id: newId("srep"), userId: this.userId, reportId, lens, title, savedAt: nowIso() };
+    const saved: SavedReport = existing ?? {
+      id: newId("srep"),
+      userId: this.userId,
+      reportId,
+      lens,
+      title,
+      savedAt: nowIso(),
+    };
     if (!existing) this.data.reports.push(saved);
     this.persist();
     return saved;
@@ -90,9 +103,13 @@ export class SavedResearchClient {
   /** Save a narrative reference. */
   saveNarrative(narrativeId: string, name: string): SavedNarrative {
     const existing = this.data.narratives.find((n) => n.narrativeId === narrativeId);
-    const saved: SavedNarrative =
-      existing ??
-      { id: newId("snav"), userId: this.userId, narrativeId, name, savedAt: nowIso() };
+    const saved: SavedNarrative = existing ?? {
+      id: newId("snav"),
+      userId: this.userId,
+      narrativeId,
+      name,
+      savedAt: nowIso(),
+    };
     if (!existing) this.data.narratives.push(saved);
     this.persist();
     return saved;
@@ -101,10 +118,32 @@ export class SavedResearchClient {
   /** Save a project reference. */
   saveProject(projectId: string, name: string): SavedProject {
     const existing = this.data.projects.find((p) => p.projectId === projectId);
-    const saved: SavedProject =
-      existing ??
-      { id: newId("sproj"), userId: this.userId, projectId, name, savedAt: nowIso() };
+    const saved: SavedProject = existing ?? {
+      id: newId("sproj"),
+      userId: this.userId,
+      projectId,
+      name,
+      savedAt: nowIso(),
+    };
     if (!existing) this.data.projects.push(saved);
+    this.persist();
+    return saved;
+  }
+
+  /** Save a search query for quick re-execution. */
+  saveSearch(query: string, name?: string): SavedSearch {
+    const trimmed = query.trim();
+    if (trimmed.length === 0) throw new Error("query must not be empty");
+    const existing = this.data.searches.find((s) => s.query === trimmed);
+    if (existing) return existing;
+    const saved: SavedSearch = {
+      id: newId("ssrch"),
+      userId: this.userId,
+      query: trimmed,
+      name: name?.trim() || trimmed.slice(0, 60),
+      savedAt: nowIso(),
+    };
+    this.data.searches.push(saved);
     this.persist();
     return saved;
   }
@@ -170,6 +209,127 @@ export class SavedResearchClient {
     });
   }
 
+  /** Get a single session by id. */
+  getSession(id: string): ResearchSession | undefined {
+    return this.data.sessions.find((s) => s.id === id);
+  }
+
+  /** Add a project to a session. */
+  addProjectToSession(sessionId: string, projectId: string): ResearchSession | undefined {
+    const session = this.data.sessions.find((s) => s.id === sessionId);
+    if (!session) return undefined;
+    if (!session.projectIds.includes(projectId)) {
+      session.projectIds.push(projectId);
+      session.updatedAt = nowIso();
+      this.persist();
+    }
+    return session;
+  }
+
+  /** Remove a project from a session. */
+  removeProjectFromSession(sessionId: string, projectId: string): ResearchSession | undefined {
+    const session = this.data.sessions.find((s) => s.id === sessionId);
+    if (!session) return undefined;
+    const before = session.projectIds.length;
+    session.projectIds = session.projectIds.filter((p) => p !== projectId);
+    if (session.projectIds.length !== before) {
+      session.updatedAt = nowIso();
+      this.persist();
+    }
+    return session;
+  }
+
+  /** Add a narrative to a session. */
+  addNarrativeToSession(sessionId: string, narrativeId: string): ResearchSession | undefined {
+    const session = this.data.sessions.find((s) => s.id === sessionId);
+    if (!session) return undefined;
+    if (!session.narrativeIds.includes(narrativeId)) {
+      session.narrativeIds.push(narrativeId);
+      session.updatedAt = nowIso();
+      this.persist();
+    }
+    return session;
+  }
+
+  /** Remove a narrative from a session. */
+  removeNarrativeFromSession(sessionId: string, narrativeId: string): ResearchSession | undefined {
+    const session = this.data.sessions.find((s) => s.id === sessionId);
+    if (!session) return undefined;
+    const before = session.narrativeIds.length;
+    session.narrativeIds = session.narrativeIds.filter((n) => n !== narrativeId);
+    if (session.narrativeIds.length !== before) {
+      session.updatedAt = nowIso();
+      this.persist();
+    }
+    return session;
+  }
+
+  /** Remove a saved search by its saved-item id. */
+  removeSearch(id: string): boolean {
+    return this.removeWhere((d) => {
+      const before = d.searches.length;
+      d.searches = d.searches.filter((s) => s.id !== id);
+      return d.searches.length !== before;
+    });
+  }
+
+  /** All alert subscriptions, newest first. */
+  listAlerts(): AlertSubscription[] {
+    return [...this.data.alerts].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  }
+
+  /** Create an alert subscription. */
+  createAlert(input: {
+    targetType: "project" | "narrative";
+    targetId: string;
+    targetName: string;
+    condition: AlertSubscription["condition"];
+    threshold?: number;
+  }): AlertSubscription {
+    const alert: AlertSubscription = {
+      id: newId("alert"),
+      userId: this.userId,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      targetName: input.targetName,
+      condition: input.condition,
+      threshold: input.threshold,
+      status: "active",
+      createdAt: nowIso(),
+      triggerHistory: [],
+    };
+    this.data.alerts.push(alert);
+    this.persist();
+    return alert;
+  }
+
+  /** Remove an alert subscription. */
+  removeAlert(id: string): boolean {
+    return this.removeWhere((d) => {
+      const before = d.alerts.length;
+      d.alerts = d.alerts.filter((a) => a.id !== id);
+      return d.alerts.length !== before;
+    });
+  }
+
+  /** Record a trigger event on an alert. */
+  triggerAlert(
+    id: string,
+    trigger: Omit<AlertTrigger, "triggeredAt">,
+  ): AlertSubscription | undefined {
+    const alert = this.data.alerts.find((a) => a.id === id);
+    if (!alert) return undefined;
+    const entry: AlertTrigger = {
+      ...trigger,
+      triggeredAt: nowIso(),
+    };
+    alert.triggerHistory.push(entry);
+    alert.status = "triggered";
+    alert.triggeredAt = nowIso();
+    this.persist();
+    return alert;
+  }
+
   /** Clear all saved data for this user. */
   clear(): void {
     this.data = empty();
@@ -191,6 +351,8 @@ export class SavedResearchClient {
         narratives: Array.isArray(parsed.narratives) ? parsed.narratives : [],
         projects: Array.isArray(parsed.projects) ? parsed.projects : [],
         sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+        searches: Array.isArray(parsed.searches) ? parsed.searches : [],
+        alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
       };
     } catch {
       return empty();
@@ -213,11 +375,15 @@ export function summarize(saved: SavedResearch): {
   narrativeCount: number;
   projectCount: number;
   sessionCount: number;
+  searchCount: number;
+  alertCount: number;
 } {
   return {
     reportCount: saved.reports.length,
     narrativeCount: saved.narratives.length,
     projectCount: saved.projects.length,
     sessionCount: saved.sessions.length,
+    searchCount: saved.searches.length,
+    alertCount: saved.alerts.length,
   };
 }

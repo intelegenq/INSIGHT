@@ -13,6 +13,7 @@ interface SavedData {
   narratives: SavedItem[];
   projects: SavedItem[];
   sessions: SavedItem[];
+  searches?: SavedItem[];
 }
 
 type LoadState = "idle" | "loading" | "success" | "error";
@@ -148,6 +149,21 @@ export default function SavedPage() {
                   <strong>{String(item.title ?? "Untitled session")}</strong>
                   <span className="ref-desc">Lens: {String(item.lens ?? "ecosystem")}</span>
                 </div>
+              )}
+            />
+            <SavedSection
+              title="Searches"
+              items={data.searches ?? []}
+              kind="search"
+              onRemove={removeItem}
+              renderItem={(item) => (
+                <Link
+                  href={`/search?q=${encodeURIComponent(String(item.query ?? ""))}`}
+                  className="ref-link"
+                >
+                  <strong>{String(item.name ?? item.query ?? "Untitled search")}</strong>
+                  <span className="ref-desc">Query: {String(item.query ?? "")}</span>
+                </Link>
               )}
             />
           </div>
