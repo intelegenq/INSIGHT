@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 interface Citation {
   evidenceId: string;
@@ -34,6 +34,21 @@ interface ReportReference {
   confidence: string;
 }
 
+interface GraphEntityReference {
+  kind: string;
+  id: string;
+  name?: string;
+}
+
+interface HealthReference {
+  projectId: string;
+  projectName: string;
+  health: number;
+  momentum: number;
+  risk: number;
+  developer: number;
+}
+
 interface AssistantMetadata {
   providerUsed: boolean;
   providerName: string;
@@ -48,28 +63,90 @@ interface AssistantApiResponse {
   projects: ProjectReference[];
   narratives: NarrativeReference[];
   reports: ReportReference[];
+  graphEntities: GraphEntityReference[];
+  healthScores: HealthReference[];
+  pulse: {
+    totalProjects: number;
+    totalNarratives: number;
+    totalEvidence: number;
+    generatedAt: string;
+  } | null;
+  snapshotCount: number;
   metadata: AssistantMetadata;
+}
+
+interface ConversationEntry {
+  id: string;
+  question: string;
+  response: AssistantApiResponse;
 }
 
 type LoadState = "idle" | "loading" | "success" | "error";
 
+const SUGGESTIONS = [
+  "What is the current state of the Solana ecosystem?",
+  "Which projects have the highest TVL?",
+  "What narratives are trending up?",
+  "Compare project health scores",
+  "What evidence supports the top projects?",
+  "What does the knowledge graph show?",
+  "How has the ecosystem changed over time?",
+  "Are there any risk signals in the data?",
+];
+
+function trendLabel(trend: string): string {
+  switch (trend) {
+    case "up":
+      return "↑ Up";
+    case "down":
+      return "↓ Down";
+    case "flat":
+      return "→ Flat";
+    case "watch":
+      return "⊙ Watch";
+    default:
+      return trend;
+  }
+}
+
+function trendClass(trend: string): string {
+  switch (trend) {
+    case "up":
+      return "trend-up";
+    case "down":
+      return "trend-down";
+    case "flat":
+      return "trend-flat";
+    case "watch":
+      return "trend-watch";
+    default:
+      return "trend-flat";
+  }
+}
+
+function healthColor(score: number): string {
+  if (score >= 70) return "#2e7d32";
+  if (score >= 50) return "#e65100";
+  return "#c62828";
+}
+
 export default function AssistantPage() {
   const [message, setMessage] = useState("");
   const [state, setState] = useState<LoadState>("idle");
-  const [response, setResponse] = useState<AssistantApiResponse | null>(null);
   const [error, setError] = useState<string>("");
+  const [history, setHistory] = useState<ConversationEntry[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const ask = useCallback(async () => {
-    if (message.trim().length === 0) return;
+  const ask = useCallback(async (question: string) => {
+    if (question.trim().length === 0) return;
     setState("loading");
     setError("");
-    setResponse(null);
 
     try {
       const res = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message: question }),
       });
 
       if (!res.ok) {
@@ -78,13 +155,30 @@ export default function AssistantPage() {
       }
 
       const data = (await res.json()) as AssistantApiResponse;
-      setResponse(data);
+      const entry: ConversationEntry = {
+        id: `conv_${Date.now()}`,
+        question,
+        response: data,
+      };
+      setHistory((prev) => [...prev, entry]);
       setState("success");
+      setMessage("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setState("error");
     }
-  }, [message]);
+  }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [history]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void ask(message);
+  };
 
   return (
     <div className="page">
@@ -103,38 +197,31 @@ export default function AssistantPage() {
           <Link href="/compare">Compare</Link>
           <Link href="/dashboard">Dashboard</Link>
           <Link href="/trends">Trends</Link>
+          <Link href="/evidence">Evidence</Link>
+          <Link href="/graph">Graph</Link>
         </div>
       </nav>
 
-      <main className="hero">
+      <main className="hero assistant-hero">
         <h1>AI Assistant</h1>
         <p className="subtitle">
           Ask questions about Insight&apos;s collected data. The AI is grounded in Insight&apos;s
           deterministic evidence — no web search, no invented facts.
         </p>
 
-        <div className="assistant-input-row">
-          <textarea
-            className="assistant-input"
-            placeholder="Ask about projects, narratives, ecosystem health..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                void ask();
-              }
-            }}
-            rows={3}
-            disabled={state === "loading"}
-          />
-          <button
-            className="primary-button"
-            onClick={() => void ask()}
-            disabled={state === "loading" || message.trim().length === 0}
-          >
-            {state === "loading" ? "Thinking..." : "Ask"}
-          </button>
-        </div>
+        {/* Conversation history */}
+        {history.length > 0 && (
+          <div className="assistant-conversation" ref={scrollRef}>
+            {history.map((entry) => (
+              <div key={entry.id} className="assistant-conversation-entry">
+                <div className="assistant-question">
+                  <strong>You:</strong> {entry.question}
+                </div>
+                <AssistantResponse data={entry.response} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {state === "error" && (
           <div className="assistant-error">
@@ -142,29 +229,42 @@ export default function AssistantPage() {
           </div>
         )}
 
-        {state === "success" && response && <AssistantResponse data={response} />}
+        {/* Input form */}
+        <form className="assistant-input-row" onSubmit={handleSubmit}>
+          <textarea
+            className="assistant-input"
+            placeholder="Ask about projects, narratives, ecosystem health, trends, evidence..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                void ask(message);
+              }
+            }}
+            rows={3}
+            disabled={state === "loading"}
+          />
+          <button
+            type="submit"
+            className="primary-button"
+            disabled={state === "loading" || message.trim().length === 0}
+          >
+            {state === "loading" ? "Thinking..." : "Ask →"}
+          </button>
+        </form>
 
-        {state === "idle" && (
+        {/* Suggestion chips */}
+        {state === "idle" && history.length === 0 && (
           <div className="assistant-suggestions">
             <p className="muted">Try asking:</p>
-            <button
-              className="suggestion-chip"
-              onClick={() => setMessage("What is the current state of the Solana ecosystem?")}
-            >
-              What is the current state of the Solana ecosystem?
-            </button>
-            <button
-              className="suggestion-chip"
-              onClick={() => setMessage("Which projects have the highest TVL?")}
-            >
-              Which projects have the highest TVL?
-            </button>
-            <button
-              className="suggestion-chip"
-              onClick={() => setMessage("What narratives are trending up?")}
-            >
-              What narratives are trending up?
-            </button>
+            <div className="suggestion-grid">
+              {SUGGESTIONS.map((s) => (
+                <button key={s} className="suggestion-chip" onClick={() => void ask(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </main>
@@ -176,10 +276,35 @@ function AssistantResponse({ data }: { data: AssistantApiResponse }) {
   return (
     <div className="assistant-response">
       <div className="assistant-answer">
-        <h3>Answer</h3>
+        <strong>Assistant:</strong>
         <p className="answer-text">{data.answer}</p>
       </div>
 
+      {/* Health scores */}
+      {data.healthScores.length > 0 && (
+        <div className="assistant-section">
+          <h4>Health Scores ({data.healthScores.length})</h4>
+          <div className="health-score-grid">
+            {data.healthScores.map((h) => (
+              <Link
+                href={`/projects/${h.projectId}`}
+                key={h.projectId}
+                className="health-score-card"
+              >
+                <span className="health-score-name">{h.projectName}</span>
+                <span className="health-score-value" style={{ color: healthColor(h.health) }}>
+                  {h.health.toFixed(0)}
+                </span>
+                <span className="health-score-detail">
+                  M: {h.momentum.toFixed(0)} R: {h.risk.toFixed(0)} D: {h.developer.toFixed(0)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Citations */}
       {data.citations.length > 0 && (
         <div className="assistant-section">
           <h4>Citations ({data.citations.length})</h4>
@@ -205,6 +330,7 @@ function AssistantResponse({ data }: { data: AssistantApiResponse }) {
         </div>
       )}
 
+      {/* Projects */}
       {data.projects.length > 0 && (
         <div className="assistant-section">
           <h4>Relevant Projects ({data.projects.length})</h4>
@@ -222,15 +348,18 @@ function AssistantResponse({ data }: { data: AssistantApiResponse }) {
         </div>
       )}
 
+      {/* Narratives */}
       {data.narratives.length > 0 && (
         <div className="assistant-section">
           <h4>Relevant Narratives ({data.narratives.length})</h4>
           <ul className="ref-list">
             {data.narratives.map((n) => (
               <li key={n.id}>
-                <Link href="/narratives" className="ref-link">
+                <Link href={`/narratives/${n.id}`} className="ref-link">
                   <strong>{n.name}</strong>{" "}
-                  <span className={`trend-badge ${n.trend}`}>{n.trend}</span>
+                  <span className={`trend-badge ${trendClass(n.trend)}`}>
+                    {trendLabel(n.trend)}
+                  </span>
                   {n.change && <span className="narrative-change">{n.change}</span>}
                 </Link>
                 <span className="ref-desc">{n.note}</span>
@@ -240,6 +369,22 @@ function AssistantResponse({ data }: { data: AssistantApiResponse }) {
         </div>
       )}
 
+      {/* Graph entities */}
+      {data.graphEntities.length > 0 && (
+        <div className="assistant-section">
+          <h4>Knowledge Graph Entities ({data.graphEntities.length})</h4>
+          <div className="graph-entity-chips">
+            {data.graphEntities.map((g) => (
+              <Link href={`/graph`} key={g.id} className="graph-entity-chip">
+                <span className="graph-entity-kind">{g.kind}</span>
+                <span className="graph-entity-name">{g.name ?? g.id}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reports */}
       {data.reports.length > 0 && (
         <div className="assistant-section">
           <h4>Relevant Reports ({data.reports.length})</h4>
@@ -258,9 +403,23 @@ function AssistantResponse({ data }: { data: AssistantApiResponse }) {
         </div>
       )}
 
+      {/* Pulse */}
+      {data.pulse && (
+        <div className="assistant-section">
+          <h4>Ecosystem Pulse</h4>
+          <div className="pulse-row">
+            <span>{data.pulse.totalProjects} projects</span>
+            <span>{data.pulse.totalNarratives} narratives</span>
+            <span>{data.pulse.totalEvidence} evidence items</span>
+            {data.snapshotCount > 0 && <span>{data.snapshotCount} snapshots</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Metadata */}
       <div className="assistant-meta">
         <span>Provider: {data.metadata.providerName}</span>
-        <span>Context items: {data.metadata.contextSize}</span>
+        <span>Context: {data.metadata.contextSize} items</span>
         <span>{data.metadata.hasSufficientData ? "✓ Sufficient data" : "⚠ Insufficient data"}</span>
         <span>{new Date(data.metadata.timestamp).toLocaleTimeString()}</span>
       </div>

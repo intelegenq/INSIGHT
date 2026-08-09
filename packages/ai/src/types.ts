@@ -46,6 +46,23 @@ export interface ReportReference {
   confidence: string;
 }
 
+/** A knowledge graph entity reference surfaced in the assistant response. */
+export interface GraphEntityReference {
+  kind: string;
+  id: string;
+  name?: string;
+}
+
+/** A health score reference surfaced in the assistant response. */
+export interface HealthReference {
+  projectId: string;
+  projectName: string;
+  health: number;
+  momentum: number;
+  risk: number;
+  developer: number;
+}
+
 /** Structured metadata about the assistant response. */
 export interface AssistantMetadata {
   /** Whether the AI provider was used (false = insufficient data fallback). */
@@ -72,6 +89,19 @@ export interface AssistantResponse {
   narratives: NarrativeReference[];
   /** Relevant reports surfaced in the context. */
   reports: ReportReference[];
+  /** Knowledge graph entities from the context. */
+  graphEntities: GraphEntityReference[];
+  /** Health scores for relevant projects. */
+  healthScores: HealthReference[];
+  /** Ecosystem pulse snapshot if available. */
+  pulse: {
+    totalProjects: number;
+    totalNarratives: number;
+    totalEvidence: number;
+    generatedAt: string;
+  } | null;
+  /** Number of historical snapshots available. */
+  snapshotCount: number;
   /** Response metadata. */
   metadata: AssistantMetadata;
 }
@@ -145,7 +175,7 @@ export function resolveAIProviderConfig(
       ? {
           apiKey: env["OPENROUTER_API_KEY"],
           baseUrl: env["OPENROUTER_BASE_URL"] ?? "https://openrouter.ai/api/v1",
-          model: env["OPENROUTER_MODEL"] ?? "anthropic/claude-3.5-sonnet",
+          model: env["OPENROUTER_MODEL"] ?? "meta-llama/llama-3.3-70b-instruct:free",
         }
       : undefined;
 

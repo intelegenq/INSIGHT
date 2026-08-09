@@ -1,17 +1,19 @@
 import { getInsightService } from "../../../lib/insight-service";
 import { errorFromUnknown, errorResponse, ok, requestIdFromRequest } from "../../../lib/api";
-import { createAIProvider } from "@insight/ai";
-import { AssistantService } from "@insight/ai";
-import type { InsightDataSource, GraphDataSource } from "@insight/ai";
+import { createAIProvider, AssistantService } from "@insight/ai";
+import type { ExtendedInsightDataSource, GraphDataSource } from "@insight/ai";
 
 /**
  * POST /api/assistant — ask the AI assistant a question about Insight data.
  *
  * Request: { "message": "..." }
- * Response: { answer, citations, projects, narratives, reports, metadata }
+ * Response: { answer, citations, projects, narratives, reports, graphEntities, healthScores, pulse, snapshotCount, metadata }
  *
  * The AI is ONLY a natural-language interface over Insight's deterministic data.
  * Server-side provider calls only — no API keys reach the browser.
+ *
+ * The data source wires ALL existing Insight contracts: projects, evidence,
+ * narratives, reports, knowledge graph, health scores, pulse, and snapshots.
  */
 export async function POST(request: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
@@ -36,15 +38,37 @@ export async function POST(request: Request): Promise<Response> {
     // Create AI provider from environment config
     const provider = createAIProvider();
 
-    // Build a data source adapter over InsightService
-    const dataSource: InsightDataSource = {
+    // Build an extended data source adapter over InsightService
+    // Wires ALL existing Insight contracts so the AI context is comprehensive
+    const dataSource: ExtendedInsightDataSource = {
       listProjects: () => service.listProjects(),
       resolveEvidenceIds: (ids) => service.resolveEvidenceIds(ids),
       getNarratives: () => service.getNarratives(),
       getReport: (lens) => service.getReport(lens as never),
+      getProjectHealth: (projectId) => service.getProjectHealth(projectId),
+      getPulse: async () => {
+        const pulse = await service.getPulse();
+        const findMetric = (id: string) => pulse.metrics.find((m) => m.id === id)?.value ?? "0";
+        return {
+          totalProjects: parseInt(findMetric("projects"), 10) || 0,
+          totalNarratives: parseInt(findMetric("narratives"), 10) || 0,
+          totalEvidence: parseInt(findMetric("evidence"), 10) || 0,
+          generatedAt: pulse.asOf,
+        };
+      },
+      listSnapshots: async () => {
+        const snaps = await service.listSnapshots();
+        return snaps.map((s) => ({
+          id: s.id,
+          referenceDate: s.referenceDate,
+          projectCount: s.projects.length,
+          narrativeCount: s.narratives.length,
+          evidenceCount: s.evidence.length,
+        }));
+      },
     };
 
-    // M34: Wire the knowledge graph data source so the AI assistant
+    // Wire the knowledge graph data source so the AI assistant
     // has access to graph entities and relationships as bounded context.
     const graphDataSource: GraphDataSource = {
       getKnowledgeGraph: () => service.getKnowledgeGraph(),

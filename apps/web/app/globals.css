@@ -2126,3 +2126,130 @@ footer {
 .alert-trigger-entry:last-child {
   border-bottom: none;
 }
+
+/* ── AI Assistant enhanced UI ────────────────────────────── */
+.assistant-hero {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+.assistant-conversation {
+  max-height: 600px;
+  overflow-y: auto;
+  margin: 24px 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.assistant-conversation-entry {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.assistant-conversation-entry:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.assistant-question {
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.suggestion-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.health-score-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.health-score-card {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  min-width: 120px;
+}
+.health-score-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.health-score-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+.health-score-detail {
+  font-size: 11px;
+  color: var(--muted);
+}
+.graph-entity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.graph-entity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-decoration: none;
+  font-size: 13px;
+}
+.graph-entity-kind {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.graph-entity-name {
+  font-weight: 500;
+}
+.pulse-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--text);
+}
+.pulse-row span {
+  padding: 4px 10px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+@media (max-width: 700px) {
+  .assistant-hero {
+    padding: 32px 16px;
+  }
+  .assistant-input {
+    font-size: 16px;
+  }
+  .suggestion-grid {
+    flex-direction: column;
+  }
+  .suggestion-chip {
+    text-align: left;
+    width: 100%;
+  }
+  .health-score-grid {
+    flex-direction: column;
+  }
+  .health-score-card {
+    min-width: auto;
+  }
+  .assistant-conversation {
+    max-height: 400px;
+  }
+}

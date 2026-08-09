@@ -9,6 +9,33 @@
 import type { Project, Evidence, Narrative, Report } from "@insight/core";
 import type { KnowledgeGraph } from "@insight/knowledge";
 
+/** Health score for a project in the context. */
+export interface ContextHealthEntry {
+  projectId: string;
+  projectName: string;
+  health: number;
+  momentum: number;
+  risk: number;
+  developer: number;
+}
+
+/** Pulse snapshot for ecosystem overview questions. */
+export interface ContextPulse {
+  totalProjects: number;
+  totalNarratives: number;
+  totalEvidence: number;
+  generatedAt: string;
+}
+
+/** Snapshot summary for history/trend questions. */
+export interface ContextSnapshotSummary {
+  id: string;
+  referenceDate: string;
+  projectCount: number;
+  narrativeCount: number;
+  evidenceCount: number;
+}
+
 /** Structured context sent to the AI provider. */
 export interface InsightContext {
   /** Projects relevant to the question. */
@@ -25,6 +52,12 @@ export interface InsightContext {
   graphRelationshipCount: number;
   /** Graph entities (bounded subset). */
   graphEntities: Array<{ kind: string; id: string; name?: string }>;
+  /** Health scores for matched projects. */
+  healthScores: ContextHealthEntry[];
+  /** Ecosystem pulse snapshot. */
+  pulse: ContextPulse | null;
+  /** Recent snapshots for history questions. */
+  snapshots: ContextSnapshotSummary[];
   /** Whether Insight has sufficient data to answer. */
   hasSufficientData: boolean;
   /** Summary of what was retrieved. */
@@ -43,6 +76,8 @@ export interface ContextRetrievalOptions {
   maxReports?: number;
   /** Maximum graph entities to include. */
   maxGraphEntities?: number;
+  /** Maximum snapshots to include. */
+  maxSnapshots?: number;
 }
 
 const DEFAULTS: Required<ContextRetrievalOptions> = {
@@ -51,6 +86,7 @@ const DEFAULTS: Required<ContextRetrievalOptions> = {
   maxNarratives: 5,
   maxReports: 3,
   maxGraphEntities: 15,
+  maxSnapshots: 5,
 };
 
 /** Data source interface — implemented by InsightService or test mocks. */
@@ -59,6 +95,24 @@ export interface InsightDataSource {
   resolveEvidenceIds(ids: readonly string[]): Promise<Evidence[]>;
   getNarratives(): Promise<Narrative[]>;
   getReport(lens?: string): Promise<Report | undefined>;
+}
+
+/** Extended data source with health, pulse, and snapshot methods. */
+export interface ExtendedInsightDataSource extends InsightDataSource {
+  /** Get health scores for projects. */
+  getProjectHealth(projectId: string): Promise<
+    | {
+        health: number;
+        momentum: number;
+        risk: number;
+        developer: number;
+      }
+    | undefined
+  >;
+  /** Get ecosystem pulse snapshot. */
+  getPulse(): Promise<ContextPulse>;
+  /** List recent snapshots. */
+  listSnapshots(): Promise<ContextSnapshotSummary[]>;
 }
 
 /** Graph data source — optional, for knowledge graph context. */
@@ -145,6 +199,37 @@ export class ContextRetriever {
       }
     }
 
+    // Health scores (optional, from extended data source)
+    let healthScores: ContextHealthEntry[] = [];
+    const extData = this.data as ExtendedInsightDataSource;
+    if (typeof extData.getProjectHealth === "function") {
+      healthScores = await Promise.all(
+        projects.slice(0, 5).map(async (p) => {
+          const h = await extData.getProjectHealth(p.id).catch(() => undefined);
+          return {
+            projectId: p.id,
+            projectName: p.name,
+            health: h?.health ?? 0,
+            momentum: h?.momentum ?? 0,
+            risk: h?.risk ?? 0,
+            developer: h?.developer ?? 0,
+          };
+        }),
+      );
+    }
+
+    // Pulse (optional, from extended data source)
+    let pulse: ContextPulse | null = null;
+    if (typeof extData.getPulse === "function") {
+      pulse = await extData.getPulse().catch(() => null);
+    }
+
+    // Snapshots (optional, from extended data source)
+    let snapshots: ContextSnapshotSummary[] = [];
+    if (typeof extData.listSnapshots === "function") {
+      snapshots = (await extData.listSnapshots().catch(() => [])).slice(0, opts.maxSnapshots);
+    }
+
     const hasSufficientData = projects.length > 0 || evidence.length > 0 || narratives.length > 0;
 
     const summary = this.buildSummary(
@@ -155,6 +240,9 @@ export class ContextRetriever {
       graphEntityCount,
       graphRelationshipCount,
       hasSufficientData,
+      healthScores.length,
+      pulse,
+      snapshots.length,
     );
 
     return {
@@ -165,6 +253,9 @@ export class ContextRetriever {
       graphEntityCount,
       graphRelationshipCount,
       graphEntities,
+      healthScores,
+      pulse,
+      snapshots,
       hasSufficientData,
       summary,
     };
@@ -185,11 +276,26 @@ export class ContextRetriever {
     graphEntities: number,
     graphRelationships: number,
     hasSufficientData: boolean,
+    healthScoreCount: number = 0,
+    pulse: ContextPulse | null = null,
+    snapshotCount: number = 0,
   ): string {
     if (!hasSufficientData) {
       return "Insight has no sufficient data to answer this question. The data pipeline may not have been refreshed yet, or no projects match the query.";
     }
-    return `Context: ${projectCount} projects, ${evidenceCount} evidence items, ${narrativeCount} narratives, ${reportCount} reports, ${graphEntities} graph entities, ${graphRelationships} graph relationships.`;
+    const parts: string[] = [];
+    parts.push(
+      `Context: ${projectCount} projects, ${evidenceCount} evidence items, ${narrativeCount} narratives, ${reportCount} reports, ${graphEntities} graph entities, ${graphRelationships} graph relationships.`,
+    );
+    if (healthScoreCount > 0)
+      parts.push(`Health scores available for ${healthScoreCount} projects.`);
+    if (pulse)
+      parts.push(
+        `Ecosystem pulse: ${pulse.totalProjects} projects, ${pulse.totalNarratives} narratives, ${pulse.totalEvidence} evidence (as of ${pulse.generatedAt}).`,
+      );
+    if (snapshotCount > 0)
+      parts.push(`${snapshotCount} historical snapshots available for trend analysis.`);
+    return parts.join(" ");
   }
 }
 
@@ -238,6 +344,9 @@ export function serializeContext(ctx: InsightContext): string {
       relationshipCount: ctx.graphRelationshipCount,
       entities: ctx.graphEntities,
     },
+    healthScores: ctx.healthScores,
+    pulse: ctx.pulse,
+    snapshots: ctx.snapshots,
     summary: ctx.summary,
     hasSufficientData: ctx.hasSufficientData,
   });

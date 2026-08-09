@@ -43,7 +43,7 @@ describe("AI domain contracts", () => {
     });
     expect(config.openrouter).toBeDefined();
     expect(config.openrouter!.baseUrl).toBe("https://openrouter.ai/api/v1");
-    expect(config.openrouter!.model).toBe("anthropic/claude-3.5-sonnet");
+    expect(config.openrouter!.model).toBe("meta-llama/llama-3.3-70b-instruct:free");
   });
 
   it("resolveAIProviderConfig uses safe defaults for NVIDIA NIM", () => {

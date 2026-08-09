@@ -14,6 +14,8 @@ import type {
   ProjectReference,
   NarrativeReference,
   ReportReference,
+  GraphEntityReference,
+  HealthReference,
   AssistantMetadata,
 } from "../types";
 import {
@@ -143,6 +145,11 @@ export class AssistantService {
       confidence: r.confidence,
     }));
 
+    const graphEntities: GraphEntityReference[] = context.graphEntities;
+    const healthScores: HealthReference[] = context.healthScores;
+    const pulse = context.pulse;
+    const snapshotCount = context.snapshots.length;
+
     const metadata: AssistantMetadata = {
       providerUsed,
       providerName,
@@ -157,6 +164,10 @@ export class AssistantService {
       projects,
       narratives,
       reports,
+      graphEntities,
+      healthScores,
+      pulse,
+      snapshotCount,
       metadata,
     };
   }
@@ -202,6 +213,10 @@ export class AssistantService {
       projects: [],
       narratives: [],
       reports: [],
+      graphEntities: [],
+      healthScores: [],
+      pulse: null,
+      snapshotCount: 0,
       metadata: {
         providerUsed: false,
         providerName: "none",
