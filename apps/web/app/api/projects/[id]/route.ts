@@ -15,7 +15,9 @@ export async function GET(
       return errorResponse("NOT_FOUND", `Project "${id}" not found.`, 404, undefined, requestId);
     // Resolve evidence IDs through the live/snapshot pipeline
     const evidence = await service.resolveEvidenceIds(project.evidenceIds);
-    return ok({ project, evidence });
+    // M37: Resolve project health scores
+    const health = await service.getProjectHealth(id);
+    return ok({ project, evidence, health });
   } catch (error) {
     return errorFromUnknown(error, requestId);
   }

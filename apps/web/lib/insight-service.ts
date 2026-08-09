@@ -182,6 +182,23 @@ export class InsightService {
     return projects.find((p) => p.id === projectId);
   }
 
+  /**
+   * M37: Get project health scores (health, momentum, risk, developer).
+   * Uses the existing scoreProject from @insight/intelligence.
+   */
+  async getProjectHealth(
+    projectId: string,
+  ): Promise<import("@insight/intelligence").ProjectHealth | undefined> {
+    const project = await this.getProject(projectId);
+    if (project === undefined) return undefined;
+    const evidence = await this.resolveEvidenceIds(project.evidenceIds);
+    const { scoreProject, DEFAULT_BOUNDS } = await import("@insight/intelligence");
+    return scoreProject(project, evidence, {
+      referenceDate: this.referenceDate,
+      bounds: DEFAULT_BOUNDS,
+    });
+  }
+
   async resolveEvidenceIds(evidenceIds: readonly string[]): Promise<Evidence[]> {
     await this.ready();
     const snapshots = await this.snapshotRepository.list();

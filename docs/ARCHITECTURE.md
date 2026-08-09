@@ -61,6 +61,12 @@ services/worker      Scheduled collectors, AI orchestration, and API workers
 - The /narratives/[id] page displays the narrative's trend, change, linked project cards (clickable to /projects/[id]), and supporting evidence log.
 - Narrative cards on /narratives are now clickable links to the detail page, completing the browse → drill-down loop described in PROJECT_MASTER.
 
+## Project health scores boundary (M37)
+
+- GET /api/projects/[id] now includes a `health` field with health, momentum, risk, and developer scores from @insight/intelligence's scoreProject.
+- The /projects/[id] page displays a health profile section with four bounded score cards (health 0–100, momentum −100 to +100, risk 0–100, developer 0–100).
+- InsightService.getProjectHealth() wires the existing scoreProject function over the service's project and resolved evidence — no new scoring logic.
+
 ## Initial deployment
 
 - Next.js frontend: Vercel

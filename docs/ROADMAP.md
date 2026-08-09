@@ -82,3 +82,9 @@
 - [x] Narrative detail API — GET /api/narratives/[id] returns narrative with linked projects and resolved evidence (M36)
 - [x] Narrative detail UI — /narratives/[id] page with trend badge, linked project cards, and evidence log (M36)
 - [x] Narrative list links — narrative cards on /narratives are now clickable links to detail pages (M36)
+
+## Phase 12 — Project health scores
+
+- [x] Project health API — GET /api/projects/[id] now includes health, momentum, risk, and developer scores (M37)
+- [x] Health profile UI — /projects/[id] page shows a health profile section with four bounded score cards (M37)
+- [x] InsightService.getProjectHealth() — wires existing scoreProject from @insight/intelligence (M37)
