@@ -75,10 +75,80 @@ interface ProgramAccountsResult {
   value: Array<{ pubkey: string; account: RawSolanaAccount }>;
 }
 
-/** getTokenAccountsByOwner result. */
-interface TokenAccountsResult {
-  context: { slot: number };
-  value: Array<{ pubkey: string; account: RawSolanaAccount }>;
+/** getEpochInfo response. */
+interface EpochInfoResult {
+  epoch: number;
+  slotIndex: number;
+  slotsInEpoch: number;
+  absoluteSlot: number;
+  blockHeight: number;
+  transactionCount: number;
+}
+
+/** getVoteAccounts response — validator stake/delinquency/commission. */
+interface VoteAccountsResult {
+  current: VoteAccount[];
+  delinquent: VoteAccount[];
+}
+
+interface VoteAccount {
+  votePubkey: string;
+  nodePubkey: string;
+  activatedStake: number;
+  epochVoteAccount: boolean;
+  commission: number;
+  lastVote: number;
+  rootSlot: number;
+  epochCredits: Array<[number, number, number]>;
+}
+
+/** getPerformanceSamples response. */
+interface PerformanceSamplesResult extends Array<{
+  slot: number;
+  numTransactions: number;
+  numSlots: number;
+  samplePeriodSecs: number;
+  numNonVoteTransaction: number;
+}> {}
+
+/** getInflationRate response. */
+interface InflationRateResult {
+  total: number;
+  validator: number;
+  foundation: number;
+  epoch: number;
+  startSlot: number;
+}
+
+/** getClusterNodes response. */
+interface ClusterNodesResult extends Array<{
+  pubkey: string;
+  gossip: string | null;
+  tpu: string | null;
+  rpc: string | null;
+  version: string;
+  featureSet: number;
+  shredVersion: number | null;
+}> {}
+
+/** Raw validator/stake metrics extracted from RPC. */
+export interface SolanaNetworkMetrics {
+  epoch: number;
+  slotIndex: number;
+  slotsInEpoch: number;
+  absoluteSlot: number;
+  blockHeight: number;
+  transactionCount: number;
+  totalActiveStake: number;
+  totalDelinquentStake: number;
+  validatorCount: number;
+  delinquentValidatorCount: number;
+  averageCommission: number;
+  inflationTotal: number;
+  inflationValidator: number;
+  inflationFoundation: number;
+  clusterNodeCount: number;
+  tps: number;
 }
 
 export class SolanaRPCProvider extends BaseProvider {
@@ -184,9 +254,117 @@ export class SolanaRPCProvider extends BaseProvider {
     return { data: projects, asOf: new Date().toISOString() };
   }
 
-  /** Stub — evidence ingestion not in scope for this milestone. */
+  /**
+   * Fetch network-level validator/stake/delinquency/commission/epoch metrics.
+   * Calls getEpochInfo, getVoteAccounts, getInflationRate, getClusterNodes,
+   * and getPerformanceSamples in parallel — surfaces them as evidence items.
+   */
+  async fetchNetworkMetrics(): Promise<SolanaNetworkMetrics | undefined> {
+    this.acquire();
+    try {
+      const [epochInfo, voteAccounts, inflationRate, clusterNodes, perfSamples] = await Promise.all(
+        [
+          this.rpcCall<EpochInfoResult>("getEpochInfo", [{ commitment: this.commitment }]).catch(
+            () => undefined,
+          ),
+          this.rpcCall<VoteAccountsResult>("getVoteAccounts", [
+            { commitment: this.commitment },
+          ]).catch(() => undefined),
+          this.rpcCall<InflationRateResult>("getInflationRate", []).catch(() => undefined),
+          this.rpcCall<ClusterNodesResult>("getClusterNodes", []).catch(() => undefined),
+          this.rpcCall<PerformanceSamplesResult>("getPerformanceSamples", [10]).catch(
+            () => undefined,
+          ),
+        ],
+      );
+
+      const current = voteAccounts?.current ?? [];
+      const delinquent = voteAccounts?.delinquent ?? [];
+      const totalActiveStake = current.reduce((sum, v) => sum + v.activatedStake, 0);
+      const totalDelinquentStake = delinquent.reduce((sum, v) => sum + v.activatedStake, 0);
+      const allValidators = [...current, ...delinquent];
+      const averageCommission =
+        allValidators.length > 0
+          ? allValidators.reduce((sum, v) => sum + v.commission, 0) / allValidators.length
+          : 0;
+
+      const recentSamples = perfSamples ?? [];
+      const tps =
+        recentSamples.length > 0
+          ? recentSamples.reduce((sum, s) => sum + s.numTransactions, 0) /
+            recentSamples.reduce((sum, s) => sum + s.samplePeriodSecs, 0)
+          : 0;
+
+      return {
+        epoch: epochInfo?.epoch ?? 0,
+        slotIndex: epochInfo?.slotIndex ?? 0,
+        slotsInEpoch: epochInfo?.slotsInEpoch ?? 0,
+        absoluteSlot: epochInfo?.absoluteSlot ?? 0,
+        blockHeight: epochInfo?.blockHeight ?? 0,
+        transactionCount: epochInfo?.transactionCount ?? 0,
+        totalActiveStake,
+        totalDelinquentStake,
+        validatorCount: current.length,
+        delinquentValidatorCount: delinquent.length,
+        averageCommission,
+        inflationTotal: inflationRate?.total ?? 0,
+        inflationValidator: inflationRate?.validator ?? 0,
+        inflationFoundation: inflationRate?.foundation ?? 0,
+        clusterNodeCount: clusterNodes?.length ?? 0,
+        tps,
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Fetch evidence items — includes validator/stake/epoch metrics as evidence.
+   */
   async fetchEvidence(): Promise<ProviderFetch<RawEvidence>> {
-    return Promise.resolve({ data: [], asOf: new Date().toISOString() });
+    this.acquire();
+    const asOf = new Date().toISOString();
+    const metrics = await this.fetchNetworkMetrics().catch(() => undefined);
+    if (!metrics) {
+      return { data: [], asOf };
+    }
+
+    const evidence: RawEvidence[] = [
+      {
+        id: `solana-epoch-${metrics.epoch}`,
+        sourceId: "solana-rpc",
+        sourceName: "Solana RPC",
+        note: `Epoch ${metrics.epoch}: slot ${metrics.slotIndex}/${metrics.slotsInEpoch}, block height ${metrics.blockHeight}, ${metrics.transactionCount.toLocaleString()} total transactions`,
+        status: "verified",
+        observedAt: asOf,
+      },
+      {
+        id: `solana-validators-${metrics.epoch}`,
+        sourceId: "solana-rpc",
+        sourceName: "Solana RPC",
+        note: `${metrics.validatorCount} active validators, ${metrics.delinquentValidatorCount} delinquent. Active stake: ${(metrics.totalActiveStake / 1e9).toFixed(2)} SOL, delinquent stake: ${(metrics.totalDelinquentStake / 1e9).toFixed(2)} SOL. Average commission: ${metrics.averageCommission.toFixed(1)}%`,
+        status: "verified",
+        observedAt: asOf,
+      },
+      {
+        id: `solana-inflation-${metrics.epoch}`,
+        sourceId: "solana-rpc",
+        sourceName: "Solana RPC",
+        note: `Inflation — total: ${(metrics.inflationTotal * 100).toFixed(2)}%, validator: ${(metrics.inflationValidator * 100).toFixed(2)}%, foundation: ${(metrics.inflationFoundation * 100).toFixed(2)}%`,
+        status: "verified",
+        observedAt: asOf,
+      },
+      {
+        id: `solana-performance-${metrics.epoch}`,
+        sourceId: "solana-rpc",
+        sourceName: "Solana RPC",
+        note: `${metrics.clusterNodeCount} cluster nodes, ~${metrics.tps.toFixed(0)} TPS (recent samples)`,
+        status: "verified",
+        observedAt: asOf,
+      },
+    ];
+
+    return { data: evidence, asOf };
   }
 
   /** Stub — narrative ingestion not in scope for this milestone. */
