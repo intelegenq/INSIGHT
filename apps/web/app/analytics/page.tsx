@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { useCopilot } from "../../components/Copilot";
 import { InsightChart } from "../../components/InsightChart";
+import { ProjectLogo } from "../../components/ProjectLogo";
 
 interface TimeSeriesPoint {
   label: string;
@@ -38,6 +39,10 @@ interface Project {
   };
   chain?: string;
   classification?: string;
+  logoUrl?: string;
+  change24h?: number;
+  change7d?: number;
+  change30d?: number;
 }
 
 interface AnalyticsData {
@@ -91,8 +96,7 @@ export default function AnalyticsPage() {
       // Defensive: filter to solana_ecosystem only — exclude market_context and network
       setProjects(
         (pRes.projects ?? []).filter(
-          (p: Project) =>
-            p.classification === undefined || p.classification === "solana_ecosystem",
+          (p: Project) => p.classification === undefined || p.classification === "solana_ecosystem",
         ),
       );
     } catch {
@@ -301,9 +305,21 @@ export default function AnalyticsPage() {
                     <tr key={p.id}>
                       <td className="mono text-muted">{i + 1}</td>
                       <td>
-                        <Link href={`/projects/${p.id}`} className="ref-link">
-                          {p.name}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <ProjectLogo src={p.logoUrl} name={p.name} size={20} />
+                          <Link href={`/projects/${p.id}`} className="ref-link">
+                            {p.name}
+                          </Link>
+                          {p.change24h !== undefined && (
+                            <span
+                              className={`metric-change ${p.change24h >= 0 ? "up" : "down"}`}
+                              style={{ fontSize: 10 }}
+                            >
+                              {p.change24h >= 0 ? "+" : ""}
+                              {p.change24h.toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <span className="t-badge muted">{p.category}</span>
