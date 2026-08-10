@@ -17,9 +17,20 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+import { headers } from "next/headers";
+
+async function getBaseUrl(): Promise<string> {
+  const explicit = process.env["NEXT_PUBLIC_BASE_URL"];
+  if (explicit) return explicit;
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") ?? "https";
+  return host ? `${proto}://${host}` : "http://localhost:3000";
+}
+
 export default async function Home() {
   // Fetch all data through API routes — no direct projectRepository import
-  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
+  const baseUrl = await getBaseUrl();
   const [pulseData, projectsData, narrativesData] = await Promise.all([
     fetchJson<{ pulse: { asOf: string; metrics: PulseMetric[] }; timeline: TimelineEvent[] }>(
       `${baseUrl}/api/pulse`,

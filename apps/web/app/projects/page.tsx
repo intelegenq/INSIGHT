@@ -1,9 +1,14 @@
 import Link from "next/link";
 import type { Project } from "@insight/core";
+import { headers } from "next/headers";
 
 async function fetchProjects(): Promise<Project[]> {
-  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/projects`, { cache: "no-store" });
+  const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "";
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") ?? "https";
+  const apiUrl = baseUrl || (host ? `${proto}://${host}` : "http://localhost:3000");
+  const res = await fetch(`${apiUrl}/api/projects`, { cache: "no-store" });
   if (!res.ok) return [];
   const data = (await res.json()) as { projects: Project[] };
   return data.projects;
