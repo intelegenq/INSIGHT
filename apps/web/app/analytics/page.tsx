@@ -37,6 +37,7 @@ interface Project {
     developerActivity?: number;
   };
   chain?: string;
+  classification?: string;
 }
 
 interface AnalyticsData {
@@ -87,7 +88,13 @@ export default function AnalyticsPage() {
           .catch(() => ({ projects: [] })),
       ]);
       if (aRes) setAnalytics(aRes);
-      setProjects(pRes.projects ?? []);
+      // Defensive: filter to solana_ecosystem only — exclude market_context and network
+      setProjects(
+        (pRes.projects ?? []).filter(
+          (p: Project) =>
+            p.classification === undefined || p.classification === "solana_ecosystem",
+        ),
+      );
     } catch {
       /* ignore */
     }

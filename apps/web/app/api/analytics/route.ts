@@ -4,6 +4,10 @@ import { errorFromUnknown, ok, requestIdFromRequest } from "../../../lib/api";
 /**
  * GET /api/analytics — returns time-series data for charts.
  * Aggregates metrics across available snapshots.
+ *
+ * All analytics calculations (totalTvl, categoryDistribution, topByTvl)
+ * are restricted to solana_ecosystem projects — market_context (CEXs)
+ * and network entries are excluded.
  */
 export async function GET(request: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
@@ -12,8 +16,13 @@ export async function GET(request: Request): Promise<Response> {
     await service.ready();
 
     const snapshots = await service.listSnapshots();
-    const projects = await service.listProjects();
+    const allProjects = await service.listProjects();
     const pulse = await service.getPulse();
+
+    // Filter to solana_ecosystem only — exclude market_context and network
+    const projects = allProjects.filter(
+      (p) => p.classification === undefined || p.classification === "solana_ecosystem",
+    );
 
     const sorted = [...snapshots].sort(
       (a, b) => new Date(a.referenceDate).getTime() - new Date(b.referenceDate).getTime(),

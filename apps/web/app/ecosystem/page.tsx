@@ -10,6 +10,7 @@ interface Project {
   category: string;
   description: string;
   metrics: { tvl?: number; volume24h?: number };
+  classification?: string;
 }
 
 interface Narrative {
@@ -50,7 +51,13 @@ export default function EcosystemPage() {
           .then((r) => r.json())
           .catch(() => ({ narratives: [] })),
       ]);
-      setProjects(pRes.projects ?? []);
+      // Defensive: filter to solana_ecosystem only — exclude market_context and network
+      setProjects(
+        (pRes.projects ?? []).filter(
+          (p: Project) =>
+            p.classification === undefined || p.classification === "solana_ecosystem",
+        ),
+      );
       setNarratives(nRes.narratives ?? []);
     } catch {
       /* ignore */

@@ -151,13 +151,18 @@ function mapCategory(defillamaCategory: string | undefined): string {
 
 /** Determine entity classification for a protocol. */
 function classifyEntity(id: string, name: string): EntityClassification {
+  const normName = name.toLowerCase();
+
   // The Solana chain entry itself is a network, not a project.
-  if (id === "solana") {
+  if (id === "solana" || normName === "solana") {
     return "network";
   }
   // Centralized exchanges are market context, not ecosystem projects.
-  if (CEX_NAMES.has(name)) {
-    return "market_context";
+  // Use case-insensitive substring matching so "Binance CEX" matches "Binance".
+  for (const cex of CEX_NAMES) {
+    if (normName.includes(cex.toLowerCase())) {
+      return "market_context";
+    }
   }
   return "solana_ecosystem";
 }
