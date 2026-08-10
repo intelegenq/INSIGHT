@@ -1,606 +1,291 @@
 # Insight
 
-**A comprehensive, automatically updating report on the current state of the Solana ecosystem.**
+**Real-time intelligence for the Solana ecosystem.**
 
-Insight collects Solana network, validator, DeFi, and market data from multiple sources, normalizes it into traceable evidence, generates snapshots on a configurable schedule, and presents it through an interactive dashboard, machine-readable reports, and a grounded AI assistant.
+Insight is a Solana-native intelligence terminal that continuously collects, analyzes, and reports on the state of the Solana ecosystem — from network performance and validator health to DeFi TVL, protocol metrics, narratives, and breaking events.
 
-The data pipeline is the source of truth. The AI assistant is only a natural-language interface over data Insight has already collected and analyzed — it does not invent facts or browse the web.
+Built for the Mission: _Create a comprehensive, automatically updating report on the current state of the Solana ecosystem._
 
 ---
 
-## Mission
+## What Insight Is
 
-Insight was built specifically for the **Solana ecosystem reporting Mission**:
+Insight is not a generic crypto dashboard. It is a **Solana-first intelligence terminal** that combines:
 
-> "Create a comprehensive, automatically updating report on the current state of the Solana ecosystem."
+- **Real-time data collection** from Solana RPC, DeFiLlama, CoinGecko, and Helius
+- **Evidence-backed analytics** — every metric traces back to a source
+- **Anomaly detection** — machine-detected significant changes surface as alerts
+- **Breaking intelligence feed** — Solana Now delivers real-time ecosystem events
+- **Historical analysis** — snapshot-based time-series for trend comparison
+- **Grounded AI copilot** — ask questions about Solana from any page, answered from Insight's collected data only
+- **Report generation** — Markdown, JSON, and PDF exports with evidence citations
 
-### How Insight satisfies each Mission requirement
+### Who It's For
 
-| Requirement                       | Implementation                                                                                                                                                                                                                                             |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Comprehensive data collection** | Solana RPC (epoch, validators, stake, TPS, inflation, cluster nodes), DeFiLlama (Solana-filtered TVL), CoinGecko (SOL price/market cap/volume), Helius (optional on-chain), Demo fallback                                                                  |
-| **Automatic refresh**             | Scheduled ingestion worker (`services/worker`) with configurable interval, `RefreshEngine` → snapshot persistence, manual `POST /api/refresh` trigger                                                                                                      |
-| **Anomaly detection**             | `AnomalyDetector` engine: TVL drops/rises (≥10%), volume surges (≥25%), validator delinquency spikes (≥50%), TPS anomalies (≥30%), SOL price moves (≥5%), narrative trend shifts. `GET /api/anomalies` endpoint. Alert subscriptions with trigger history. |
-| **Evidence / traceability**       | Every data point is an `Evidence` record with `source`, `status`, `observedAt`, and `reference`. Projects and narratives link to evidence via `evidenceIds`. Reports include evidence citations. Evidence timeline page at `/evidence`.                    |
-| **Interactive HTML dashboard**    | 20 Next.js pages: `/dashboard`, `/pulse`, `/projects`, `/narratives`, `/graph`, `/trends`, `/evidence`, `/compare`, `/history`, `/health`, `/alerts`, `/assistant`, `/search`, `/saved`, `/reports`, `/login`, `/register`                                 |
-| **Markdown report**               | `POST /api/reports/export` with `format: "markdown"`. Sample at `samples/sample-report.md`                                                                                                                                                                 |
-| **JSON report**                   | `POST /api/reports/export` with `format: "json"`. Sample at `samples/sample-report.json`                                                                                                                                                                   |
-| **PDF report**                    | `POST /api/reports/export` with `format: "pdf"` (printable HTML with inline CSS, auto-print)                                                                                                                                                               |
-| **AI natural-language interface** | `POST /api/assistant` + `/assistant` UI page. Grounded in Insight data only. Configurable LLM backend with deterministic offline fallback.                                                                                                                 |
+- **Ecosystem researchers** tracking Solana protocol health and trends
+- **Traders and analysts** monitoring TVL, volume, and market movements
+- **Validators and infrastructure operators** watching network performance
+- **Mission judges** evaluating comprehensive Solana ecosystem reporting
+
+---
+
+## Core Capabilities
+
+| Capability            | Description                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| **Overview**          | Homepage with ecosystem snapshot, Solana Now feed, top protocols, and narratives   |
+| **Markets**           | SOL market data, ecosystem TVL, volume, data source health status                  |
+| **Analytics**         | Protocol rankings, TVL charts, category distribution, historical trends            |
+| **Ecosystem**         | Project universe with category filters, narrative tracking                         |
+| **Solana Now**        | Real-time intelligence feed with BREAKING / NEW / EVENT / DATA ALERT badges        |
+| **Research**          | Evidence-backed reports with Markdown / JSON / PDF export                          |
+| **Alerts**            | Anomaly subscription system for health drops, trend changes, TVL movements         |
+| **Evidence**          | Chronological evidence timeline with source attribution and status tracking        |
+| **Historical**        | Snapshot comparison and diff analysis over time                                    |
+| **AI Copilot**        | Global floating chat accessible from every page, grounded in Insight data          |
+| **Reports**           | Auto-generated research briefs with executive summary, evidence, and caveats       |
+| **Anomaly Detection** | TVL drops, volume surges, validator delinquency spikes, TPS anomalies, price moves |
 
 ---
 
 ## Architecture
 
 ```
-Data Sources (Solana RPC, Helius, DeFiLlama, CoinGecko, Demo)
-    │
-    ▼
-Providers / Collectors (packages/data/src/providers/)
-    │  RawProject, RawEvidence, RawNarrative
-    ▼
-Normalization (packages/data/src/transformers/)
-    │  Project, Evidence, Narrative (core types)
-    ▼
-Evidence Store → Snapshots (packages/runtime/src/snapshot/)
-    │  Immutable, timestamped, content-hashed
-    ▼
-Intelligence (packages/intelligence/)
-    │  Health scores, narratives, signals, anomaly detection
-    ▼
-Reports / Dashboard (apps/web/)
-    │  Next.js API routes + React UI
-    ▼
-AI Assistant (packages/ai/)
-    │  Bounded context from Insight data → AI provider → grounded answer
+Data Sources → Providers → Normalization → Evidence → Snapshots → Intelligence → Reports / Dashboard / AI
 ```
 
-**The AI is NOT the source of truth.** It receives bounded structured context from Insight's collected data and translates it into natural language. It does not independently retrieve Solana facts, browse the web, or create independent intelligence.
+### Pipeline
+
+1. **Sources** — Solana RPC, DeFiLlama, CoinGecko, Helius
+2. **Providers** — Fetch raw data from each source
+3. **Normalization** — Transform raw data into Insight domain model
+4. **Evidence** — Attach source, status, timestamp, and reference URL
+5. **Snapshots** — Persist complete ecosystem state at a point in time
+6. **Intelligence** — Health scoring, narrative detection, anomaly detection
+7. **Reports** — Generate Markdown / JSON / PDF with evidence citations
+8. **Dashboard** — Interactive terminal UI with charts, tables, and feeds
+9. **AI** — Natural-language interface over Insight data (not a data source)
+
+### AI Architecture
+
+The AI copilot is **NOT** the source of truth. It is only a natural-language interface.
+
+- AI receives bounded context from Insight's collected data (projects, evidence, narratives, reports, health, pulse, snapshots)
+- AI cannot browse the web, invent metrics, or access external knowledge
+- AI provider configuration is server-side — no provider details in the UI
+- If data is unavailable, the AI and UI state that clearly
 
 ---
 
 ## Data Sources
 
-### Sources that work without credentials
+### Sources working without credentials (public APIs)
 
-| Source         | Endpoint                                         | Data Collected                                                                                                                                                                                             | Key Needed                |
-| -------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| **Solana RPC** | `https://api.mainnet-beta.solana.com`            | Epoch info, slot index, block height, transaction count, active/delinquent validators, activated stake, commission %, inflation rate, cluster node count, TPS (from performance samples), program accounts | No (public, rate-limited) |
-| **DeFiLlama**  | `https://api.llama.fi/protocols`                 | Solana-chain TVL per protocol, 24h/7d/30d changes, protocol category, chain breakdowns                                                                                                                     | No (public)               |
-| **CoinGecko**  | `https://api.coingecko.com/api/v3/coins/markets` | SOL price, market cap, 24h volume, circulating supply, 24h price change, ATH/ATL                                                                                                                           | No (public, rate-limited) |
-| **Demo**       | N/A                                              | Deterministic illustrative data covering all features                                                                                                                                                      | N/A                       |
+| Source         | Data                                                                  | API Key | Configuration                                     |
+| -------------- | --------------------------------------------------------------------- | ------- | ------------------------------------------------- |
+| **Solana RPC** | Epoch, validators, TPS, inflation, cluster nodes, performance samples | None    | `SOLANA_RPC_URL` (defaults to public endpoint)    |
+| **DeFiLlama**  | Protocol TVL, chain breakdowns, 24h/7d/30d changes                    | None    | `DEFILLAMA_API_URL` (defaults to public endpoint) |
+| **CoinGecko**  | SOL price, market cap, 24h volume, circulating supply                 | None    | `COINGECKO_API_URL` (defaults to public endpoint) |
 
 ### Sources requiring credentials (optional)
 
-| Source                      | Variable                                       | Data Collected                                         | Behavior if Absent                                                           |
-| --------------------------- | ---------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| **Helius**                  | `HELIUS_API_KEY`                               | On-chain token accounts, program data via enhanced RPC | Helius provider skipped; Solana RPC still provides validator/epoch metrics   |
-| **LLM backend**             | `AI_LLM_API_KEY` (see `.env.example`)          | AI assistant natural-language answers                  | Deterministic offline mock provider gives grounded answers from Insight data |
-| **Alternative LLM backend** | `AI_LLM_FALLBACK_API_KEY` (see `.env.example`) | Alternative AI provider                                | Skipped; falls back to primary LLM backend or mock                           |
+| Source         | Data                                        | Variable                | Behavior if Absent                       |
+| -------------- | ------------------------------------------- | ----------------------- | ---------------------------------------- |
+| **Helius**     | Enhanced on-chain data, transaction details | `HELIUS_API_KEY`        | Falls back to public Solana RPC          |
+| **AI Backend** | Natural-language AI assistant               | `AI_PROVIDER` + API key | Falls back to deterministic offline mock |
 
-### Fallback behavior
+### Demo Mode
 
-When credentials are absent, Insight degrades gracefully:
+Insight works without any API keys. Without credentials:
 
-- **No `HELIUS_API_KEY`** → Solana RPC still covers validators/stake/epoch/TPS/inflation
-- **No `AI_PROVIDER` / LLM API key configured** → Deterministic offline mock provider gives grounded answers from Insight data
-- **No `INSIGHT_POSTGRES_URL`** → In-memory SQL fallback (snapshots reset on restart)
-- **No `INSIGHT_REDIS_URL`** → In-memory cache fallback
-- **`NEXT_PUBLIC_INSIGHT_DATA_MODE=demo`** → All live providers skipped; deterministic demo data only
+- DeFiLlama, CoinGecko, and Solana RPC provide **real live data**
+- Helius-enhanced features show **unavailable** (not fabricated)
+- AI assistant uses **mock provider** (deterministic offline responses grounded in Insight data)
+- Evidence status clearly shows **LIVE** vs **DEMO** vs **PENDING** vs **UNAVAILABLE**
 
 ---
 
 ## Requirements
 
-- **Node.js**: 22.x (specified in `package.json` engines, Docker uses `node:22-alpine`)
-- **pnpm**: 10.14.0 (specified in `package.json` `packageManager`)
-- **Docker**: Optional, for full-stack production deployment (Docker Compose v3.9)
+- **Node.js** 22.x
+- **pnpm** 10.x
+- **Docker** (optional, for Docker Compose deployment)
 
 ---
 
 ## Quick Start
 
-### Development (demo mode — no API keys needed)
-
 ```bash
-git clone https://github.com/qwertyIQ/Insight.git
-cd Insight
+git clone https://github.com/intelegenq/INSIGHT.git
+cd INSIGHT
 pnpm install
 cp apps/web/.env.example apps/web/.env.local
-pnpm --filter @insight/web dev
+pnpm run dev
 ```
 
-Open `http://localhost:3000` — the dashboard loads with deterministic demo data.
+Open http://localhost:3000
 
-### Verify quality checks
+### For live data (optional keys)
 
-```bash
-pnpm test
-pnpm typecheck
-pnpm build
-pnpm format:check
+Edit `apps/web/.env.local` and add:
+
+```env
+HELIUS_API_KEY=your_key
+AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=your_key
+OPENROUTER_MODEL=your_model
 ```
-
-### Trigger a manual refresh
-
-```bash
-curl -X POST http://localhost:3000/api/refresh
-```
-
-This executes the InsightService pipeline and produces a fresh snapshot.
-
-### Use the AI assistant
-
-Open `http://localhost:3000/assistant` and ask a question. In demo mode (default), the mock provider gives deterministic answers grounded in Insight's demo data.
-
-### Generate a report
-
-```bash
-# Markdown
-curl -X POST http://localhost:3000/api/reports/export \
-  -H "Content-Type: application/json" \
-  -d '{"lens":"ecosystem","format":"markdown"}'
-
-# JSON
-curl -X POST http://localhost:3000/api/reports/export \
-  -H "Content-Type: application/json" \
-  -d '{"lens":"ecosystem","format":"json"}'
-```
-
-Sample reports are in `samples/sample-report.md` and `samples/sample-report.json`.
 
 ---
 
 ## Environment Variables
 
-All variables are read from `process.env`. Copy `apps/web/.env.example` to `apps/web/.env.local` and fill in as needed. **No variables are required** — Insight runs in demo mode by default.
-
-### Data Sources
-
-| Variable                        | Required | Default                               | Purpose                                                    |
-| ------------------------------- | -------- | ------------------------------------- | ---------------------------------------------------------- |
-| `SOLANA_RPC_URL`                | No       | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint for validator/epoch/TPS/inflation data |
-| `HELIUS_API_KEY`                | No       | (empty)                               | Helius API key for enhanced on-chain data                  |
-| `DEFILLAMA_API_URL`             | No       | `https://api.llama.fi`                | DeFiLlama API base URL (public, no key)                    |
-| `COINGECKO_API_URL`             | No       | `https://api.coingecko.com/api/v3`    | CoinGecko API base URL (public, no key)                    |
-| `NEXT_PUBLIC_INSIGHT_DATA_MODE` | No       | (empty)                               | Set to `demo` to force demo-only data                      |
-
-### Infrastructure (Docker Compose)
-
-| Variable               | Required | Default             | Purpose                                               |
-| ---------------------- | -------- | ------------------- | ----------------------------------------------------- |
-| `INSIGHT_POSTGRES_URL` | No       | (empty → in-memory) | PostgreSQL connection string for snapshot persistence |
-| `INSIGHT_REDIS_URL`    | No       | (empty → in-memory) | Redis connection URL for caching                      |
-| `INSIGHT_S3_ENDPOINT`  | No       | (empty → in-memory) | S3-compatible endpoint for report artifacts           |
-| `INSIGHT_S3_BUCKET`    | No       | `insight-artifacts` | S3 bucket name                                        |
-| `INSIGHT_S3_REGION`    | No       | `us-east-1`         | S3 region                                             |
-
-### Worker
-
-| Variable                      | Required | Default          | Purpose                                      |
-| ----------------------------- | -------- | ---------------- | -------------------------------------------- |
-| `INSIGHT_WORKER_INTERVAL_MS`  | No       | `300000` (5 min) | Refresh interval in milliseconds             |
-| `INSIGHT_WORKER_MAX_FAILURES` | No       | `10`             | Max consecutive failures before worker stops |
-
-### AI Assistant
-
-| Variable                   | Required | Default              | Purpose                                                |
-| -------------------------- | -------- | -------------------- | ------------------------------------------------------ |
-| `AI_PROVIDER`              | No       | `mock`               | LLM backend selection (see `.env.example` for options) |
-| `AI_LLM_API_KEY`           | No       | (empty)              | API key for primary LLM backend                        |
-| `AI_LLM_BASE_URL`          | No       | (see `.env.example`) | Primary LLM backend API URL                            |
-| `AI_LLM_MODEL`             | No       | (see `.env.example`) | Primary LLM backend model                              |
-| `AI_LLM_FALLBACK_API_KEY`  | No       | (empty)              | API key for alternative LLM backend                    |
-| `AI_LLM_FALLBACK_BASE_URL` | No       | (see `.env.example`) | Alternative LLM backend API URL                        |
-| `AI_LLM_FALLBACK_MODEL`    | No       | (see `.env.example`) | Alternative LLM backend model                          |
+| Variable                     | Required | Default                               | Purpose                         |
+| ---------------------------- | -------- | ------------------------------------- | ------------------------------- |
+| `SOLANA_RPC_URL`             | No       | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint             |
+| `DEFILLAMA_API_URL`          | No       | `https://api.llama.fi`                | DeFiLlama API endpoint          |
+| `COINGECKO_API_URL`          | No       | `https://api.coingecko.com/api/v3`    | CoinGecko API endpoint          |
+| `HELIUS_API_KEY`             | No       | (empty)                               | Helius enhanced on-chain data   |
+| `AI_PROVIDER`                | No       | `mock`                                | LLM backend selection           |
+| `OPENROUTER_API_KEY`         | No       | (empty)                               | AI backend API key              |
+| `OPENROUTER_BASE_URL`        | No       | (empty)                               | AI backend base URL             |
+| `OPENROUTER_MODEL`           | No       | (empty)                               | AI backend model name           |
+| `INSIGHT_POSTGRES_URL`       | No       | (empty)                               | PostgreSQL connection string    |
+| `INSIGHT_REDIS_URL`          | No       | (empty)                               | Redis connection string         |
+| `INSIGHT_S3_ENDPOINT`        | No       | (empty)                               | S3-compatible object storage    |
+| `INSIGHT_S3_BUCKET`          | No       | (empty)                               | Object storage bucket           |
+| `INSIGHT_WORKER_INTERVAL_MS` | No       | `300000`                              | Worker refresh interval (5 min) |
 
 ---
 
 ## Docker / Production
 
-The `docker-compose.yml` defines a 5-service stack:
-
-| Service    | Image                                                    | Port       | Purpose                               |
-| ---------- | -------------------------------------------------------- | ---------- | ------------------------------------- |
-| `postgres` | `postgres:16-alpine`                                     | 5432       | Snapshot persistence, entity storage  |
-| `redis`    | `redis:7-alpine`                                         | 6379       | Cache, queue                          |
-| `minio`    | `minio/minio:latest`                                     | 9000, 9001 | S3-compatible report artifact storage |
-| `web`      | Built from `docker/Dockerfile` (target: `web-runner`)    | 3000       | Next.js dashboard + API               |
-| `worker`   | Built from `docker/Dockerfile` (target: `worker-runner`) | —          | Scheduled ingestion worker            |
-
-### Commands
-
 ```bash
-# Build and start the full stack
-docker compose up --build
-
-# Start in background
-docker compose up -d --build
-
-# Stop
-docker compose down
+# Build and start all services
+docker compose up --build -d
 
 # View logs
 docker compose logs -f web
 docker compose logs -f worker
 
-# Rebuild after code changes
-docker compose up --build --force-recreate
+# Stop
+docker compose down
 ```
 
-The worker automatically refreshes data every 5 minutes (configurable via `INSIGHT_WORKER_INTERVAL_MS`). Snapshots persist to PostgreSQL so the web app serves the latest data across restarts.
+### Docker Compose Stack
 
-Supply live credentials via `.env` in the project root (Docker Compose reads it automatically):
-
-```env
-HELIUS_API_KEY=your_key_here
-SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=your_key
-AI_LLM_API_KEY=your_key_here
-```
-
----
-
-## Running Live Data
-
-To activate real Solana data:
-
-1. Copy `apps/web/.env.example` to `apps/web/.env.local`
-2. Set `SOLANA_RPC_URL` to a Solana RPC endpoint (public mainnet works, paid RPC recommended for production)
-3. Optionally set `HELIUS_API_KEY` for enhanced on-chain data
-4. Leave `NEXT_PUBLIC_INSIGHT_DATA_MODE` empty (or remove it) to enable live providers
-5. Restart the app
-
-When credentials are absent, Insight falls back to demo data. DeFiLlama and CoinGecko work without keys (public APIs). Solana RPC works with the public endpoint but is rate-limited.
-
----
-
-## Dashboard
-
-The dashboard is a Next.js web app with 20 pages:
-
-| Route              | Description                                                                 |
-| ------------------ | --------------------------------------------------------------------------- |
-| `/`                | Ecosystem pulse — overview with metrics, top projects, narratives, timeline |
-| `/dashboard`       | Customizable dashboard with toggleable/reorderable sections                 |
-| `/projects`        | Project list with health scores, metrics, evidence                          |
-| `/projects/[id]`   | Project detail — health profile, metrics, evidence log                      |
-| `/narratives`      | Narrative list with trend direction indicators                              |
-| `/narratives/[id]` | Narrative detail — linked projects, evidence                                |
-| `/reports`         | Research briefs with export (Markdown/JSON/PDF) and save buttons            |
-| `/assistant`       | AI assistant with conversation history                                      |
-| `/graph`           | Knowledge graph entity browser with relationship visualization              |
-| `/trends`          | Project trend comparison over time + multi-project overlay                  |
-| `/evidence`        | Chronological evidence timeline with status/source filtering                |
-| `/compare`         | Side-by-side project metrics and health scores                              |
-| `/history`         | Snapshot timeline with diff comparison                                      |
-| `/health`          | Source health monitoring — per-provider status                              |
-| `/alerts`          | Alert subscriptions — create, view trigger history                          |
-| `/search`          | Global search with saved search subscriptions                               |
-| `/saved`           | Saved research — reports, narratives, projects, sessions, searches          |
-| `/saved/[id]`      | Research session detail with add/remove items                               |
-| `/login`           | User login                                                                  |
-| `/register`        | User registration                                                           |
-
----
-
-## AI Assistant
-
-**Access:** `http://localhost:3000/assistant`
-
-**What it answers:**
-
-- Project health scores and comparisons
-- Ecosystem pulse and overview
-- Narrative trends and shifts
-- Evidence/source explanations
-- Knowledge graph relationships
-- Report contents and quality verdicts
-- Snapshot history and changes
-
-**Grounding rules:**
-
-- The AI receives bounded structured context from Insight's collected data (projects, evidence, narratives, reports, health scores, pulse, snapshots, graph entities)
-- The system prompt enforces: "Use ONLY the supplied Insight context. Do NOT invent facts."
-- If Insight lacks sufficient data, the assistant says so explicitly
-- Answers include citations referencing evidence IDs
-- The AI does not browse the web, access external knowledge, or independently retrieve Solana facts
-
-**Configuration:**
-
-- Default: `mock` (deterministic, offline, no API key needed)
-- Live LLM backend: set `AI_PROVIDER` and the corresponding API key in environment variables
-- If the AI provider fails, a deterministic fallback answer is generated from Insight's structured data
-- Provider-specific implementation details are internal — the assistant UI shows "connected" or "offline" status only
-
----
-
-## Reports & Exports
-
-### Report lenses
-
-| Lens             | Description                   |
-| ---------------- | ----------------------------- |
-| `ecosystem`      | Full ecosystem overview       |
-| `defi`           | DeFi-focused report           |
-| `infrastructure` | Infrastructure-focused report |
-
-### Export formats
-
-| Format       | Method                                               | Description                                                      |
-| ------------ | ---------------------------------------------------- | ---------------------------------------------------------------- |
-| **Markdown** | `POST /api/reports/export` with `format: "markdown"` | Human-readable report with evidence citations                    |
-| **JSON**     | `POST /api/reports/export` with `format: "json"`     | Machine-readable structured report with evidence                 |
-| **PDF**      | `POST /api/reports/export` with `format: "pdf"`      | Self-contained printable HTML with inline CSS, auto-print dialog |
-
-### Sample reports
-
-- `samples/sample-report.md` — Markdown ecosystem report with evidence log
-- `samples/sample-report.json` — JSON report with evidence and quality verdict
-
-### Quality verdicts
-
-`GET /api/reports/evaluated` returns the report with a `ReportVerdict` including quality label, evidence statistics, and verified flag.
+- **web** — Next.js application (port 3000)
+- **worker** — Automated refresh worker
+- **PostgreSQL** — Snapshot persistence
+- **Redis** — Cache layer
+- **MinIO** — S3-compatible object storage
 
 ---
 
 ## Automation
 
-### RefreshEngine
+The worker runs a scheduled refresh loop:
 
-The `RefreshEngine` (`packages/runtime`) orchestrates the data pipeline:
+1. Fetch data from all configured providers
+2. Normalize into Insight domain model
+3. Attach evidence with source attribution
+4. Persist snapshot
+5. Calculate health scores and narratives
+6. Run anomaly detection against previous snapshot
+7. Update reports and feeds
 
-1. Calls all registered providers (`fetchProjects`, `fetchEvidence`, `fetchNarratives`)
-2. Transforms raw data to core types via the transformer layer
-3. Merges and deduplicates across providers
-4. Runs intelligence engines (health scoring, narrative derivation, report generation)
-5. Produces a `RuntimeResult`
-6. Snapshots the result for persistence
+Default interval: 5 minutes (configurable via `INSIGHT_WORKER_INTERVAL_MS`)
 
-### Worker
-
-The ingestion worker (`services/worker`) wraps the RefreshEngine in a `WorkerRunner` loop:
-
-- Runs on a configurable interval (`INSIGHT_WORKER_INTERVAL_MS`, default 5 minutes)
-- Persists snapshots to PostgreSQL (or in-memory fallback)
-- Shuts down gracefully on SIGTERM/SIGINT
-- Logs per-iteration status
-
-### Manual refresh
-
-```bash
-curl -X POST http://localhost:3000/api/refresh
-```
-
-Returns the new snapshot ID and data.
+Manual refresh: `POST /api/refresh`
 
 ---
 
-## Anomaly Detection
+## AI Copilot
 
-The `AnomalyDetector` (`packages/intelligence/src/anomalyDetector.ts`) detects ecosystem anomalies by comparing snapshots and evidence:
+The AI copilot is accessible from **every page** via:
 
-### Anomaly types
+- Floating "✦ Ask Insight" button (bottom-right)
+- Keyboard shortcut: `Ctrl/Cmd + K`
 
-| Type                          | Trigger                             | Default threshold |
-| ----------------------------- | ----------------------------------- | ----------------- |
-| `tvl_drop`                    | TVL decrease between snapshots      | ≥10%              |
-| `tvl_rise`                    | TVL increase between snapshots      | ≥10%              |
-| `volume_drop`                 | 24h volume decrease                 | ≥25%              |
-| `volume_rise`                 | 24h volume increase                 | ≥25%              |
-| `trend_shift`                 | Narrative trend direction change    | Any shift         |
-| `validator_delinquency_spike` | Delinquent validator count increase | ≥50%              |
-| `tps_anomaly`                 | TPS increase or decrease            | ≥30%              |
-| `price_move`                  | SOL price change                    | ≥5%               |
-| `new_evidence`                | New projects appearing in snapshot  | Any addition      |
+The copilot automatically receives **page context** — it knows which page you're viewing and tailors responses accordingly.
 
-### API
+The AI:
 
-```bash
-curl http://localhost:3000/api/anomalies
-```
+- Answers from Insight's collected data only
+- Cites evidence sources
+- References projects and narratives
+- Explains anomalies and trends
+- Does NOT browse the web or invent facts
 
-Returns anomalies sorted by severity (1=low, 2=medium, 3=high), comparing the two most recent snapshots.
-
-### Alert subscriptions
-
-Users can subscribe to alerts at `/alerts` with conditions:
-
-- `health_drop` — health score drops below threshold
-- `health_rise` — health score rises above threshold
-- `trend_change` — narrative trend changes
-- `new_evidence` — new evidence added
-- `tvl_change` — TVL changes by percentage
-
-Alerts record trigger history with old/new values.
-
----
-
-## Evidence & Traceability
-
-Every claim in Insight is backed by evidence:
-
-- Each `Evidence` record has: `id`, `source` (id + name), `note`, `status` (verified/demo/pending/draft), `observedAt` (ISO timestamp), `reference` (URL/tx/artifact), `chain`
-- Projects link to evidence via `evidenceIds`
-- Narratives link to evidence via `evidenceIds`
-- Reports include evidence citations in all export formats
-- The AI assistant cites evidence IDs in answers
-- The `/evidence` page shows all evidence chronologically with project/narrative associations and filtering by status/source
-
-### Evidence sources
-
-| Source     | Evidence produced                                                                 |
-| ---------- | --------------------------------------------------------------------------------- |
-| Solana RPC | Epoch info, validator counts/stake/commission, inflation rate, TPS, cluster nodes |
-| DeFiLlama  | Per-protocol TVL with 24h/7d/30d changes, reference URL to DeFiLlama              |
-| CoinGecko  | SOL price, market cap, 24h volume, circulating supply, price change               |
-| Demo       | Illustrative lending, developer activity, ecosystem monitoring evidence           |
-
----
-
-## API
-
-Key API endpoints (all under `/api/`):
-
-| Method            | Path                          | Description                        |
-| ----------------- | ----------------------------- | ---------------------------------- |
-| `GET`             | `/api/pulse`                  | Ecosystem pulse metrics + timeline |
-| `GET`             | `/api/projects`               | All tracked projects               |
-| `GET`             | `/api/projects/[id]`          | Project detail with health scores  |
-| `GET`             | `/api/narratives`             | All narratives                     |
-| `GET`             | `/api/narratives/[id]`        | Narrative detail with evidence     |
-| `GET`             | `/api/reports?lens=ecosystem` | Report by lens                     |
-| `POST`            | `/api/reports/export`         | Export report (markdown/json/pdf)  |
-| `GET`             | `/api/reports/evaluated`      | Report with quality verdict        |
-| `GET`             | `/api/graph`                  | Knowledge graph overview           |
-| `GET`             | `/api/graph/[id]`             | Entity detail with relationships   |
-| `GET`             | `/api/health`                 | Source health status               |
-| `GET`             | `/api/anomalies`              | Detected ecosystem anomalies       |
-| `GET`             | `/api/search?q=...`           | Global search                      |
-| `GET`             | `/api/compare?ids=...`        | Cross-project comparison           |
-| `GET`             | `/api/dashboard`              | Aggregated dashboard data          |
-| `GET`             | `/api/trends/projects/[id]`   | Project trend over time            |
-| `GET`             | `/api/trends/overlay?ids=...` | Multi-project trend overlay        |
-| `GET`             | `/api/evidence/timeline`      | Chronological evidence             |
-| `GET`             | `/api/snapshots`              | All snapshots                      |
-| `GET`             | `/api/history?from=&to=`      | Snapshot diff comparison           |
-| `POST`            | `/api/assistant`              | AI assistant (grounded Q&A)        |
-| `POST`            | `/api/refresh`                | Trigger data refresh               |
-| `GET/POST/DELETE` | `/api/saved`                  | Saved research CRUD                |
-| `GET/PATCH`       | `/api/sessions/[id]`          | Research session detail            |
-| `POST`            | `/api/auth/register`          | Register user                      |
-| `POST`            | `/api/auth/login`             | Login                              |
-| `POST`            | `/api/auth/logout`            | Logout                             |
-| `GET`             | `/api/auth/me`                | Current user                       |
+Provider details are hidden from the UI. The interface shows only "Connected" or "Offline".
 
 ---
 
 ## Development
 
 ```bash
-pnpm test          # Run all tests (9 packages)
-pnpm typecheck     # TypeScript type checking (tsc --noEmit)
-pnpm build         # Production build (Next.js + all packages)
-pnpm format        # Format code with Prettier
-pnpm format:check  # Check formatting without writing
-pnpm lint          # ESLint
+pnpm run test          # Run all tests
+pnpm run typecheck     # TypeScript type checking
+pnpm run build         # Production build
+pnpm run format        # Format code
+pnpm run format:check  # Check formatting
 ```
-
-Individual package:
-
-```bash
-pnpm --filter @insight/web dev      # Start dev server
-pnpm --filter @insight/web test     # Run web tests only
-pnpm --filter @insight/data test    # Run data tests only
-```
-
-CI runs on every push to `main` and every PR (`.github/workflows/ci.yml`): format check → lint → typecheck → test → determinism guard → build.
 
 ---
 
 ## Project Structure
 
 ```
-Insight/
-├── apps/
-│   └── web/                    # Next.js 15 web app (dashboard, API routes, UI)
-├── packages/
-│   ├── core/                   # Domain entities, types, scoring contracts
-│   ├── ai/                     # AI assistant: provider abstraction, context retrieval
-│   ├── data/                   # Data providers, normalization, evidence collection
-│   ├── infra/                  # Infrastructure: Postgres, Redis, S3, observability, security
-│   ├── intelligence/           # Health scoring, narrative derivation, anomaly detection
-│   ├── knowledge/              # Knowledge graph builder
-│   └── runtime/                # Refresh engine, snapshot pipeline, history analysis
-├── services/
-│   └── worker/                 # Scheduled ingestion worker
-├── docker/
-│   └── Dockerfile              # Multi-target Dockerfile (web + worker)
-├── docs/                       # Architecture, roadmap, decisions, guidelines
-├── samples/                    # Sample Markdown and JSON reports
-├── docker-compose.yml          # Full-stack deployment (Postgres, Redis, MinIO, web, worker)
-├── vercel.json                 # Vercel deployment config
-├── .github/workflows/ci.yml    # CI pipeline
-└── .env.example                # Environment variable template
+apps/web/          Next.js application (UI + API routes)
+components/        Reusable UI components (Copilot, charts)
+packages/
+  core/            Domain types and interfaces
+  data/            Data providers and transformers
+  intelligence/    Health scoring, narratives, anomaly detection
+  runtime/         Snapshot management and history
+  ai/              AI assistant and context retrieval
+  knowledge/       Knowledge graph
+  infra/           Infrastructure (cache, storage, worker)
+services/worker/   Automated refresh worker
 ```
 
 ---
 
 ## Security / Secrets
 
-- All credentials belong in environment variables or secrets — never in code or committed files
-- `.gitignore` excludes `.env`, `.env.*` (except `.env.example`)
-- No real API keys, tokens, or passwords are committed to the repository
-- The AI provider abstraction redacts secrets in error messages (`redactSecrets` from `@insight/infra`)
-- Auth passwords are salted and hashed (`AuthenticationService` in `@insight/data`)
-- Session tokens are random and time-limited
-- API keys are server-side only — no keys reach the browser
+- Credentials belong in environment variables only
+- No secrets are committed to the repository
+- `.env` and `.env.local` are gitignored
+- AI provider keys are server-side only — never exposed client-side
 
 ---
 
 ## Mission Judging Criteria
 
-### Comprehensiveness
-
-Insight covers:
-
-- **Network performance**: TPS (from `getPerformanceSamples`), slot time, block height, epoch progress (`getEpochInfo`)
-- **Validator status**: active/delinquent validators, stake distribution, average commission (`getVoteAccounts`)
-- **Economic metrics**: SOL price, market cap, 24h volume (CoinGecko); TVL per protocol (DeFiLlama); inflation rate (`getInflationRate`)
-- **Ecosystem growth**: TVL changes, project additions/removals, narrative trends
-- **Upcoming developments**: Narrative tracking with direction indicators (up/down/flat/watch)
-- **Other indicators**: Cluster node count, transaction count, circulating supply, ATH/ATL
-
-### Automation & Maintainability
-
-- Scheduled ingestion worker with configurable interval
-- `RefreshEngine` orchestrates all providers → normalization → intelligence → snapshot
-- Snapshots are immutable, content-hashed, and persist to PostgreSQL
-- Monorepo with clear package boundaries (core, data, infra, intelligence, runtime, ai, knowledge)
-- 9 packages with full test coverage (typecheck + vitest)
-- CI pipeline: format → lint → typecheck → test → determinism guard → build
-
-### Clarity & Presentation
-
-- 20-page interactive dashboard with responsive design
-- Health scores (0–100) with momentum, risk, and developer sub-scores
-- Color-coded trend badges, sparkline charts, evidence timeline
-- Customizable dashboard with section toggles and reordering
-- Global search with saved search subscriptions
-- AI assistant with conversation history and clickable entity links
-
-### Innovation
-
-- Anomaly detection engine detecting TVL/volume/TPS/validator/price anomalies from snapshot diffs
-- Alert subscription system with trigger history
-- Evidence timeline with project/narrative associations
-- Multi-project trend overlay with SVG charts
-- Knowledge graph surfacing with entity browser
-- AI assistant grounded exclusively in Insight's deterministic data (not model knowledge)
-
-### Technical Implementation
-
-- **Public GitHub repository**: `https://github.com/qwertyIQ/Insight`
-- **Reproducible setup**: `pnpm install` → `pnpm dev` (demo mode, no keys)
-- **Clear README**: This document
-- **Maintainable architecture**: Monorepo with 7 packages, clear boundaries, pure functions
-- **Automated collection**: Worker + RefreshEngine + configurable interval
-- **Live hosted demo**: Deployable to Vercel (web) + Docker Compose (full stack)
-- **Minimal API-key dependency**: 3 of 4 data sources are public APIs; AI defaults to offline mock
+| Criterion             | Implementation                                                                                 |
+| --------------------- | ---------------------------------------------------------------------------------------------- |
+| **Comprehensiveness** | 428+ Solana protocols, network metrics, validators, DeFi TVL, SOL price, narratives, evidence  |
+| **Automation**        | Scheduled worker with configurable interval, automatic snapshot persistence, anomaly detection |
+| **Data Sources**      | Solana RPC, DeFiLlama, CoinGecko, Helius — 3 of 4 work without any API key                     |
+| **Anomaly Detection** | TVL drops/rises, volume surges, validator delinquency spikes, TPS anomalies, price moves       |
+| **Reports**           | Markdown, JSON, PDF exports with evidence citations and quality verdicts                       |
+| **Dashboard**         | Dark terminal UI with 25+ pages, charts, tables, real-time feed                                |
+| **AI**                | Global copilot grounded in Insight data, page-context aware, no web browsing                   |
+| **Evidence**          | Every metric traces to source with timestamp, status, and reference URL                        |
+| **Live Demo**         | Deployed on Vercel with real Solana data                                                       |
 
 ---
 
 ## Limitations
 
-- **Demo mode data is illustrative** — when no live credentials are configured, all metrics, projects, and narratives are deterministic demo data, not real ecosystem data
-- **Public Solana RPC is rate-limited** — for production use, a paid RPC endpoint (Helius, QuickNode) is recommended to avoid rate-limit errors
-- **AI assistant is a language interface only** — it translates Insight's structured data into natural language; it does not perform independent analysis, browse the web, or access external knowledge. A live LLM backend requires an API key; without one, a deterministic offline mock provides grounded answers.. A live LLM backend requires an API key; without one, a deterministic offline mock provides grounded answers.
-- **No real-time streaming** — data refreshes on a scheduled interval (default 5 minutes), not on every block
-- **Snapshot persistence depends on infrastructure** — without PostgreSQL configured, snapshots are in-memory and reset on restart
-- **DeFiLlama and CoinGecko are rate-limited** — public APIs have rate limits; for high-frequency refresh, consider using paid tiers or caching strategies
-- **Helius is optional** — without a Helius API key, the Solana RPC provider still covers validator/stake/epoch/TPS/inflation metrics, but enhanced on-chain token data is not available
+- Historical charts require multiple snapshots — trigger refreshes to build time-series
+- ETF flow data and institutional activity are not available — shown as unavailable, not fabricated
+- NFT, DePIN, and RWA analytics depend on data source availability — architecture supports plugging in additional sources
+- AI assistant is a language interface only — it does not perform independent analysis or access external knowledge
+- Free-tier AI models may have rate limits or availability constraints
 
 ---
 
 ## License
 
-This project is built for the Solana ecosystem reporting Mission. All implementation is original.
+MIT

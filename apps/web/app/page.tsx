@@ -18,24 +18,24 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-function fmtNum(v: number | undefined): string {
-  if (v === undefined || v === null) return "—";
-  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
-  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
-  if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
-  return v.toLocaleString();
-}
-
 function fmtTvl(v: number | undefined): string {
   if (v === undefined || v === null) return "—";
   if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
   if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
   return `$${v.toLocaleString()}`;
+}
+
+function fmtNum(v: number | undefined): string {
+  if (v === undefined || v === null) return "—";
+  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+  return v.toLocaleString();
 }
 
 export default async function Home() {
   const baseUrl = await getBaseUrl();
-  const [pulseData, projectsData, narrativesData] = await Promise.all([
+  const [pulseData, projectsData, narrativesData, analyticsData] = await Promise.all([
     fetchJson<{ pulse: { asOf: string; metrics: PulseMetric[] }; timeline: TimelineEvent[] }>(
       `${baseUrl}/api/pulse`,
     ).catch(() => ({ pulse: { asOf: "", metrics: [] }, timeline: [] })),
@@ -43,26 +43,32 @@ export default async function Home() {
     fetchJson<{ narratives: Narrative[] }>(`${baseUrl}/api/narratives`).catch(() => ({
       narratives: [],
     })),
+    fetchJson<{
+      totalTvl: number;
+      totalVolume: number;
+      projectCount: number;
+      categoryCount: number;
+      topByTvl: { name: string; tvl: number; category: string; id: string }[];
+    }>(`${baseUrl}/api/analytics`).catch(() => null),
   ]);
 
   const { pulse, timeline } = pulseData;
   const projects = (projectsData as { projects?: Project[] }).projects ?? [];
   const narratives = (narrativesData as { narratives?: Narrative[] }).narratives ?? [];
 
-  // Calculate ecosystem stats
-  const totalTvl = projects.reduce((sum, p) => sum + (p.metrics?.tvl ?? 0), 0);
-  const totalVolume = projects.reduce((sum, p) => sum + (p.metrics?.volume24h ?? 0), 0);
-  const topProjects = [...projects]
-    .sort((a, b) => (b.metrics?.tvl ?? 0) - (a.metrics?.tvl ?? 0))
-    .slice(0, 8);
+  const totalTvl =
+    analyticsData?.totalTvl ?? projects.reduce((sum, p) => sum + (p.metrics?.tvl ?? 0), 0);
+  const totalVolume =
+    analyticsData?.totalVolume ?? projects.reduce((sum, p) => sum + (p.metrics?.volume24h ?? 0), 0);
+  const topProjects =
+    analyticsData?.topByTvl ??
+    [...projects].sort((a, b) => (b.metrics?.tvl ?? 0) - (a.metrics?.tvl ?? 0)).slice(0, 8);
   const categories = new Set(projects.map((p) => p.category));
 
-  // Get metric values
   const getMetric = (id: string) => pulse.metrics.find((m) => m.id === id)?.value ?? "—";
 
   return (
     <div>
-      {/* Hero header */}
       <div className="page-hero">
         <p className="eyebrow">SOLANA INTELLIGENCE TERMINAL</p>
         <h1>
@@ -75,7 +81,7 @@ export default async function Home() {
       </div>
 
       <div className="terminal-main">
-        {/* Market + Network + DeFi Snapshot */}
+        {/* Ecosystem Snapshot */}
         <div className="terminal-section">
           <div className="section-header">
             <div>
@@ -146,7 +152,6 @@ export default async function Home() {
 
         {/* Top Projects + Narratives */}
         <div className="terminal-grid terminal-grid-2">
-          {/* Top Projects */}
           <div className="terminal-section">
             <div className="section-header">
               <div className="section-title">Top Protocols by TVL</div>
@@ -160,30 +165,32 @@ export default async function Home() {
                   <tr>
                     <th>Protocol</th>
                     <th className="right">TVL</th>
-                    <th className="right">24h Vol</th>
+                    <th>Category</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {topProjects.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        <Link href={`/projects/${p.id}`} className="ref-link">
-                          {p.name}
-                        </Link>
-                        <span className="category-badge" style={{ marginLeft: 8 }}>
-                          {p.category}
-                        </span>
-                      </td>
-                      <td className="right mono">{fmtTvl(p.metrics?.tvl)}</td>
-                      <td className="right mono">{fmtNum(p.metrics?.volume24h)}</td>
-                    </tr>
-                  ))}
+                  {topProjects.slice(0, 8).map((p) => {
+                    const tvl = "tvl" in p ? p.tvl : ((p as Project).metrics?.tvl ?? 0);
+                    const category = "category" in p ? p.category : (p as Project).category;
+                    return (
+                      <tr key={p.id}>
+                        <td>
+                          <Link href={`/projects/${p.id}`} className="ref-link">
+                            {p.name}
+                          </Link>
+                        </td>
+                        <td className="right mono">{fmtTvl(tvl)}</td>
+                        <td>
+                          <span className="t-badge muted">{category}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Narratives */}
           <div className="terminal-section">
             <div className="section-header">
               <div className="section-title">Active Narratives</div>
