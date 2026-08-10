@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { InsightChart } from "../components/InsightChart";
+import { InsightChart, Sparkline } from "../components/InsightChart";
 import { ProjectLogo } from "../components/ProjectLogo";
 import { useCopilot } from "../components/Copilot";
 
@@ -70,13 +70,16 @@ function MetricCard({
   value,
   change,
   sub,
+  sparkData,
 }: {
   label: string;
   value: string;
   change?: number;
   sub?: string;
+  sparkData?: number[];
 }) {
   const isUp = (change ?? 0) >= 0;
+  const sparkColor = isUp ? "#059669" : "#dc2626";
   return (
     <div
       style={{
@@ -122,6 +125,11 @@ function MetricCard({
         </div>
       )}
       {sub && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{sub}</div>}
+      {sparkData && sparkData.length > 0 && (
+        <div style={{ width: 80, height: 36, marginTop: 4 }}>
+          <Sparkline data={sparkData} color={sparkColor} height={36} />
+        </div>
+      )}
     </div>
   );
 }
@@ -247,6 +255,7 @@ export default function Home() {
             label="SOL Price"
             value={current ? `$${current.price.toFixed(2)}` : "—"}
             change={current?.change24h}
+            sparkData={priceData?.prices?.slice(-30).map((p) => p.price)}
           />
           <MetricCard
             label="Market Cap"
