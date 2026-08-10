@@ -1,5 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "SOLANA_RPC_URL",
+    "DEFILLAMA_API_URL",
+    "COINGECKO_API_URL",
+    "HELIUS_API_KEY",
+    "AI_PROVIDER",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_BASE_URL",
+    "OPENROUTER_MODEL",
+    "NVIDIA_NIM_API_KEY",
+    "NVIDIA_NIM_BASE_URL",
+    "NVIDIA_NIM_MODEL",
+    "INSIGHT_POSTGRES_URL",
+    "INSIGHT_REDIS_URL",
+    "INSIGHT_S3_ENDPOINT",
+    "INSIGHT_S3_BUCKET",
+    "INSIGHT_S3_REGION",
+    "INSIGHT_WORKER_INTERVAL_MS",
+    "INSIGHT_WORKER_MAX_FAILURES",
+    "INSIGHT_REFERENCE_DATE",
+    "NEXT_PUBLIC_INSIGHT_DATA_MODE",
+    "NEXT_PUBLIC_BASE_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
