@@ -19,20 +19,35 @@ export async function GET(): Promise<Response> {
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getEpochInfo", params: [{ commitment: "confirmed" }] }),
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getEpochInfo",
+          params: [{ commitment: "confirmed" }],
+        }),
         signal: controller.signal,
       });
       clearTimeout(timer);
       const data = await res.json();
-      results.push({ endpoint: url, ok: true, data: data?.result ? {
-        epoch: data.result.epoch,
-        slotIndex: data.result.slotIndex,
-        slotsInEpoch: data.result.slotsInEpoch,
-        blockHeight: data.result.blockHeight,
-        transactionCount: data.result.transactionCount,
-      } : data });
+      results.push({
+        endpoint: url,
+        ok: true,
+        data: data?.result
+          ? {
+              epoch: data.result.epoch,
+              slotIndex: data.result.slotIndex,
+              slotsInEpoch: data.result.slotsInEpoch,
+              blockHeight: data.result.blockHeight,
+              transactionCount: data.result.transactionCount,
+            }
+          : data,
+      });
     } catch (err) {
-      results.push({ endpoint: url, ok: false, error: err instanceof Error ? err.message : "unknown" });
+      results.push({
+        endpoint: url,
+        ok: false,
+        error: err instanceof Error ? err.message : "unknown",
+      });
     }
   }
 
@@ -52,7 +67,11 @@ export async function GET(): Promise<Response> {
       const data = await res.json();
       healthResults.push({ endpoint: url, ok: true, status: data?.result });
     } catch (err) {
-      healthResults.push({ endpoint: url, ok: false, status: err instanceof Error ? err.message : "error" });
+      healthResults.push({
+        endpoint: url,
+        ok: false,
+        status: err instanceof Error ? err.message : "error",
+      });
     }
   }
 
