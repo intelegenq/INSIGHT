@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useCopilot } from "../../components/Copilot";
 import { InsightChart, Sparkline } from "../../components/InsightChart";
-
-// ── Types ─────────────────────────────────────────────────────
+import { useCopilot } from "../../components/Copilot";
 
 interface PricePoint {
   timestamp: string;
@@ -28,11 +26,6 @@ interface CurrentMarket {
   circulatingSupply: number;
   high24h: number;
   low24h: number;
-  // Fields the API may add later; shown as unavailable when absent
-  fdv?: number;
-  totalSupply?: number;
-  change90d?: number;
-  change1y?: number;
 }
 interface SolanaPriceData {
   prices: PricePoint[];
@@ -45,188 +38,47 @@ interface HealthProvider {
   status: string;
 }
 
-// ── Format helpers ────────────────────────────────────────────
-
-function fmtUsd(v: number | undefined | null): string {
-  if (v === undefined || v === null || Number.isNaN(v)) return "—";
+function fmtUsd(v: number | undefined): string {
+  if (!v) return "\u2014";
   if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
   if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
   if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
   return `$${v.toFixed(2)}`;
 }
-
-function fmtNum(v: number | undefined | null, suffix = ""): string {
-  if (v === undefined || v === null || Number.isNaN(v)) return "—";
-  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B${suffix}`;
-  if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M${suffix}`;
-  if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K${suffix}`;
-  return `${v.toLocaleString()}${suffix}`;
-}
-
-function fmtPct(v: number | undefined | null): string {
-  if (v === undefined || v === null || Number.isNaN(v)) return "—";
+function fmtPct(v: number | undefined): string {
+  if (v === undefined || v === null) return "\u2014";
   return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
 }
 
-function fmtDateLabel(ts: string, days: number): string {
-  const d = new Date(ts);
-  if (days <= 1) {
-    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  }
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-// ── Timeframe options ─────────────────────────────────────────
-
-const TIMEFRAMES = [
-  { label: "1D", val: 1 },
-  { label: "7D", val: 7 },
-  { label: "30D", val: 30 },
-  { label: "90D", val: 90 },
-  { label: "1Y", val: 365 },
-] as const;
-
-// ── Source metadata ───────────────────────────────────────────
-
-const SOURCE_META: Record<string, { label: string; desc: string }> = {
-  coingecko: {
-    label: "CoinGecko",
-    desc: "SOL price, market cap, volume, supply",
-  },
-  defillama: {
-    label: "DeFiLlama",
-    desc: "Ecosystem TVL & protocol metrics",
-  },
-  "solana-rpc": {
-    label: "Solana RPC",
-    desc: "On-chain epoch & network data",
-  },
-};
-
-const DEFAULT_SOURCES = [
-  { id: "coingecko", status: "unknown" },
-  { id: "defillama", status: "unknown" },
-  { id: "solana-rpc", status: "unknown" },
-];
-
-// ── Inline style fragments ────────────────────────────────────
-
-const heroPriceStyle: React.CSSProperties = {
-  fontSize: 44,
+const rule = { borderTop: "2px solid #3d2e1e", margin: "24px 0" };
+const sectionHeader = {
+  fontSize: 11,
   fontWeight: 800,
-  fontFamily: "var(--font-mono)",
-  letterSpacing: "-0.03em",
+  letterSpacing: "0.1em",
+  textTransform: "uppercase",
   color: "var(--text)",
-  lineHeight: 1,
 };
-
-const heroChangeStyle: React.CSSProperties = {
-  fontSize: 18,
-  fontWeight: 700,
-  fontFamily: "var(--font-mono)",
-};
-
-const metricLabelStyle: React.CSSProperties = {
+const label = {
   fontSize: 10,
-  fontWeight: 700,
-  letterSpacing: "0.08em",
+  fontWeight: 600,
+  letterSpacing: "0.06em",
   textTransform: "uppercase",
   color: "var(--text-muted)",
 };
-
-const metricValueStyle: React.CSSProperties = {
-  fontSize: 20,
-  fontWeight: 700,
-  fontFamily: "var(--font-mono)",
-  color: "var(--text)",
-  lineHeight: 1.2,
-};
-
-const metricSubStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: "var(--text-muted)",
-};
-
-const sourceDotStyle = (status: string): React.CSSProperties => ({
-  width: 8,
-  height: 8,
-  borderRadius: "50%",
-  display: "inline-block",
-  flexShrink: 0,
-  background:
-    status === "healthy"
-      ? "var(--green)"
-      : status === "degraded"
-        ? "var(--yellow)"
-        : status === "unknown"
-          ? "var(--text-muted)"
-          : "var(--red)",
-});
-
-const perfPillStyle = (v: number | undefined): React.CSSProperties => ({
-  display: "flex",
-  flexDirection: "column",
-  gap: 2,
-  padding: "10px 14px",
-  borderRadius: "var(--radius-sm)",
-  background: "var(--bg-elevated)",
-  border: "1px solid var(--border)",
-  flex: 1,
-  minWidth: 0,
-});
-
-const perfValueStyle = (v: number | undefined): React.CSSProperties => ({
-  fontSize: 16,
-  fontWeight: 700,
-  fontFamily: "var(--font-mono)",
-  color: v === undefined ? "var(--text-muted)" : v >= 0 ? "var(--green)" : "var(--red)",
-});
-
-const cardStyle: React.CSSProperties = {
-  background: "var(--bg-card)",
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius)",
-  padding: 20,
-};
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontSize: 16,
-  fontWeight: 700,
-  color: "var(--text)",
-  letterSpacing: "-0.01em",
-};
-
-const sectionSubtitleStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: "var(--text-muted)",
-  marginTop: 2,
-};
-
-const provenanceStyle: React.CSSProperties = {
-  fontSize: 13,
-  color: "var(--text-secondary)",
-  lineHeight: 1.65,
-};
-
-// ── Component ─────────────────────────────────────────────────
+const num = { fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text)" };
 
 export default function MarketsPage() {
   const { setPageContext } = useCopilot();
   useEffect(() => {
-    setPageContext(
-      "[Markets] User is viewing full SOL market analytics: price chart, volume chart, market cap chart, performance metrics (24h/7d/30d/90d/1y), supply data, and data source health.",
-    );
+    setPageContext("[Markets] SOL market data, price chart, volume, market cap, performance.");
   }, [setPageContext]);
 
   const [priceData, setPriceData] = useState<SolanaPriceData | null>(null);
   const [health, setHealth] = useState<HealthProvider[]>([]);
-  const [days, setDays] = useState<number>(30);
+  const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(false);
     try {
       const [pRes, hRes] = await Promise.all([
         fetch(`/api/solana-price?days=${days}`)
@@ -236,11 +88,10 @@ export default function MarketsPage() {
           .then((r) => r.json())
           .catch(() => ({ providers: [] })),
       ]);
-      if (pRes && !pRes.error) setPriceData(pRes);
-      else setPriceData(null);
+      if (pRes) setPriceData(pRes);
       setHealth(hRes.providers ?? []);
     } catch {
-      setError(true);
+      /* ignore */
     }
     setLoading(false);
   }, [days]);
@@ -249,523 +100,295 @@ export default function MarketsPage() {
     void load();
   }, [load]);
 
-  const current = priceData?.current ?? null;
-  const prices = priceData?.prices ?? [];
-  const marketCaps = priceData?.marketCaps ?? [];
-  const volumes = priceData?.volumes ?? [];
-
-  // Build chart datasets
-  const priceChart = prices.map((p) => ({
-    label: fmtDateLabel(p.timestamp, days),
-    value: p.price,
-  }));
-  const volumeChart = volumes.map((v) => ({
-    label: fmtDateLabel(v.timestamp, days),
-    value: v.value,
-  }));
-  const mcapChart = marketCaps.map((m) => ({
-    label: fmtDateLabel(m.timestamp, days),
-    value: m.value,
-  }));
-
-  // Sparkline data for hero
-  const sparkPrices = prices.slice(-30).map((p) => p.price);
-
-  // Resolve health providers, merging defaults with API response
-  const resolvedProviders = (() => {
-    if (health.length > 0) return health;
-    return DEFAULT_SOURCES as HealthProvider[];
-  })();
-
-  // Performance strip
-  const perfMetrics = [
-    { label: "24h", value: current?.change24h },
-    { label: "7d", value: current?.change7d },
-    { label: "30d", value: current?.change30d },
-    { label: "90d", value: current?.change90d },
-    { label: "1y", value: current?.change1y },
-  ];
-
-  // Change indicator helper
-  const changeColor = (v: number | undefined) =>
-    v === undefined ? "var(--text-muted)" : v >= 0 ? "var(--green)" : "var(--red)";
+  const c = priceData?.current;
+  const priceChart =
+    priceData?.prices?.map((p) => ({
+      label: new Date(p.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      value: p.price,
+    })) ?? [];
+  const volChart =
+    priceData?.volumes?.map((v) => ({
+      label: new Date(v.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      value: v.value,
+    })) ?? [];
+  const mcChart =
+    priceData?.marketCaps?.map((m) => ({
+      label: new Date(m.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      value: m.value,
+    })) ?? [];
+  const spark = priceData?.prices?.slice(-30).map((p) => p.price) ?? [];
 
   return (
-    <div>
-      {/* ── Hero ── */}
-      <div className="page-hero">
-        <p className="eyebrow">MARKETS</p>
-        <h1 style={{ fontSize: 32, marginBottom: 4 }}>SOL market analytics</h1>
-        <p className="subtitle">Price, volume, market cap, performance & source attribution</p>
+    <div style={{ background: "var(--linen)", minHeight: "100vh" }}>
+      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "32px 24px 0" }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 32,
+            fontWeight: 700,
+            margin: 0,
+            color: "var(--text)",
+          }}
+        >
+          Markets
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 2 }}>
+          SOL price, volume, market cap, and performance
+        </p>
       </div>
 
-      <div className="terminal-main">
-        {loading && <div className="t-loading">Loading market data…</div>}
-
-        {!loading && error && (
-          <div className="t-empty">Failed to load market data. Please try again.</div>
+      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "0 24px 24px" }}>
+        {loading && (
+          <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
+            Loading market data...
+          </div>
         )}
 
-        {!loading && !error && (
+        {!loading && c && (
           <>
-            {/* ── 1. Metric Header ── */}
-            <div className="chart-container" style={{ marginBottom: 16, padding: 24 }}>
-              {/* Big price + change */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 16,
-                  marginBottom: 20,
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={metricLabelStyle}>SOL / USD</span>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      gap: 12,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={heroPriceStyle}>
-                      {current ? `$${current.price.toFixed(2)}` : "—"}
-                    </span>
-                    {current?.change24h !== undefined && (
-                      <span
-                        style={{
-                          ...heroChangeStyle,
-                          color: changeColor(current.change24h),
-                        }}
-                      >
-                        {fmtPct(current.change24h)}{" "}
-                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-muted)" }}>
-                          24h
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                    Source: CoinGecko ·{" "}
-                    {current
-                      ? `Updated ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
-                      : "Awaiting data"}
-                  </span>
-                </div>
-                {/* Sparkline */}
-                {sparkPrices.length > 1 && (
-                  <div style={{ width: 180, height: 48 }}>
-                    <Sparkline data={sparkPrices} color="var(--accent)" height={48} />
-                  </div>
-                )}
-              </div>
-
-              {/* Metric grid */}
-              <div
-                className="terminal-grid terminal-grid-4"
-                style={{
-                  gap: 1,
-                  background: "var(--border)",
-                  borderRadius: "var(--radius)",
-                  overflow: "hidden",
-                }}
-              >
-                <MetricCell
-                  label="Market Cap"
-                  value={fmtUsd(current?.marketCap)}
-                  sub={
-                    current?.change24h !== undefined
-                      ? `${fmtPct(current.change24h)} 24h`
-                      : undefined
-                  }
-                  subColor={changeColor(current?.change24h)}
-                />
-                <MetricCell
-                  label="FDV"
-                  value={current?.fdv ? fmtUsd(current.fdv) : "Data unavailable"}
-                  sub={current?.fdv ? "Fully diluted" : "Not in free API"}
-                />
-                <MetricCell
-                  label="Circulating Supply"
-                  value={
-                    current?.circulatingSupply ? fmtNum(current.circulatingSupply, " SOL") : "—"
-                  }
-                  sub={
-                    current?.circulatingSupply
-                      ? `${(current.circulatingSupply / 1e9).toFixed(1)}B SOL`
-                      : undefined
-                  }
-                />
-                <MetricCell
-                  label="Total Supply"
-                  value={
-                    current?.totalSupply ? fmtNum(current.totalSupply, " SOL") : "Data unavailable"
-                  }
-                  sub={current?.totalSupply ? "Max supply" : "Not in free API"}
-                />
-                <MetricCell
-                  label="24h Volume"
-                  value={fmtUsd(current?.volume)}
-                  sub="Trading volume"
-                />
-                <MetricCell
-                  label="24h High"
-                  value={current?.high24h ? `$${current.high24h.toFixed(2)}` : "—"}
-                />
-                <MetricCell
-                  label="24h Low"
-                  value={current?.low24h ? `$${current.low24h.toFixed(2)}` : "—"}
-                />
-                <MetricCell
-                  label="24h Range"
-                  value={
-                    current?.high24h && current?.low24h
-                      ? `$${current.low24h.toFixed(2)} – $${current.high24h.toFixed(2)}`
-                      : "—"
-                  }
-                  sub={
-                    current?.high24h && current?.low24h
-                      ? `${(((current.high24h - current.low24h) / current.low24h) * 100).toFixed(1)}% spread`
-                      : undefined
-                  }
-                />
-              </div>
-            </div>
-
-            {/* ── 2. SOL Price Chart ── */}
-            <div className="chart-container" style={{ marginBottom: 16 }}>
-              <div className="section-header">
-                <div>
-                  <div style={sectionTitleStyle}>SOL Price</div>
-                  <div style={sectionSubtitleStyle}>
-                    Source: CoinGecko · {priceChart.length} data points ·{" "}
-                    {days <= 1 ? "hourly" : days <= 30 ? "daily" : "interval"} candles
-                  </div>
-                </div>
-                <div className="timeframe-controls">
-                  {TIMEFRAMES.map((t) => (
-                    <button
-                      key={t.val}
-                      className={`timeframe-btn ${days === t.val ? "active" : ""}`}
-                      onClick={() => setDays(t.val)}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Current price + change prominently above chart */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 14,
-                  marginBottom: 12,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
+            {/* Price header */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginTop: 24 }}>
+              <div>
+                <div style={label}>SOL / USD</div>
+                <div
                   style={{
-                    fontSize: 28,
-                    fontWeight: 800,
+                    fontSize: 44,
+                    fontWeight: 700,
                     fontFamily: "var(--font-mono)",
                     color: "var(--text)",
+                    lineHeight: 1,
                   }}
                 >
-                  {current ? `$${current.price.toFixed(2)}` : "—"}
-                </span>
-                {current?.change24h !== undefined && (
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      fontFamily: "var(--font-mono)",
-                      color: changeColor(current.change24h),
-                    }}
-                  >
-                    {fmtPct(current.change24h)} (24h)
-                  </span>
-                )}
-                {current?.change7d !== undefined && (
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      fontFamily: "var(--font-mono)",
-                      color: changeColor(current.change7d),
-                    }}
-                  >
-                    7d: {fmtPct(current.change7d)}
-                  </span>
-                )}
+                  ${c.price.toFixed(2)}
+                </div>
               </div>
-              {priceChart.length > 0 ? (
-                <InsightChart
-                  data={priceChart}
-                  type="area"
-                  color="var(--accent)"
-                  height={320}
-                  formatValue={(v) => `$${v.toFixed(2)}`}
-                />
-              ) : (
-                <div className="t-empty">Price data unavailable.</div>
+              <div style={{ paddingBottom: 6 }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono)",
+                    color: (c.change24h ?? 0) >= 0 ? "var(--green)" : "var(--red)",
+                  }}
+                >
+                  {(c.change24h ?? 0) >= 0 ? "\u25B2" : "\u25BC"} {fmtPct(c.change24h)}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>24h</div>
+              </div>
+              {spark.length > 1 && (
+                <div style={{ width: 120, height: 40, paddingBottom: 6 }}>
+                  <Sparkline
+                    data={spark}
+                    color={(c.change24h ?? 0) >= 0 ? "#059669" : "#dc2626"}
+                    height={40}
+                  />
+                </div>
               )}
             </div>
 
-            {/* ── 3 & 4. Volume + Market Cap side by side ── */}
-            <div className="terminal-grid terminal-grid-2" style={{ marginBottom: 16 }}>
-              {/* Trading Volume */}
-              <div className="chart-container" style={{ marginBottom: 0 }}>
-                <div className="section-header">
-                  <div>
-                    <div style={sectionTitleStyle}>Trading Volume</div>
-                    <div style={sectionSubtitleStyle}>Source: CoinGecko · {days}D</div>
-                  </div>
-                  {current?.volume !== undefined && (
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--accent)",
-                      }}
-                    >
-                      {fmtUsd(current.volume)}
-                    </span>
-                  )}
-                </div>
-                {volumeChart.length > 0 ? (
-                  <InsightChart
-                    data={volumeChart}
-                    type="bar"
-                    color="var(--violet)"
-                    height={220}
-                    formatValue={(v) => fmtUsd(v)}
-                  />
-                ) : (
-                  <div className="t-empty">Volume data unavailable.</div>
-                )}
-              </div>
-
-              {/* Market Cap */}
-              <div className="chart-container" style={{ marginBottom: 0 }}>
-                <div className="section-header">
-                  <div>
-                    <div style={sectionTitleStyle}>Market Cap</div>
-                    <div style={sectionSubtitleStyle}>Source: CoinGecko · {days}D</div>
-                  </div>
-                  {current?.marketCap !== undefined && (
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--accent)",
-                      }}
-                    >
-                      {fmtUsd(current.marketCap)}
-                    </span>
-                  )}
-                </div>
-                {mcapChart.length > 0 ? (
-                  <InsightChart
-                    data={mcapChart}
-                    type="area"
-                    color="var(--blue)"
-                    height={220}
-                    formatValue={(v) => fmtUsd(v)}
-                  />
-                ) : (
-                  <div className="t-empty">Market cap data unavailable.</div>
-                )}
-              </div>
-            </div>
-
-            {/* ── 5. Price Performance strip ── */}
-            <div className="chart-container" style={{ marginBottom: 16 }}>
-              <div className="section-header">
-                <div>
-                  <div style={sectionTitleStyle}>Price Performance</div>
-                  <div style={sectionSubtitleStyle}>
-                    Period-over-period returns · Source: CoinGecko
-                  </div>
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                {perfMetrics.map((m) => (
-                  <div key={m.label} style={perfPillStyle(m.value)}>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "var(--text-muted)",
-                      }}
-                    >
-                      {m.label}
-                    </span>
-                    <span style={perfValueStyle(m.value)}>{fmtPct(m.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ── 6. Data Sources ── */}
-            <div className="terminal-section">
-              <div className="section-header">
-                <div>
-                  <div style={sectionTitleStyle}>Data Sources</div>
-                  <div style={sectionSubtitleStyle}>Live health status of upstream providers</div>
-                </div>
-              </div>
-              <div className="terminal-grid terminal-grid-3">
-                {resolvedProviders.map((p) => {
-                  const meta = SOURCE_META[p.id] ?? {
-                    label: p.id,
-                    desc: "",
-                  };
-                  return (
-                    <div key={p.id} style={cardStyle}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          marginBottom: 8,
-                        }}
-                      >
-                        <span style={sourceDotStyle(p.status)} />
-                        <span
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: "var(--text)",
-                          }}
-                        >
-                          {meta.label}
-                        </span>
-                        <span
-                          className={`t-badge ${
-                            p.status === "healthy"
-                              ? "green"
-                              : p.status === "degraded"
-                                ? "yellow"
-                                : p.status === "unknown"
-                                  ? "muted"
-                                  : "red"
-                          }`}
-                          style={{ marginLeft: "auto" }}
-                        >
-                          {p.status}
-                        </span>
-                      </div>
-                      <div style={metricSubStyle}>{meta.desc}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ── 7. Data Provenance ── */}
-            <div className="terminal-section">
-              <div style={cardStyle}>
+            {/* Stats strip */}
+            <div
+              style={{
+                display: "flex",
+                gap: 0,
+                marginTop: 16,
+                borderTop: "1px solid var(--border)",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              {[
+                { l: "Market Cap", v: fmtUsd(c.marketCap) },
+                { l: "24h Volume", v: fmtUsd(c.volume) },
+                {
+                  l: "Circ. Supply",
+                  v: c.circulatingSupply ? `${(c.circulatingSupply / 1e9).toFixed(1)}B` : "\u2014",
+                },
+                { l: "24h High", v: `$${c.high24h?.toFixed(2) ?? "\u2014"}` },
+                { l: "24h Low", v: `$${c.low24h?.toFixed(2) ?? "\u2014"}` },
+              ].map((s, i) => (
                 <div
+                  key={s.l}
                   style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "var(--text-muted)",
-                    marginBottom: 10,
+                    flex: 1,
+                    padding: "10px 12px",
+                    borderRight: i < 4 ? "1px solid var(--border)" : "none",
                   }}
                 >
-                  Market Data Provenance & Limitations
+                  <div style={label}>{s.l}</div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--text)",
+                      marginTop: 2,
+                    }}
+                  >
+                    {s.v}
+                  </div>
                 </div>
-                <div style={provenanceStyle}>
-                  <p style={{ marginTop: 0 }}>
-                    <strong>SOL price, market cap, volume, and supply data</strong> are fetched live
-                    from the{" "}
-                    <span style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}>
-                      CoinGecko free API
-                    </span>
-                    . Price history is available for 1D – 1Y ranges; volume and market cap charts
-                    use the same source and timeframe.
-                  </p>
-                  <p>
-                    <strong>ETF flow data and institutional activity</strong> are{" "}
-                    <em>not available</em> through CoinGecko&apos;s free tier. These metrics are shown as
-                    &ldquo;Data unavailable&rdquo; rather than fabricated or estimated.
-                  </p>
-                  <p>
-                    <strong>FDV (fully diluted valuation) and total supply</strong> may not be
-                    returned by the free API in all responses — when absent, they are labeled
-                    accordingly. Circulating supply is available and shown in the metric header.
-                  </p>
-                  <p>
-                    <strong>90d and 1y performance</strong> percentages depend on the CoinGecko
-                    market data response; when the API does not return these fields (e.g.,
-                    rate-limited or shorter history), they display as &ldquo;—&rdquo;.
-                  </p>
-                  <p style={{ marginBottom: 0 }}>
-                    All metrics on this page are <strong>evidence-backed</strong> and traceable to
-                    their upstream source. No data is synthesized or interpolated. If a source is
-                    down, the corresponding section displays &ldquo;Data unavailable.&rdquo;
-                  </p>
+              ))}
+            </div>
+
+            {/* Performance strip */}
+            <div style={{ display: "flex", gap: 0, marginTop: 8 }}>
+              {[
+                { l: "24h", v: c.change24h },
+                { l: "7d", v: c.change7d },
+                { l: "30d", v: c.change30d },
+              ].map((p, i) => (
+                <div key={p.l} style={{ flex: 1, padding: "8px 12px" }}>
+                  <div style={label}>{p.l}</div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      fontFamily: "var(--font-mono)",
+                      color: (p.v ?? 0) >= 0 ? "var(--green)" : "var(--red)",
+                    }}
+                  >
+                    {fmtPct(p.v)}
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            <div style={rule} />
+
+            {/* Price chart */}
+            <div style={sectionHeader}>SOL Price \u2014 {days}D</div>
+            <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", gap: 0, marginBottom: 8 }}>
+                  {[1, 7, 30, 90].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDays(d)}
+                      style={{
+                        padding: "3px 10px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        fontFamily: "var(--font-mono)",
+                        background: days === d ? "var(--text)" : "transparent",
+                        color: days === d ? "var(--linen)" : "var(--text-muted)",
+                        border: "1px solid var(--border)",
+                        borderRight: d < 90 ? "none" : "1px solid var(--border)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {d === 1 ? "1D" : d === 7 ? "7D" : d === 30 ? "30D" : "90D"}
+                    </button>
+                  ))}
+                </div>
+                {priceChart.length > 0 ? (
+                  <InsightChart
+                    data={priceChart}
+                    type="area"
+                    color="var(--brown)"
+                    height={300}
+                    formatValue={(v) => `$${v.toFixed(2)}`}
+                  />
+                ) : (
+                  <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                    Price data unavailable.
+                  </div>
+                )}
               </div>
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-mono)",
+                marginTop: 4,
+              }}
+            >
+              Source: CoinGecko \u00b7 {priceChart.length} data points
+            </div>
+
+            <div style={rule} />
+
+            {/* Volume chart */}
+            <div style={sectionHeader}>Trading Volume</div>
+            {volChart.length > 0 ? (
+              <InsightChart
+                data={volChart}
+                type="bar"
+                color="var(--brown)"
+                height={200}
+                formatValue={(v) => fmtUsd(v)}
+              />
+            ) : (
+              <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                Volume data unavailable.
+              </div>
+            )}
+
+            <div style={rule} />
+
+            {/* Market cap chart */}
+            <div style={sectionHeader}>Market Cap</div>
+            {mcChart.length > 0 ? (
+              <InsightChart
+                data={mcChart}
+                type="area"
+                color="var(--brown)"
+                height={200}
+                formatValue={(v) => fmtUsd(v)}
+              />
+            ) : (
+              <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                Market cap data unavailable.
+              </div>
+            )}
+
+            <div style={rule} />
+
+            {/* Data sources */}
+            <div style={sectionHeader}>Data Sources</div>
+            <div style={{ display: "flex", gap: 0, marginTop: 8 }}>
+              {health.map((h) => (
+                <div
+                  key={h.id}
+                  style={{ flex: 1, padding: "8px 12px", borderRight: "1px solid var(--border)" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: h.status === "healthy" ? "var(--green)" : "var(--red)",
+                      }}
+                    />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
+                      {h.id}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: h.status === "healthy" ? "var(--green)" : "var(--red)",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    {h.status}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={rule} />
+
+            {/* Provenance */}
+            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+              SOL price, market cap, and volume data from CoinGecko free API. ETF flow data and
+              institutional activity are not available via free API \u2014 shown as unavailable
+              rather than fabricated. All metrics are evidence-backed and traceable to their source.
             </div>
           </>
         )}
       </div>
-    </div>
-  );
-}
-
-// ── Metric cell sub-component ─────────────────────────────────
-
-function MetricCell({
-  label,
-  value,
-  sub,
-  subColor,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  subColor?: string;
-}) {
-  return (
-    <div
-      style={{
-        background: "var(--bg-card)",
-        padding: "14px 18px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 3,
-      }}
-    >
-      <span style={metricLabelStyle}>{label}</span>
-      <span style={metricValueStyle}>{value}</span>
-      {sub && (
-        <span
-          style={{
-            ...metricSubStyle,
-            ...(subColor ? { color: subColor, fontWeight: 600 } : {}),
-          }}
-        >
-          {sub}
-        </span>
-      )}
     </div>
   );
 }
