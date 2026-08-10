@@ -6,200 +6,119 @@ import { InsightChart } from "../components/InsightChart";
 import { ProjectLogo } from "../components/ProjectLogo";
 import { useCopilot } from "../components/Copilot";
 
-// ── Types (matching API response shapes) ──────────────────────
-
 interface PricePoint {
   timestamp: string;
   price: number;
 }
-
-interface SolanaPriceResponse {
+interface CurrentMarket {
+  price: number;
+  marketCap: number;
+  volume: number;
+  change24h?: number;
+  change7d?: number;
+  change30d?: number;
+  circulatingSupply: number;
+  high24h: number;
+  low24h: number;
+}
+interface SolanaPriceData {
   prices: PricePoint[];
-  marketCaps: { timestamp: string; value: number }[];
-  volumes: { timestamp: string; value: number }[];
-  current: {
-    price: number;
-    marketCap: number;
-    volume: number;
-    change24h?: number;
-    change7d?: number;
-    change30d?: number;
-    circulatingSupply?: number;
-    high24h?: number;
-    low24h?: number;
-  } | null;
+  current: CurrentMarket | null;
 }
-
-interface SourceHealthEntry {
-  id: string;
-  name: string;
-  available: boolean;
-  note?: string;
-  status: "healthy" | "degraded" | "unavailable";
-}
-
-interface HealthResponse {
-  status: "healthy" | "degraded" | "unavailable";
-  checkedAt: string;
-  providers: SourceHealthEntry[];
-  summary: { total: number; healthy: number; unavailable: number };
-}
-
-interface TimelineEvent {
-  id: string;
-  time: string;
-  title: string;
-  source: string;
-  confidence: string;
-}
-
-interface PulseMetric {
-  id: string;
-  label: string;
-  value: string;
-  caption: string;
-}
-
-interface PulseResponse {
-  pulse: { asOf: string; metrics: PulseMetric[] };
-  timeline: TimelineEvent[];
-}
-
 interface Project {
   id: string;
   name: string;
   category: string;
-  description: string;
-  metrics: { tvl?: number; volume24h?: number; activeUsers24h?: number };
-  classification?: string;
+  metrics: { tvl?: number; volume24h?: number };
   logoUrl?: string;
   symbol?: string;
   change24h?: number;
-  change7d?: number;
-  change30d?: number;
-  website?: string;
-  twitter?: string;
-  github?: string;
-  slug?: string;
+  classification?: string;
 }
-
-interface ProjectsResponse {
-  projects: Project[];
-  count: number;
+interface TimelineEntry {
+  id: string;
+  title: string;
+  source: string;
+  confidence: string;
 }
-
 interface Narrative {
   id: string;
   name: string;
-  trend: "up" | "down" | "flat" | "watch";
-  change?: string;
+  trend: string;
   note: string;
-  projectIds: string[];
+  change?: string;
 }
-
-interface NarrativesResponse {
-  narratives: Narrative[];
-  count: number;
+interface HealthProvider {
+  id: string;
+  status: string;
 }
-
-interface AnalyticsResponse {
-  timeSeries: {
-    label: string;
-    projectCount: number;
-    narrativeCount: number;
-    evidenceCount: number;
-  }[];
-  categoryDistribution: { category: string; count: number }[];
-  topByTvl: {
-    name: string;
-    tvl: number;
-    volume24h: number;
-    category: string;
-    id: string;
-  }[];
+interface AnalyticsData {
   totalTvl: number;
   totalVolume: number;
   projectCount: number;
   categoryCount: number;
+  categoryDistribution: { category: string; count: number }[];
+  topByTvl: { name: string; tvl: number; category: string; id: string }[];
 }
 
-// ── Helpers ───────────────────────────────────────────────────
-
-function fmtUsd(v: number | undefined | null): string {
-  if (v === undefined || v === null) return "—";
+function fmtUsd(v: number | undefined): string {
+  if (!v) return "—";
   if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
   if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
   if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
   return `$${v.toFixed(2)}`;
 }
-
-function fmtPct(v: number | undefined | null): string {
+function fmtPct(v: number | undefined): string {
   if (v === undefined || v === null) return "—";
-  return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+  return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
 }
-
-function changeClass(v: number | undefined | null): string {
-  if (v === undefined || v === null) return "metric-change flat";
-  if (v > 0) return "metric-change up";
-  if (v < 0) return "metric-change down";
-  return "metric-change flat";
-}
-
-function changeArrow(v: number | undefined | null): string {
-  if (v === undefined || v === null) return "";
-  if (v > 0) return "▲";
-  if (v < 0) return "▼";
-  return "▬";
-}
-
-// ── Component ─────────────────────────────────────────────────
 
 export default function Home() {
   const { setPageContext } = useCopilot();
-
-  const [priceData, setPriceData] = useState<SolanaPriceResponse | null>(null);
-  const [healthData, setHealthData] = useState<HealthResponse | null>(null);
-  const [pulseData, setPulseData] = useState<PulseResponse | null>(null);
-  const [projectsData, setProjectsData] = useState<ProjectsResponse | null>(null);
-  const [narrativesData, setNarrativesData] = useState<NarrativesResponse | null>(null);
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     setPageContext(
-      "[Overview] User is viewing the Insight homepage — Solana price chart, market snapshot, network health, real-time feed, top projects, narratives, and category distribution.",
+      "[Overview] Solana intelligence terminal homepage with SOL price chart, market metrics, ecosystem TVL, top protocols, Solana Now feed, and narratives.",
     );
   }, [setPageContext]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [priceRes, healthRes, pulseRes, projectsRes, narrativesRes, analyticsRes] =
-      await Promise.all([
-        fetch("/api/solana-price?days=30").catch(() => null),
-        fetch("/api/health").catch(() => null),
-        fetch("/api/pulse").catch(() => null),
-        fetch("/api/projects?classification=solana_ecosystem").catch(() => null),
-        fetch("/api/narratives").catch(() => null),
-        fetch("/api/analytics").catch(() => null),
-      ]);
+  const [priceData, setPriceData] = useState<SolanaPriceData | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [narratives, setNarratives] = useState<Narrative[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [health, setHealth] = useState<HealthProvider[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    if (priceRes?.ok) {
-      setPriceData((await priceRes.json()) as SolanaPriceResponse);
-    }
-    if (healthRes?.ok) {
-      setHealthData((await healthRes.json()) as HealthResponse);
-    }
-    if (pulseRes?.ok) {
-      setPulseData((await pulseRes.json()) as PulseResponse);
-    }
-    if (projectsRes?.ok) {
-      setProjectsData((await projectsRes.json()) as ProjectsResponse);
-    }
-    if (narrativesRes?.ok) {
-      setNarrativesData((await narrativesRes.json()) as NarrativesResponse);
-    }
-    if (analyticsRes?.ok) {
-      setAnalyticsData((await analyticsRes.json()) as AnalyticsResponse);
+  const load = useCallback(async () => {
+    try {
+      const [pRes, projRes, tlRes, narrRes, anRes, hRes] = await Promise.all([
+        fetch("/api/solana-price?days=30")
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch("/api/projects?classification=solana_ecosystem")
+          .then((r) => r.json())
+          .catch(() => ({ projects: [] })),
+        fetch("/api/pulse")
+          .then((r) => r.json())
+          .catch(() => ({ timeline: [] })),
+        fetch("/api/narratives")
+          .then((r) => r.json())
+          .catch(() => ({ narratives: [] })),
+        fetch("/api/analytics")
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch("/api/health")
+          .then((r) => r.json())
+          .catch(() => ({ providers: [] })),
+      ]);
+      if (pRes) setPriceData(pRes);
+      setProjects(projRes.projects ?? []);
+      setTimeline(tlRes.timeline ?? []);
+      setNarratives(narrRes.narratives ?? []);
+      if (anRes) setAnalytics(anRes);
+      setHealth(hRes.providers ?? []);
+    } catch {
+      /* ignore */
     }
     setLoading(false);
   }, []);
@@ -208,359 +127,601 @@ export default function Home() {
     void load();
   }, [load]);
 
-  // ── Derived data ────────────────────────────────────────────
-
-  const priceChartData =
+  const current = priceData?.current;
+  const priceChart =
     priceData?.prices?.map((p) => ({
-      label: new Date(p.timestamp).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
+      label: new Date(p.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       value: p.price,
     })) ?? [];
-
-  const current = priceData?.current;
-  const projects = projectsData?.projects ?? [];
-  const timeline = pulseData?.timeline ?? [];
-  const narratives = narrativesData?.narratives ?? [];
-  const topProjects = analyticsData?.topByTvl ?? [];
-  const categoryDist = analyticsData?.categoryDistribution ?? [];
-  const totalTvl = analyticsData?.totalTvl ?? 0;
-  const totalVolume = analyticsData?.totalVolume ?? 0;
-  const providers = healthData?.providers ?? [];
-
-  // Category distribution as bar chart data (top 10)
-  const categoryChartData = categoryDist.slice(0, 10).map((c) => ({
-    label: c.category,
-    value: c.count,
-  }));
+  const ecoProjects = projects.filter(
+    (p) => !p.classification || p.classification === "solana_ecosystem",
+  );
+  const topProjects = [...ecoProjects]
+    .sort((a, b) => (b.metrics?.tvl ?? 0) - (a.metrics?.tvl ?? 0))
+    .slice(0, 10);
+  const catChart =
+    analytics?.categoryDistribution
+      ?.slice(0, 10)
+      .map((c) => ({ label: c.category, value: c.count })) ?? [];
+  const liveSources = health.filter((h) => h.status === "healthy").length;
 
   return (
     <div>
-      <div className="page-hero">
-        <p className="eyebrow">SOLANA INTELLIGENCE TERMINAL</p>
-        <h1>
-          Everything happening across Solana, <em>in one terminal.</em>
+      {/* HERO */}
+      <div style={{ padding: "48px 24px 24px", maxWidth: "var(--max-width)", margin: "0 auto" }}>
+        <h1
+          style={{
+            fontSize: "clamp(36px, 5vw, 56px)",
+            fontWeight: 800,
+            lineHeight: 1.05,
+            letterSpacing: "-0.03em",
+            margin: 0,
+          }}
+        >
+          Real-time intelligence
+          <br />
+          for the{" "}
+          <em style={{ color: "var(--accent-dim)", fontStyle: "italic" }}>Solana ecosystem.</em>
         </h1>
-        <p className="hero-copy">
-          Real-time data from Solana RPC, DeFiLlama, CoinGecko, and Helius — with evidence
-          traceability, anomaly detection, and grounded AI analysis.
+        <p
+          style={{
+            fontSize: 17,
+            color: "var(--text-secondary)",
+            maxWidth: 600,
+            marginTop: 16,
+            lineHeight: 1.5,
+          }}
+        >
+          Comprehensive analytics, breaking intelligence, and evidence-backed research — all powered
+          by live data from Solana RPC, DeFiLlama, CoinGecko, and Helius.
         </p>
+        <div style={{ display: "flex", gap: 12, marginTop: 20, alignItems: "center" }}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              color: liveSources > 0 ? "var(--green)" : "var(--red)",
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: liveSources > 0 ? "var(--green)" : "var(--red)",
+                animation: "pulse-dot 2s infinite",
+              }}
+            />
+            {liveSources > 0 ? "LIVE" : "DEGRADED"}
+          </span>
+          {health.map((h) => (
+            <span
+              key={h.id}
+              style={{
+                fontSize: 11,
+                fontFamily: "var(--font-mono)",
+                color:
+                  h.status === "healthy"
+                    ? "var(--green)"
+                    : h.status === "degraded"
+                      ? "var(--warning)"
+                      : "var(--red)",
+              }}
+            >
+              {h.id} {h.status}
+            </span>
+          ))}
+        </div>
       </div>
 
-      <div className="terminal-main">
-        {/* ═══ SOL PRICE CHART ═══ */}
-        <div className="terminal-section">
-          <div className="section-header">
-            <div>
-              <div className="section-title">SOL Price · 30D</div>
-              <div className="section-subtitle">
-                {current
-                  ? `$${current.price.toFixed(2)} · ${fmtPct(current.change24h)} (24h)`
-                  : "Loading price data..."}
-              </div>
+      {/* METRIC BAR */}
+      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "0 24px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 12,
+            marginBottom: 24,
+          }}
+        >
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: "16px 20px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+              }}
+            >
+              SOL Price
             </div>
-          </div>
-          <div className="chart-container">
-            {loading && priceChartData.length === 0 ? (
-              <div className="t-loading">Fetching SOL price history from CoinGecko...</div>
-            ) : priceChartData.length > 0 ? (
-              <InsightChart
-                data={priceChartData}
-                type="area"
-                color="var(--accent)"
-                height={220}
-                formatValue={(v) => `$${v.toFixed(2)}`}
-              />
-            ) : (
-              <div className="t-empty">Unable to load SOL price data.</div>
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 700,
+                fontFamily: "var(--font-mono)",
+                marginTop: 4,
+              }}
+            >
+              {current ? `$${current.price.toFixed(2)}` : "—"}
+            </div>
+            {current?.change24h !== undefined && (
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: "var(--font-mono)",
+                  color: current.change24h >= 0 ? "var(--green)" : "var(--red)",
+                }}
+              >
+                {current.change24h >= 0 ? "▲" : "▼"} {fmtPct(current.change24h)} 24h
+              </div>
             )}
           </div>
-        </div>
-
-        {/* ═══ MARKET SNAPSHOT ═══ */}
-        <div className="terminal-section">
-          <div className="section-header">
-            <div>
-              <div className="section-title">Market Snapshot</div>
-              <div className="section-subtitle">
-                {current
-                  ? `Updated ${new Date().toLocaleTimeString()}`
-                  : "Fetching live market data..."}
-              </div>
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: "16px 20px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+              }}
+            >
+              Market Cap
+            </div>
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 700,
+                fontFamily: "var(--font-mono)",
+                marginTop: 4,
+              }}
+            >
+              {fmtUsd(current?.marketCap)}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+              {current?.circulatingSupply
+                ? `${(current.circulatingSupply / 1e9).toFixed(1)}B SOL`
+                : "—"}
             </div>
           </div>
-          <div className="terminal-grid terminal-grid-4">
-            <div className="metric-card">
-              <span className="metric-label">SOL Price</span>
-              <span className="metric-value">{current ? `$${current.price.toFixed(2)}` : "—"}</span>
-              {current?.change24h !== undefined && (
-                <span className={changeClass(current.change24h)}>
-                  {changeArrow(current.change24h)} {fmtPct(current.change24h)}
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: "16px 20px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+              }}
+            >
+              Ecosystem TVL
+            </div>
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 700,
+                fontFamily: "var(--font-mono)",
+                marginTop: 4,
+              }}
+            >
+              {fmtUsd(analytics?.totalTvl)}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+              {analytics?.projectCount ?? 0} protocols
+            </div>
+          </div>
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: "16px 20px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+              }}
+            >
+              24h Volume
+            </div>
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 700,
+                fontFamily: "var(--font-mono)",
+                marginTop: 4,
+              }}
+            >
+              {fmtUsd(current?.volume)}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+              Trading volume
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SOL PRICE CHART */}
+      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "0 24px 24px" }}>
+        <div
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius)",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 16,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>SOL Price — 30D</div>
+              <div
+                style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+              >
+                Source: CoinGecko · {priceChart.length} data points
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              {current?.change7d !== undefined && (
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono)",
+                    color: current.change7d >= 0 ? "var(--green)" : "var(--red)",
+                  }}
+                >
+                  7d: {fmtPct(current.change7d)}
+                </span>
+              )}
+              {current?.change30d !== undefined && (
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: "var(--font-mono)",
+                    color: current.change30d >= 0 ? "var(--green)" : "var(--red)",
+                  }}
+                >
+                  30d: {fmtPct(current.change30d)}
                 </span>
               )}
             </div>
-            <div className="metric-card">
-              <span className="metric-label">Market Cap</span>
-              <span className="metric-value">{current ? fmtUsd(current.marketCap) : "—"}</span>
-              <span className="metric-sub">
-                {current?.circulatingSupply
-                  ? `${(current.circulatingSupply / 1e6).toFixed(1)}M SOL circulating`
-                  : "—"}
-              </span>
-            </div>
-            <div className="metric-card">
-              <span className="metric-label">Total TVL</span>
-              <span className="metric-value">{fmtUsd(totalTvl)}</span>
-              <span className="metric-sub">
-                {analyticsData ? `${analyticsData.projectCount} protocols` : "—"}
-              </span>
-            </div>
-            <div className="metric-card">
-              <span className="metric-label">24h DEX Volume</span>
-              <span className="metric-value">{fmtUsd(totalVolume)}</span>
-              <span className="metric-sub">
-                {current ? `SOL 24h vol: ${fmtUsd(current.volume)}` : "—"}
-              </span>
-            </div>
           </div>
+          {priceChart.length > 0 ? (
+            <InsightChart
+              data={priceChart}
+              type="area"
+              color="var(--accent-dim)"
+              height={260}
+              formatValue={(v) => `$${v.toFixed(2)}`}
+            />
+          ) : (
+            <div
+              style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 14 }}
+            >
+              {loading ? "Loading chart..." : "Price data unavailable."}
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* ═══ NETWORK HEALTH BAR ═══ */}
-        <div className="terminal-section">
-          <div className="section-header">
-            <div>
-              <div className="section-title">Network Health</div>
-              <div className="section-subtitle">
-                {healthData
-                  ? `${healthData.summary.healthy}/${healthData.summary.total} sources healthy · ${healthData.status}`
-                  : "Checking data source health..."}
-              </div>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {loading && providers.length === 0 && (
-              <div className="t-loading" style={{ padding: 16 }}>
-                Fetching source health...
-              </div>
-            )}
-            {providers.map((p) => (
-              <span
-                key={p.id}
-                className={`t-badge ${p.status === "healthy" ? "green" : p.status === "degraded" ? "yellow" : "red"}`}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    marginRight: 6,
-                    background:
-                      p.status === "healthy"
-                        ? "var(--green)"
-                        : p.status === "degraded"
-                          ? "var(--yellow)"
-                          : "var(--red)",
-                  }}
-                />
-                {p.name}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ═══ SOLANA NOW FEED ═══ */}
-        <div className="terminal-section">
-          <div className="section-header">
-            <div>
-              <div className="section-title">Solana Now</div>
-              <div className="section-subtitle">Real-time intelligence feed</div>
-            </div>
-            <Link href="/solana-now" className="t-card-link">
+      {/* SOLANA NOW + TOP PROJECTS */}
+      <div
+        style={{
+          maxWidth: "var(--max-width)",
+          margin: "0 auto",
+          padding: "0 24px 24px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 24,
+        }}
+      >
+        {/* Solana Now */}
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Solana Now</div>
+            <Link
+              href="/solana-now"
+              style={{ fontSize: 12, color: "var(--accent-dim)", fontWeight: 600 }}
+            >
               View all →
             </Link>
           </div>
-          <div className="solana-now">
-            {loading && timeline.length === 0 && (
-              <div className="t-loading">Fetching real-time feed...</div>
-            )}
-            {timeline.slice(0, 6).map((t, i) => {
-              const badgeClass = i === 0 ? "breaking" : i === 1 ? "alert" : "event";
-              const badgeText = i === 0 ? "BREAKING" : i === 1 ? "DATA ALERT" : "NEWS";
-              return (
-                <div key={t.id} className="feed-item">
-                  <span className={`feed-badge ${badgeClass}`}>{badgeText}</span>
-                  <div className="feed-content">
-                    <div className="feed-headline">{t.title}</div>
-                    <div className="feed-meta">
-                      <span className="feed-source">{t.source}</span>
-                      <span>·</span>
-                      <span>{t.confidence}</span>
-                    </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {timeline.slice(0, 6).map((t, i) => (
+              <div
+                key={t.id}
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  padding: "14px 16px",
+                  display: "flex",
+                  gap: 12,
+                  cursor: "pointer",
+                }}
+              >
+                <span
+                  style={{
+                    flexShrink: 0,
+                    padding: "2px 8px",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    fontFamily: "var(--font-mono)",
+                    whiteSpace: "nowrap",
+                    marginTop: 2,
+                    background: i === 0 ? "#fef2f2" : i === 1 ? "#fffbeb" : "#faf5ff",
+                    color: i === 0 ? "var(--red)" : i === 1 ? "var(--warning)" : "var(--violet)",
+                    border: `1px solid ${i === 0 ? "#fecaca" : i === 1 ? "#fde68a" : "#e9d5ff"}`,
+                  }}
+                >
+                  {i === 0 ? "BREAKING" : i === 1 ? "ALERT" : "EVENT"}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.35 }}>{t.title}</div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      marginTop: 4,
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    <span style={{ color: "var(--accent-dim)" }}>{t.source}</span>
+                    <span>·</span>
+                    <span>{t.confidence}</span>
                   </div>
                 </div>
-              );
-            })}
-            {timeline.length === 0 && !loading && (
-              <div className="t-empty">No real-time updates yet.</div>
+              </div>
+            ))}
+            {timeline.length === 0 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: 32,
+                  color: "var(--text-muted)",
+                  fontSize: 13,
+                }}
+              >
+                {loading ? "Loading..." : "No updates yet."}
+              </div>
             )}
           </div>
         </div>
 
-        {/* ═══ TOP PROJECTS + NARRATIVES ═══ */}
-        <div className="terminal-grid terminal-grid-2">
-          {/* Top Projects Table with Logos */}
-          <div className="terminal-section">
-            <div className="section-header">
-              <div className="section-title">Top Protocols by TVL</div>
-              <Link href="/ecosystem" className="t-card-link">
-                All →
-              </Link>
-            </div>
-            <div className="t-card" style={{ padding: 0 }}>
-              {loading && topProjects.length === 0 && (
-                <div className="t-loading">Loading projects...</div>
-              )}
-              {topProjects.length > 0 && (
-                <table className="t-table">
-                  <thead>
-                    <tr>
-                      <th>Protocol</th>
-                      <th className="right">TVL</th>
-                      <th className="right">24h Vol</th>
-                      <th>Category</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topProjects.slice(0, 8).map((p, i) => {
-                      const project = projects.find((proj) => proj.id === p.id);
-                      return (
-                        <tr key={p.id}>
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <ProjectLogo src={project?.logoUrl} name={p.name} size={20} />
-                              <Link href={`/projects/${p.id}`} className="ref-link">
-                                {p.name}
-                              </Link>
-                            </div>
-                          </td>
-                          <td className="right mono">{fmtUsd(p.tvl)}</td>
-                          <td className="right mono">{fmtUsd(p.volume24h)}</td>
-                          <td>
-                            <span className="t-badge muted">{p.category}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-              {topProjects.length === 0 && !loading && (
-                <div className="t-empty">No project data available.</div>
-              )}
-            </div>
-          </div>
-
-          {/* Active Narratives */}
-          <div className="terminal-section">
-            <div className="section-header">
-              <div className="section-title">Active Narratives</div>
-              <Link href="/ecosystem" className="t-card-link">
-                All →
-              </Link>
-            </div>
-            <div className="t-card">
-              {loading && narratives.length === 0 && (
-                <div className="t-loading">Loading narratives...</div>
-              )}
-              {narratives.map((n) => (
-                <Link
-                  href={`/narratives/${n.id}`}
-                  key={n.id}
-                  className="narrative-card-link"
-                  style={{ marginBottom: 8, display: "block" }}
-                >
-                  <div className="narrative-card-header">
-                    <h4>{n.name}</h4>
-                    <span className={`trend-badge trend-${n.trend}`}>{n.trend}</span>
-                  </div>
-                  <p className="narrative-note">{n.note}</p>
-                  {n.change && <span className="narrative-change">{n.change}</span>}
-                </Link>
-              ))}
-              {narratives.length === 0 && !loading && (
-                <div className="t-empty">No narratives detected.</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ CATEGORY DISTRIBUTION CHART ═══ */}
-        <div className="terminal-section">
-          <div className="section-header">
-            <div>
-              <div className="section-title">Category Distribution</div>
-              <div className="section-subtitle">
-                {analyticsData
-                  ? `${analyticsData.projectCount} projects across ${analyticsData.categoryCount} categories`
-                  : "Loading analytics..."}
-              </div>
-            </div>
-          </div>
-          <div className="chart-container">
-            {loading && categoryChartData.length === 0 ? (
-              <div className="t-loading">Computing category distribution...</div>
-            ) : categoryChartData.length > 0 ? (
-              <InsightChart
-                data={categoryChartData}
-                type="bar"
-                color="var(--violet)"
-                height={200}
-              />
-            ) : (
-              <div className="t-empty">No category data available.</div>
-            )}
-          </div>
-        </div>
-
-        {/* ═══ QUICK LINKS ═══ */}
-        <div className="terminal-section">
-          <div className="terminal-grid terminal-grid-4">
-            <Link href="/analytics" className="t-card" style={{ textDecoration: "none" }}>
-              <div className="t-card-title">Analytics</div>
-              <div style={{ fontSize: 14, marginTop: 8, color: "var(--text)" }}>
-                Deep metrics, charts, rankings →
-              </div>
+        {/* Top Projects with logos */}
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Top Protocols by TVL</div>
+            <Link
+              href="/ecosystem"
+              style={{ fontSize: 12, color: "var(--accent-dim)", fontWeight: 600 }}
+            >
+              All →
             </Link>
-            <Link href="/research" className="t-card" style={{ textDecoration: "none" }}>
-              <div className="t-card-title">Research</div>
-              <div style={{ fontSize: 14, marginTop: 8, color: "var(--text)" }}>
-                Reports, evidence, history →
-              </div>
-            </Link>
-            <Link href="/assistant" className="t-card" style={{ textDecoration: "none" }}>
-              <div className="t-card-title">Ask Insight</div>
-              <div style={{ fontSize: 14, marginTop: 8, color: "var(--text)" }}>
-                Grounded AI analysis →
-              </div>
-            </Link>
-            <Link href="/alerts" className="t-card" style={{ textDecoration: "none" }}>
-              <div className="t-card-title">Alerts</div>
-              <div style={{ fontSize: 14, marginTop: 8, color: "var(--text)" }}>
-                Anomaly subscriptions →
-              </div>
-            </Link>
+          </div>
+          <div
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              overflow: "hidden",
+            }}
+          >
+            <table className="t-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Protocol</th>
+                  <th className="right">TVL</th>
+                  <th>Category</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topProjects.slice(0, 10).map((p, i) => (
+                  <tr key={p.id}>
+                    <td
+                      style={{
+                        color: "var(--text-muted)",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 12,
+                      }}
+                    >
+                      {i + 1}
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <ProjectLogo src={p.logoUrl} name={p.name} size={20} />
+                        <Link href={`/projects/${p.id}`} style={{ color: "var(--text)" }}>
+                          {p.name}
+                        </Link>
+                      </div>
+                    </td>
+                    <td
+                      style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12 }}
+                    >
+                      {fmtUsd(p.metrics?.tvl)}
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: "2px 8px",
+                          borderRadius: "var(--radius-sm)",
+                          background: "var(--bg-hover)",
+                          color: "var(--text-secondary)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {p.category}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <footer>
+      {/* CATEGORY CHART + NARRATIVES */}
+      <div
+        style={{
+          maxWidth: "var(--max-width)",
+          margin: "0 auto",
+          padding: "0 24px 24px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 24,
+        }}
+      >
         <div>
-          <div className="brand">◎ Insight</div>
-          <div>Solana Intelligence Terminal · Evidence-backed</div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
+            Category Distribution
+          </div>
+          {catChart.length > 0 ? (
+            <div
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius)",
+                padding: 20,
+              }}
+            >
+              <InsightChart
+                data={catChart}
+                type="bar"
+                color="var(--accent-dim)"
+                height={200}
+                formatValue={(v) => `${v}`}
+              />
+            </div>
+          ) : (
+            <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              {loading ? "Loading..." : "No data."}
+            </div>
+          )}
         </div>
-        <div>© 2026 · Built for the Solana ecosystem reporting Mission</div>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Active Narratives</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {narratives.slice(0, 6).map((n) => (
+              <Link
+                href={`/narratives/${n.id}`}
+                key={n.id}
+                style={{
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  padding: "14px 16px",
+                  textDecoration: "none",
+                  display: "block",
+                }}
+              >
+                <div
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{n.name}</span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "2px 8px",
+                      borderRadius: "var(--radius-sm)",
+                      background: n.trend === "up" ? "rgba(16,185,129,0.1)" : "var(--bg-hover)",
+                      color: n.trend === "up" ? "var(--green)" : "var(--text-muted)",
+                    }}
+                  >
+                    {n.trend}
+                  </span>
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
+                  {n.note}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* FOOTER */}
+      <footer
+        style={{
+          maxWidth: "var(--max-width)",
+          margin: "40px auto 0",
+          padding: "24px",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 12,
+          color: "var(--text-muted)",
+        }}
+      >
+        <div>
+          <span style={{ fontWeight: 700, color: "var(--text)" }}>◎ Insight</span> — Solana
+          Intelligence Terminal
+        </div>
+        <div>© {new Date().getFullYear()} · Evidence-backed</div>
       </footer>
     </div>
   );

@@ -6,29 +6,29 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Core palette ── */
-  --bg: #0a0e0f;
-  --bg-elevated: #11171a;
-  --bg-card: #161d20;
-  --bg-hover: #1c2528;
-  --border: #1f2a2e;
-  --border-light: #2a373b;
-  --text: #e8efef;
-  --text-secondary: #8b9ea1;
-  --text-muted: #5a6e72;
+  /* ── Core palette — clean light terminal ── */
+  --bg: #f8f9fa;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f1f3;
+  --border: #e4e6eb;
+  --border-light: #d1d5db;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
   --accent: #14f195;
   --accent-dim: #0faa6e;
   --violet: #9945ff;
-  --danger: #f44336;
-  --danger-dim: #c62828;
-  --warning: #ff9800;
-  --info: #2196f3;
+  --danger: #ef4444;
+  --danger-dim: #dc2626;
+  --warning: #f59e0b;
+  --info: #3b82f6;
   /* ── Semantic ── */
-  --green: #14f195;
-  --red: #f44336;
-  --yellow: #ffd54f;
-  --blue: #42a5f5;
-  --purple: #ab47bc;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
   /* ── Layout ── */
   --nav-height: 56px;
   --max-width: 1440px;
@@ -70,6 +70,7 @@ a {
   align-items: center;
   padding: 0 24px;
   gap: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 .terminal-brand {
   display: flex;
@@ -311,29 +312,29 @@ a {
   margin-top: 2px;
 }
 .feed-badge.breaking {
-  background: rgba(244, 67, 54, 0.15);
+  background: #fef2f2;
   color: var(--red);
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  border: 1px solid #fecaca;
 }
 .feed-badge.developing {
-  background: rgba(255, 152, 0, 0.15);
+  background: #fffbeb;
   color: var(--warning);
-  border: 1px solid rgba(255, 152, 0, 0.3);
+  border: 1px solid #fde68a;
 }
 .feed-badge.new {
-  background: rgba(33, 150, 243, 0.15);
+  background: #eff6ff;
   color: var(--info);
-  border: 1px solid rgba(33, 150, 243, 0.3);
+  border: 1px solid #bfdbfe;
 }
 .feed-badge.alert {
-  background: rgba(255, 213, 79, 0.15);
+  background: #fffbeb;
   color: var(--yellow);
-  border: 1px solid rgba(255, 213, 79, 0.3);
+  border: 1px solid #fde68a;
 }
 .feed-badge.event {
-  background: rgba(153, 69, 255, 0.15);
+  background: #faf5ff;
   color: var(--violet);
-  border: 1px solid rgba(153, 69, 255, 0.3);
+  border: 1px solid #e9d5ff;
 }
 .feed-content {
   flex: 1;
@@ -485,23 +486,23 @@ a {
   letter-spacing: 0.02em;
 }
 .t-badge.green {
-  background: rgba(20, 241, 149, 0.12);
+  background: rgba(16, 185, 129, 0.1);
   color: var(--green);
 }
 .t-badge.red {
-  background: rgba(244, 67, 54, 0.12);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--red);
 }
 .t-badge.yellow {
-  background: rgba(255, 213, 79, 0.12);
+  background: rgba(245, 158, 11, 0.1);
   color: var(--yellow);
 }
 .t-badge.blue {
-  background: rgba(66, 165, 245, 0.12);
+  background: rgba(59, 130, 246, 0.1);
   color: var(--blue);
 }
 .t-badge.purple {
-  background: rgba(171, 71, 188, 0.12);
+  background: rgba(139, 92, 246, 0.1);
   color: var(--purple);
 }
 .t-badge.muted {
@@ -587,8 +588,8 @@ a {
 }
 .t-error {
   padding: 16px;
-  background: rgba(244, 67, 54, 0.08);
-  border: 1px solid rgba(244, 67, 54, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
   border-radius: var(--radius);
   color: var(--red);
   font-size: 13px;
@@ -861,11 +862,11 @@ h1 em {
   border-radius: var(--radius-sm);
 }
 .trend-up {
-  background: rgba(20, 241, 149, 0.12);
+  background: rgba(16, 185, 129, 0.1);
   color: var(--green);
 }
 .trend-down {
-  background: rgba(244, 67, 54, 0.12);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--red);
 }
 .trend-flat {
@@ -873,7 +874,7 @@ h1 em {
   color: var(--text-muted);
 }
 .trend-watch {
-  background: rgba(255, 213, 79, 0.12);
+  background: rgba(245, 158, 11, 0.1);
   color: var(--yellow);
 }
 .narrative-change {
@@ -909,7 +910,7 @@ h1 em {
   border-radius: 3px;
 }
 .evidence-status.verified {
-  background: rgba(20, 241, 149, 0.12);
+  background: rgba(16, 185, 129, 0.1);
   color: var(--green);
 }
 .evidence-status.demo {
@@ -998,8 +999,8 @@ h1 em {
 /* ── Auth ── */
 .auth-error {
   padding: 12px 16px;
-  background: rgba(244, 67, 54, 0.08);
-  border: 1px solid rgba(244, 67, 54, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
   border-radius: var(--radius);
   color: var(--red);
   font-size: 13px;
@@ -1270,8 +1271,8 @@ h1 em {
 }
 .assistant-error {
   padding: 12px 16px;
-  background: rgba(244, 67, 54, 0.08);
-  border: 1px solid rgba(244, 67, 54, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
   border-radius: var(--radius);
   color: var(--red);
 }
@@ -1654,7 +1655,7 @@ h1 em {
   font-weight: 600;
 }
 .alert-status-active {
-  background: rgba(20, 241, 149, 0.12);
+  background: rgba(16, 185, 129, 0.1);
   color: var(--green);
 }
 .alert-status-triggered {
@@ -1662,7 +1663,7 @@ h1 em {
   color: var(--warning);
 }
 .alert-status-removed {
-  background: rgba(244, 67, 54, 0.12);
+  background: rgba(239, 68, 68, 0.1);
   color: var(--red);
 }
 .alert-trigger-log {
@@ -2028,8 +2029,8 @@ footer .brand {
 
 .copilot-error {
   padding: 10px 14px;
-  background: rgba(244, 67, 54, 0.08);
-  border: 1px solid rgba(244, 67, 54, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
   border-radius: var(--radius-sm);
   color: var(--red);
   font-size: 12px;
