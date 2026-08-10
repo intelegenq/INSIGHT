@@ -40,6 +40,13 @@ export interface SolanaRPCConfig {
   commitment?: "processed" | "confirmed" | "finalized";
 }
 
+/** Public Solana RPC endpoints for fallback. */
+const RPC_FALLBACKS = [
+  "https://api.mainnet-beta.solana.com",
+  "https://solana-rpc.publicnode.com",
+  "https://solana-mainnet.g.alchemy.com/v2/demo",
+];
+
 const DEFAULT_COMMITMENT = "confirmed" as const;
 
 /** JSON-RPC 2.0 request envelope. */
@@ -154,6 +161,7 @@ export interface SolanaNetworkMetrics {
 export class SolanaRPCProvider extends BaseProvider {
   private readonly rpcUrl: string;
   private readonly commitment: "processed" | "confirmed" | "finalized";
+  private activeRpcUrl: string;
   private requestId = 0;
 
   constructor(config: SolanaRPCConfig, options: Omit<BaseProviderOptions, "id" | "name">) {
@@ -163,7 +171,37 @@ export class SolanaRPCProvider extends BaseProvider {
       name: "Solana RPC",
     });
     this.rpcUrl = config.rpcUrl;
+    this.activeRpcUrl = config.rpcUrl;
     this.commitment = config.commitment ?? DEFAULT_COMMITMENT;
+  }
+
+  /** All RPC URLs to try — configured first, then public fallbacks. */
+  private get rpcUrls(): string[] {
+    const all = [this.rpcUrl, ...RPC_FALLBACKS];
+    // Deduplicate, keeping order
+    return [...new Set(all)];
+  }
+
+  /** Try a POST to each RPC URL until one succeeds. */
+  private async rpcPost<T>(method: string, params: unknown[] = [], timeoutMs = 5000): Promise<T | undefined> {
+    for (const url of this.rpcUrls) {
+      try {
+        const response = await this.httpClient.post<JsonRpcResponse<T>>({
+          url,
+          body: this.buildRequest(method, params),
+          timeoutMs,
+        });
+        if (response.ok && response.data !== null) {
+          const rpcResponse = response.data;
+          if (rpcResponse.error) continue;
+          this.activeRpcUrl = url;
+          return rpcResponse.result as T;
+        }
+      } catch {
+        // Try next endpoint
+      }
+    }
+    return undefined;
   }
 
   /** Build a JSON-RPC request. */
@@ -196,19 +234,8 @@ export class SolanaRPCProvider extends BaseProvider {
   }
 
   protected async checkHealth(): Promise<boolean> {
-    try {
-      const response = await this.httpClient.post<JsonRpcResponse<HealthResult>>({
-        url: this.rpcUrl,
-        body: this.buildRequest("getHealth"),
-        timeoutMs: 5000,
-      });
-      if (!response.ok || response.data === null) return false;
-      const rpcResponse = response.data;
-      if (rpcResponse.error) return false;
-      return rpcResponse.result?.status === "ok";
-    } catch {
-      return false;
-    }
+    const result = await this.rpcPost<HealthResult>("getHealth", [], 5000);
+    return result?.status === "ok";
   }
 
   /**
@@ -270,17 +297,11 @@ export class SolanaRPCProvider extends BaseProvider {
     try {
       const [epochInfo, voteAccounts, inflationRate, clusterNodes, perfSamples] = await Promise.all(
         [
-          this.rpcCall<EpochInfoResult>("getEpochInfo", [{ commitment: this.commitment }]).catch(
-            () => undefined,
-          ),
-          this.rpcCall<VoteAccountsResult>("getVoteAccounts", [
-            { commitment: this.commitment },
-          ]).catch(() => undefined),
-          this.rpcCall<InflationRateResult>("getInflationRate", []).catch(() => undefined),
-          this.rpcCall<ClusterNodesResult>("getClusterNodes", []).catch(() => undefined),
-          this.rpcCall<PerformanceSamplesResult>("getPerformanceSamples", [10]).catch(
-            () => undefined,
-          ),
+          this.rpcPost<EpochInfoResult>("getEpochInfo", [{ commitment: this.commitment }]).catch(() => undefined),
+          this.rpcPost<VoteAccountsResult>("getVoteAccounts", [{ commitment: this.commitment }]).catch(() => undefined),
+          this.rpcPost<InflationRateResult>("getInflationRate", []).catch(() => undefined),
+          this.rpcPost<ClusterNodesResult>("getClusterNodes", []).catch(() => undefined),
+          this.rpcPost<PerformanceSamplesResult>("getPerformanceSamples", [10]).catch(() => undefined),
         ],
       );
 
