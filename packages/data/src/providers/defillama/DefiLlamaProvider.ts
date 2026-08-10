@@ -5,6 +5,7 @@ import type {
   RawNarrative,
   RawProject,
 } from "../../interfaces/DataProvider";
+import type { EntityClassification } from "@insight/core";
 import { BaseProvider } from "../base/BaseProvider";
 import type { BaseProviderOptions } from "../base/BaseProvider";
 
@@ -49,6 +50,117 @@ export interface DefiLlamaConfig {
 }
 
 const DEFAULT_API_URL = "https://api.llama.fi";
+
+/**
+ * DeFiLlama category → Insight Solana taxonomy mapping.
+ * Most DeFiLlama protocols are DeFi, so the default fallback is "defi".
+ */
+const CATEGORY_MAP: Record<string, string> = {
+  // DEX
+  Dexes: "dex",
+  Dex: "dex",
+  AMM: "dex",
+  // Lending
+  Lending: "lending",
+  Borrowing: "lending",
+  CDP: "lending",
+  // Yield
+  Yield: "yield",
+  "Yield Aggregator": "yield",
+  // Liquid Staking
+  "Liquid Staking": "liquid-staking",
+  Staking: "liquid-staking",
+  // Bridge
+  Bridge: "bridge",
+  "Cross Chain": "bridge",
+  // Derivatives
+  Derivatives: "derivatives",
+  Perps: "derivatives",
+  Options: "derivatives",
+  // Payments
+  Payments: "payments",
+  // NFT
+  "NFT Marketplace": "nft",
+  NFT: "nft",
+  // Oracle
+  Oracle: "oracle",
+  // RWA
+  RWA: "rwa",
+  Tokenized: "rwa",
+  // Gaming
+  Gaming: "gaming",
+  // Social
+  Social: "social",
+  // Wallet
+  Wallet: "wallets",
+  // Infrastructure
+  Infrastructure: "infrastructure",
+  RPC: "infrastructure",
+  "RPC Node": "infrastructure",
+  // AI
+  AI: "ai",
+  // DePIN
+  DePIN: "depin",
+  // Stablecoin
+  Stablecoin: "stablecoins",
+  // Restaking
+  Restaking: "restaking",
+  "Liquid Restaking": "restaking",
+  // MEV
+  MEV: "mev",
+  // Validator
+  Validator: "validators",
+  // Data
+  Data: "data",
+  // Security
+  Security: "security",
+  // Developer Tooling
+  "Developer Tooling": "developer-tools",
+  "Dev Tooling": "developer-tools",
+};
+
+/**
+ * CEX names that represent market context rather than Solana ecosystem projects.
+ * These get `classification: "market_context"` instead of the default
+ * `classification: "solana_ecosystem"`.
+ */
+const CEX_NAMES: ReadonlySet<string> = new Set([
+  "Binance",
+  "Bybit",
+  "OKX",
+  "Bitfinex",
+  "Gate",
+  "MEXC",
+  "Bitget",
+  "Deribit",
+  "HTX",
+  "Coinbase",
+  "Kraken",
+  "Kucoin",
+  "Bingx",
+  "Poloniex",
+]);
+
+/** Map a DeFiLlama category string to the Insight taxonomy. Defaults to "defi". */
+function mapCategory(defillamaCategory: string | undefined): string {
+  if (defillamaCategory === undefined) {
+    return "defi";
+  }
+  return CATEGORY_MAP[defillamaCategory] ?? "defi";
+}
+
+/** Determine entity classification for a protocol. */
+function classifyEntity(id: string, name: string): EntityClassification {
+  // The Solana chain entry itself is a network, not a project.
+  if (id === "solana") {
+    return "network";
+  }
+  // Centralized exchanges are market context, not ecosystem projects.
+  if (CEX_NAMES.has(name)) {
+    return "market_context";
+  }
+  return "solana_ecosystem";
+}
 
 export class DefiLlamaProvider extends BaseProvider {
   private readonly apiUrl: string;
@@ -106,14 +218,16 @@ export class DefiLlamaProvider extends BaseProvider {
     // Filter to protocols present on Solana
     const solanaProtocols = allProtocols.filter((p) => p.chains?.includes("Solana") ?? false);
 
-    // Map to RawProject with structured metrics
+    // Map to RawProject with structured metrics and rich category mapping
     const projects: RawProject[] = solanaProtocols.map((proto) => {
       const solanaTvl = proto.chainTvls?.["Solana"] ?? proto.tvl ?? 0;
       const evidenceId = `defillama-${proto.id}-tvl`;
+      const category = mapCategory(proto.category);
+      const classification = classifyEntity(proto.id, proto.name);
       return {
         id: `defillama-${proto.id}`,
         name: proto.name,
-        category: proto.category ?? "defi",
+        category,
         description: `DeFi protocol on Solana — TVL: $${solanaTvl.toLocaleString()}`,
         metrics: {
           tvl: solanaTvl,
@@ -121,6 +235,7 @@ export class DefiLlamaProvider extends BaseProvider {
         },
         evidenceIds: [evidenceId],
         updatedAt: asOf,
+        classification,
       };
     });
 

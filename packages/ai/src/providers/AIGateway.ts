@@ -21,20 +21,24 @@ export function resolveConfig(): AIProviderConfig {
 
 /** Create the AI provider based on configuration. */
 export function createAIProvider(config?: AIProviderConfig): AIProvider {
-  const resolved = config ?? resolveConfig();
-  const providerName = resolved.provider;
+  try {
+    const resolved = config ?? resolveConfig();
+    const providerName = resolved.provider;
 
-  // Try the configured provider first
-  if (providerName === "openrouter" && resolved.openrouter) {
-    return new OpenRouterProvider(resolved.openrouter);
-  }
-  if (providerName === "nvidia-nim" && resolved.nvidiaNim) {
-    return new NvidiaNimProvider(resolved.nvidiaNim);
-  }
+    // Try the configured provider first
+    if (providerName === "openrouter" && resolved.openrouter) {
+      return new OpenRouterProvider(resolved.openrouter);
+    }
+    if (providerName === "nvidia-nim" && resolved.nvidiaNim) {
+      return new NvidiaNimProvider(resolved.nvidiaNim);
+    }
 
-  // Fallback: try any available provider
-  if (resolved.openrouter) return new OpenRouterProvider(resolved.openrouter);
-  if (resolved.nvidiaNim) return new NvidiaNimProvider(resolved.nvidiaNim);
+    // Fallback: try any available provider
+    if (resolved.openrouter) return new OpenRouterProvider(resolved.openrouter);
+    if (resolved.nvidiaNim) return new NvidiaNimProvider(resolved.nvidiaNim);
+  } catch {
+    // Configuration error — fall through to mock
+  }
 
   // No provider configured — return mock (deterministic, offline)
   return new MockProvider();

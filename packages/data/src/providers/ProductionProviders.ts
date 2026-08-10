@@ -89,8 +89,12 @@ export function resolveProductionProviders(config: ProductionProviderConfig = {}
     new CoinGeckoProvider(coingeckoUrl ? { apiUrl: coingeckoUrl } : {}, { httpClient }),
   );
 
-  // Always include demo as fallback so the pipeline has baseline data
-  providers.push(new DemoProvider());
+  // Only include demo as fallback if NO live providers are configured
+  // This prevents demo data (e.g. "Illustrative Lending Pool") from mixing
+  // with real DeFiLlama/CoinGecko data in production
+  if (providers.length === 0) {
+    providers.push(new DemoProvider());
+  }
 
   return providers;
 }

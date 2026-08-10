@@ -15,12 +15,15 @@ export async function GET(request: Request): Promise<Response> {
     const projects = await service.listProjects();
     const pulse = await service.getPulse();
 
-    const sorted = [...snapshots].sort((a, b) =>
-      new Date(a.referenceDate).getTime() - new Date(b.referenceDate).getTime(),
+    const sorted = [...snapshots].sort(
+      (a, b) => new Date(a.referenceDate).getTime() - new Date(b.referenceDate).getTime(),
     );
 
     const timeSeries = sorted.map((s) => ({
-      label: new Date(s.referenceDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: new Date(s.referenceDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
       projectCount: s.projects.length,
       narrativeCount: s.narratives.length,
       evidenceCount: s.evidence.length,
@@ -49,8 +52,7 @@ export async function GET(request: Request): Promise<Response> {
     const totalTvl = projects.reduce((s, p) => s + (p.metrics?.tvl ?? 0), 0);
     const totalVolume = projects.reduce((s, p) => s + (p.metrics?.volume24h ?? 0), 0);
 
-    const getMetric = (id: string) =>
-      pulse.metrics.find((m) => m.id === id)?.value ?? "—";
+    const getMetric = (id: string) => pulse.metrics.find((m) => m.id === id)?.value ?? "—";
 
     return ok({
       timeSeries,

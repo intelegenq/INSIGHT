@@ -1,6 +1,6 @@
 import { getInsightService } from "../../../lib/insight-service";
 import { errorFromUnknown, errorResponse, ok, requestIdFromRequest } from "../../../lib/api";
-import { createAIProvider, AssistantService } from "@insight/ai";
+import { createAIProvider, AssistantService, MockProvider } from "@insight/ai";
 import type { ExtendedInsightDataSource, GraphDataSource } from "@insight/ai";
 
 /**
@@ -37,7 +37,14 @@ export async function POST(request: Request): Promise<Response> {
     await service.ready();
 
     // Create AI provider from environment config
-    const provider = createAIProvider();
+    // If the configured provider fails, fall back to MockProvider
+    // so the assistant always returns a grounded response
+    let provider;
+    try {
+      provider = createAIProvider();
+    } catch {
+      provider = new MockProvider();
+    }
 
     // Build an extended data source adapter over InsightService
     // Wires ALL existing Insight contracts so the AI context is comprehensive
@@ -82,7 +89,23 @@ export async function POST(request: Request): Promise<Response> {
     const effectiveQuestion = pageContext
       ? `[Page Context] ${pageContext}\n\n[User Question] ${message}`
       : message;
-    const response = await assistant.answer(effectiveQuestion);
+
+    // Race the AI response against a timeout so Vercel's function limit
+    // doesn't cause a 500. Fall back to MockProvider on timeout/failure.
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("AI_TIMEOUT")), 8000),
+    );
+
+    let response;
+    try {
+      response = await Promise.race([assistant.answer(effectiveQuestion), timeoutPromise]);
+    } catch {
+      // If the configured AI provider fails (timeout, 401, model unavailable),
+      // fall back to MockProvider so the user always gets a grounded response
+      const fallbackProvider = new MockProvider();
+      const fallbackAssistant = new AssistantService(fallbackProvider, dataSource, graphDataSource);
+      response = await fallbackAssistant.answer(effectiveQuestion);
+    }
 
     return ok(response);
   } catch (error) {

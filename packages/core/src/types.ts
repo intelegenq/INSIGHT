@@ -44,7 +44,36 @@ export interface Confidence {
 }
 
 /** Ecosystem category a project belongs to. */
-export type ProjectCategory = "defi" | "infrastructure" | "consumer" | "other";
+export type ProjectCategory =
+  | "defi"
+  | "dex"
+  | "lending"
+  | "yield"
+  | "liquid-staking"
+  | "bridge"
+  | "derivatives"
+  | "payments"
+  | "nft"
+  | "oracle"
+  | "rwa"
+  | "gaming"
+  | "social"
+  | "wallets"
+  | "infrastructure"
+  | "ai"
+  | "depin"
+  | "stablecoins"
+  | "restaking"
+  | "mev"
+  | "validators"
+  | "data"
+  | "security"
+  | "developer-tools"
+  | "consumer"
+  | "other";
+
+/** Entity classification — distinguishes ecosystems projects from market context. */
+export type EntityClassification = "solana_ecosystem" | "market_context" | "network";
 
 /** Snapshot of traction indicators for a project. */
 export interface ProjectMetrics {
@@ -67,6 +96,8 @@ export interface Project {
   chain?: ChainId;
   /** ISO-8601 timestamp of the last update. */
   updatedAt: string;
+  /** Entity classification — distinguishes ecosystem projects from CEXs/network. */
+  classification?: EntityClassification;
 }
 
 /** Direction of a narrative's momentum. */

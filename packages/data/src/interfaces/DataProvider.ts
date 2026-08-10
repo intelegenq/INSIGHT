@@ -28,6 +28,10 @@ export interface RawProject {
   evidenceIds?: string[];
   /** ISO-8601 timestamp of the last project update. */
   updatedAt?: string;
+  /** Entity classification — distinguishes ecosystem projects from CEXs/network. */
+  classification?: string;
+  /** Sources that contributed to this project record. */
+  sources?: string[];
 }
 
 /** Raw, provider-neutral evidence record (pre-transformation). */

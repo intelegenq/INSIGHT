@@ -153,13 +153,13 @@ describe("DefiLlamaProvider", () => {
     expect(result.data).toHaveLength(2);
     expect(result.data[0]?.id).toBe("defillama-uniswap");
     expect(result.data[0]?.name).toBe("Uniswap");
-    expect(result.data[0]?.category).toBe("Dexes");
+    expect(result.data[0]?.category).toBe("dex");
     expect(result.data[0]?.description).toContain("Solana");
     expect(result.data[0]?.description).toContain("TVL");
     expect(result.data[0]?.metrics?.tvl).toBe(500_000_000);
     expect(result.data[1]?.id).toBe("defillama-aave");
     expect(result.data[1]?.name).toBe("Aave");
-    expect(result.data[1]?.category).toBe("Lending");
+    expect(result.data[1]?.category).toBe("lending");
     expect(result.data[1]?.metrics?.tvl).toBe(1_000_000_000);
   });
 

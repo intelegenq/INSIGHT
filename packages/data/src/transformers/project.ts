@@ -1,4 +1,4 @@
-import type { Project, ProjectCategory, ProjectMetrics } from "@insight/core";
+import type { EntityClassification, Project, ProjectCategory, ProjectMetrics } from "@insight/core";
 import type { RawProject } from "../interfaces/DataProvider";
 
 /**
@@ -8,13 +8,45 @@ import type { RawProject } from "../interfaces/DataProvider";
 
 const VALID_CATEGORIES: readonly ProjectCategory[] = [
   "defi",
+  "dex",
+  "lending",
+  "yield",
+  "liquid-staking",
+  "bridge",
+  "derivatives",
+  "payments",
+  "nft",
+  "oracle",
+  "rwa",
+  "gaming",
+  "social",
+  "wallets",
   "infrastructure",
+  "ai",
+  "depin",
+  "stablecoins",
+  "restaking",
+  "mev",
+  "validators",
+  "data",
+  "security",
+  "developer-tools",
   "consumer",
   "other",
 ];
 
+const VALID_CLASSIFICATIONS: readonly EntityClassification[] = [
+  "solana_ecosystem",
+  "market_context",
+  "network",
+];
+
 function isCategory(value: string): value is ProjectCategory {
   return (VALID_CATEGORIES as readonly string[]).includes(value);
+}
+
+function isClassification(value: string): value is EntityClassification {
+  return (VALID_CLASSIFICATIONS as readonly string[]).includes(value);
 }
 
 function normalizeCategory(value: string | undefined): ProjectCategory {
@@ -22,6 +54,13 @@ function normalizeCategory(value: string | undefined): ProjectCategory {
     return value;
   }
   return "other";
+}
+
+function normalizeClassification(value: string | undefined): EntityClassification | undefined {
+  if (value !== undefined && isClassification(value)) {
+    return value;
+  }
+  return undefined;
 }
 
 function normalizeMetrics(raw: RawProject["metrics"]): ProjectMetrics {
@@ -35,7 +74,7 @@ function normalizeMetrics(raw: RawProject["metrics"]): ProjectMetrics {
 
 /** Map a single raw project record to a core {@link Project}. */
 export function transformProject(raw: RawProject): Project {
-  return {
+  const transformed: Project = {
     id: raw.id,
     name: raw.name,
     category: normalizeCategory(raw.category),
@@ -44,6 +83,13 @@ export function transformProject(raw: RawProject): Project {
     evidenceIds: raw.evidenceIds ?? [],
     updatedAt: raw.updatedAt ?? "1970-01-01T00:00:00.000Z",
   };
+
+  const classification = normalizeClassification(raw.classification);
+  if (classification !== undefined) {
+    transformed.classification = classification;
+  }
+
+  return transformed;
 }
 
 /** Map many raw records, preserving input order. */

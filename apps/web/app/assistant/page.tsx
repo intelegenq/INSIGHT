@@ -189,33 +189,16 @@ export default function AssistantPage() {
   };
 
   return (
-    <div className="page">
-      <nav className="nav" aria-label="Primary navigation">
-        <Link href="/" className="nav-brand">
-          Insight
-        </Link>
-        <div className="nav-links">
-          <Link href="/projects">Projects</Link>
-          <Link href="/narratives">Narratives</Link>
-          <Link href="/reports">Reports</Link>
-          <Link href="/assistant" className="active">
-            Assistant
-          </Link>
-          <Link href="/search">Search</Link>
-          <Link href="/compare">Compare</Link>
-          <Link href="/dashboard">Dashboard</Link>
-          <Link href="/trends">Trends</Link>
-          <Link href="/evidence">Evidence</Link>
-          <Link href="/graph">Graph</Link>
+    <div>
+      <main className="terminal-main" style={{ paddingTop: 32 }}>
+        <div className="page-hero" style={{ paddingLeft: 0, paddingRight: 0 }}>
+          <p className="eyebrow">ASK INSIGHT</p>
+          <h1 style={{ fontSize: 32 }}>AI Assistant</h1>
+          <p className="subtitle">
+            Ask questions about Insight&apos;s collected data. The AI is grounded in Insight&apos;s
+            deterministic evidence — no web search, no invented facts.
+          </p>
         </div>
-      </nav>
-
-      <main className="hero assistant-hero">
-        <h1>AI Assistant</h1>
-        <p className="subtitle">
-          Ask questions about Insight&apos;s collected data. The AI is grounded in Insight&apos;s
-          deterministic evidence — no web search, no invented facts.
-        </p>
 
         {/* Conversation history */}
         {history.length > 0 && (

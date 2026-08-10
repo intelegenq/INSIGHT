@@ -197,9 +197,15 @@ export class SolanaRPCProvider extends BaseProvider {
 
   protected async checkHealth(): Promise<boolean> {
     try {
-      this.acquire();
-      const result = await this.rpcCall<HealthResult>("getHealth");
-      return result.status === "ok";
+      const response = await this.httpClient.post<JsonRpcResponse<HealthResult>>({
+        url: this.rpcUrl,
+        body: this.buildRequest("getHealth"),
+        timeoutMs: 5000,
+      });
+      if (!response.ok || response.data === null) return false;
+      const rpcResponse = response.data;
+      if (rpcResponse.error) return false;
+      return rpcResponse.result?.status === "ok";
     } catch {
       return false;
     }

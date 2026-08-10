@@ -55,12 +55,22 @@ describe("resolveProductionProviders", () => {
     expect(providers.find((p) => p.id === "coingecko")).toBeInstanceOf(CoinGeckoProvider);
   });
 
-  it("always includes demo as fallback", () => {
+  it("includes demo as fallback when no live providers are configured", () => {
     const providers = resolveProductionProviders({
-      env: {},
+      env: { NEXT_PUBLIC_INSIGHT_DATA_MODE: "demo" },
       transport: () => new MockHttpClient(),
     });
     expect(providers.find((p) => p.id === "demo")).toBeInstanceOf(DemoProvider);
+  });
+
+  it("does not include demo when live providers are configured", () => {
+    const mock = new MockHttpClient();
+    const providers = resolveProductionProviders({
+      env: { DEFILLAMA_API_URL: "https://api.llama.fi" },
+      transport: () => mock,
+    });
+    expect(providers.find((p) => p.id === "demo")).toBeUndefined();
+    expect(providers.find((p) => p.id === "defillama")).toBeDefined();
   });
 
   it("respects custom API URLs", () => {

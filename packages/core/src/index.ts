@@ -7,6 +7,7 @@
 
 export type {
   Confidence,
+  EntityClassification,
   Evidence,
   EvidenceSource,
   EvidenceStatus,
