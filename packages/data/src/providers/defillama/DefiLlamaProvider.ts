@@ -39,6 +39,10 @@ export interface RawDefiLlamaProtocol {
   parentProtocol?: string;
   oracles?: string[];
   chain?: string;
+  logo?: string;
+  url?: string;
+  github?: string;
+  parentProtocolId?: string;
 }
 
 /** Config for DeFiLlama provider. */
@@ -241,6 +245,15 @@ export class DefiLlamaProvider extends BaseProvider {
         evidenceIds: [evidenceId],
         updatedAt: asOf,
         classification,
+        logoUrl: proto.logo,
+        slug: proto.module ?? proto.id.toString(),
+        symbol: proto.symbol,
+        change24h: proto.change24h,
+        change7d: proto.change7d,
+        change30d: proto.change30d,
+        website: proto.url,
+        twitter: proto.twitter,
+        github: proto.github,
       };
     });
 

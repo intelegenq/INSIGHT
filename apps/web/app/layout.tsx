@@ -15,6 +15,7 @@ const navLinks = [
   { href: "/markets", label: "Markets" },
   { href: "/analytics", label: "Analytics" },
   { href: "/ecosystem", label: "Ecosystem" },
+  { href: "/network", label: "Network" },
   { href: "/solana-now", label: "Solana Now" },
   { href: "/research", label: "Research" },
   { href: "/alerts", label: "Alerts" },

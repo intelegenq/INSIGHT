@@ -89,6 +89,17 @@ export function transformProject(raw: RawProject): Project {
     transformed.classification = classification;
   }
 
+  // Pass through enrichment fields
+  if (raw.logoUrl) transformed.logoUrl = raw.logoUrl;
+  if (raw.symbol) transformed.symbol = raw.symbol;
+  if (raw.slug) transformed.slug = raw.slug;
+  if (raw.change24h !== undefined) transformed.change24h = raw.change24h;
+  if (raw.change7d !== undefined) transformed.change7d = raw.change7d;
+  if (raw.change30d !== undefined) transformed.change30d = raw.change30d;
+  if (raw.website) transformed.website = raw.website;
+  if (raw.twitter) transformed.twitter = raw.twitter;
+  if (raw.github) transformed.github = raw.github;
+
   return transformed;
 }
 

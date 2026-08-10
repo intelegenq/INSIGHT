@@ -32,6 +32,24 @@ export interface RawProject {
   classification?: string;
   /** Sources that contributed to this project record. */
   sources?: string[];
+  /** Project logo URL from data source (DeFiLlama, CoinGecko, etc.) */
+  logoUrl?: string;
+  /** Protocol slug for historical data fetching */
+  slug?: string;
+  /** Token symbol (e.g. JUP, RAY) */
+  symbol?: string;
+  /** 24h change percentage */
+  change24h?: number;
+  /** 7d change percentage */
+  change7d?: number;
+  /** 30d change percentage */
+  change30d?: number;
+  /** Website URL */
+  website?: string;
+  /** Twitter handle */
+  twitter?: string;
+  /** GitHub URL */
+  github?: string;
 }
 
 /** Raw, provider-neutral evidence record (pre-transformation). */
