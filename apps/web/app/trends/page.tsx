@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface ProjectMetrics {
   tvl?: number;
@@ -127,6 +128,14 @@ export default function TrendsPage() {
     string,
     { name: string; points: TrendPoint[] }
   > | null>(null);
+
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Trends] User is viewing project trend comparison over time with multi-project overlay and sparkline charts.",
+    );
+  }, [setPageContext]);
+
   const [overlayState, setOverlayState] = useState<LoadState>("idle");
 
   // Load available projects on mount

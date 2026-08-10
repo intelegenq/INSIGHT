@@ -18,8 +18,9 @@ import type { ExtendedInsightDataSource, GraphDataSource } from "@insight/ai";
 export async function POST(request: Request): Promise<Response> {
   const requestId = requestIdFromRequest(request);
   try {
-    const body = (await request.json()) as { message?: unknown };
+    const body = (await request.json()) as { message?: unknown; pageContext?: unknown };
     const message = body?.message;
+    const pageContext = typeof body?.pageContext === "string" ? body.pageContext : undefined;
 
     if (typeof message !== "string" || message.trim().length === 0) {
       return errorResponse(
@@ -76,7 +77,12 @@ export async function POST(request: Request): Promise<Response> {
 
     // Create and call the assistant service
     const assistant = new AssistantService(provider, dataSource, graphDataSource);
-    const response = await assistant.answer(message);
+    // If page context is provided, prepend it to the question so the AI
+    // receives structured context about the current page the user is viewing.
+    const effectiveQuestion = pageContext
+      ? `[Page Context] ${pageContext}\n\n[User Question] ${message}`
+      : message;
+    const response = await assistant.answer(effectiveQuestion);
 
     return ok(response);
   } catch (error) {

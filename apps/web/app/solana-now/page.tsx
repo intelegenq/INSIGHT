@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface FeedItem {
   id: string;
@@ -34,6 +35,13 @@ export default function SolanaNowPage() {
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [anomalies, setAnomalies] = useState<AnomalyItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Solana Now] User is viewing the real-time intelligence feed with breaking events, data alerts, and timeline updates.",
+    );
+  }, [setPageContext]);
 
   const load = useCallback(async () => {
     setLoading(true);

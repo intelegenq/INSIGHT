@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface AlertItem {
   id: string;
@@ -38,6 +39,12 @@ const CONDITION_LABELS: Record<string, string> = {
 };
 
 export default function AlertsPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Alerts] User is viewing alert subscriptions for anomaly detection including health drops, trend changes, and TVL changes.",
+    );
+  }, [setPageContext]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState("");

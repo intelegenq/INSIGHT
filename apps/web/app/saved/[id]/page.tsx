@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { use, useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../../components/Copilot";
 
 interface SessionData {
   session: {

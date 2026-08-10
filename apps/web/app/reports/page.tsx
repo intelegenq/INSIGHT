@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import type { Report, ReportLens, Evidence } from "@insight/core";
+import { useCopilot } from "../../components/Copilot";
 
 const lensLabels: Record<ReportLens, string> = {
   ecosystem: "Ecosystem",
@@ -15,6 +16,12 @@ const lensOptions: ReportLens[] = ["ecosystem", "defi", "infrastructure"];
 const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "";
 
 export default function ReportsPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Reports] User is viewing research briefs with export options and evidence citations.",
+    );
+  }, [setPageContext]);
   const [lens, setLens] = useState<ReportLens>("ecosystem");
   const [isEvidenceOpen, setEvidenceOpen] = useState(true);
   const [report, setReport] = useState<Report | undefined>(undefined);

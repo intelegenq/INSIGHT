@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface GraphEntity {
   kind: "project" | "evidence" | "source" | "narrative";
@@ -60,6 +61,12 @@ const relLabels: Record<string, string> = {
 const baseUrl = process.env["NEXT_PUBLIC_BASE_URL"] ?? "";
 
 export default function GraphPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Graph] User is viewing the knowledge graph entity browser with relationship visualization.",
+    );
+  }, [setPageContext]);
   const [graph, setGraph] = useState<GraphResponse | null>(null);
   const [filter, setFilter] = useState<KindFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);

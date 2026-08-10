@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface SnapshotSummary {
   projectCount: number;
@@ -106,6 +107,12 @@ function directionClass(dir: string): string {
 }
 
 export default function HistoryPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[History] User is viewing snapshot history with diff comparison between snapshots.",
+    );
+  }, [setPageContext]);
   const [state, setState] = useState<LoadState>("idle");
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");

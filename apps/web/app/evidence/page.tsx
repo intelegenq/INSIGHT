@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface EvidenceItem {
   evidence: {
@@ -35,6 +36,12 @@ function formatDate(iso: string): string {
 }
 
 export default function EvidenceTimelinePage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Evidence] User is viewing the chronological evidence timeline with source/status filtering and project/narrative associations.",
+    );
+  }, [setPageContext]);
   const [items, setItems] = useState<EvidenceItem[]>([]);
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState("");

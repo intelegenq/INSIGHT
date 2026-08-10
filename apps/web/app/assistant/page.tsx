@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface Citation {
   evidenceId: string;
@@ -135,6 +136,13 @@ export default function AssistantPage() {
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState<string>("");
   const [history, setHistory] = useState<ConversationEntry[]>([]);
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Assistant] User is in the full AI assistant workspace with conversation history.",
+    );
+  }, [setPageContext]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const ask = useCallback(async (question: string) => {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface Report {
   id: string;
@@ -15,6 +16,12 @@ interface Report {
 }
 
 export default function ResearchPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Research] User is viewing research reports with export options (Markdown/JSON/PDF) and evidence citations.",
+    );
+  }, [setPageContext]);
   const [report, setReport] = useState<Report | undefined>();
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [loading, setLoading] = useState(true);

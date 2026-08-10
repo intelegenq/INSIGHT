@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface Project {
   id: string;
@@ -28,6 +29,12 @@ function fmtTvl(v: number | undefined): string {
 }
 
 export default function EcosystemPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Ecosystem] User is viewing the Solana ecosystem universe with project listings, category filters, and narratives.",
+    );
+  }, [setPageContext]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [narratives, setNarratives] = useState<Narrative[]>([]);
   const [loading, setLoading] = useState(true);

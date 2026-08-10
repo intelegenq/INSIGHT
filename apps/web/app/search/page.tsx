@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useCallback, useEffect } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface SearchProject {
   id: string;
@@ -72,6 +73,13 @@ export default function SearchPage() {
   const [savedSearches, setSavedSearches] = useState<{ id: string; query: string; name: string }[]>(
     [],
   );
+
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Search] User is viewing global search across projects, narratives, and evidence with saved search subscriptions.",
+    );
+  }, [setPageContext]);
   const [saveMsg, setSaveMsg] = useState("");
 
   const executeSearch = useCallback(async (q: string) => {

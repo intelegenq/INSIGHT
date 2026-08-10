@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface PulseMetric {
   id: string;
@@ -11,6 +12,12 @@ interface PulseMetric {
 }
 
 export default function MarketsPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Markets] User is viewing Solana market data including SOL price, market cap, volume, and data source status.",
+    );
+  }, [setPageContext]);
   const [metrics, setMetrics] = useState<PulseMetric[]>([]);
   const [asOf, setAsOf] = useState("");
   const [loading, setLoading] = useState(true);

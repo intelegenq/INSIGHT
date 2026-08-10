@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { useCopilot } from "../../components/Copilot";
 
 interface Project {
   id: string;
@@ -29,6 +30,12 @@ function fmtTvl(v: number | undefined): string {
 }
 
 export default function AnalyticsPage() {
+  const { setPageContext } = useCopilot();
+  useEffect(() => {
+    setPageContext(
+      "[Analytics] User is viewing Solana protocol analytics with rankings by TVL, volume, and category filters.",
+    );
+  }, [setPageContext]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortKey>("tvl");
