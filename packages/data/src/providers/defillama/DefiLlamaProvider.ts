@@ -143,6 +143,15 @@ const CEX_NAMES: ReadonlySet<string> = new Set([
   "Kucoin",
   "Bingx",
   "Poloniex",
+  "Bitrue",
+  "Crypto.com",
+  "Upbit",
+  "WazirX",
+  "Bitmart",
+  "Bitmex",
+  "Coinex",
+  "Hotbit",
+  "Okx",
 ]);
 
 /** Map a DeFiLlama category string to the Insight taxonomy. Defaults to "defi". */

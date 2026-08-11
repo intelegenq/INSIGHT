@@ -19,9 +19,12 @@ export async function GET(request: Request): Promise<Response> {
     const allProjects = await service.listProjects();
     const pulse = await service.getPulse();
 
-    // Filter to solana_ecosystem only — exclude market_context and network
+    // Filter to solana_ecosystem only — exclude market_context, network, and chain-level entries
     const projects = allProjects.filter(
-      (p) => p.classification === undefined || p.classification === "solana_ecosystem",
+      (p) =>
+        (p.classification === undefined || p.classification === "solana_ecosystem") &&
+        p.name.toLowerCase() !== "solana" &&
+        !p.id.toLowerCase().startsWith("solana-"),
     );
 
     const sorted = [...snapshots].sort(

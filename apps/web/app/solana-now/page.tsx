@@ -69,7 +69,10 @@ export default function SolanaNowPage() {
           .then((r) => r.json())
           .catch(() => ({ providers: [] })),
       ]);
-      setTimeline(tlRes.timeline ?? []);
+      setTimeline((tlRes.timeline ?? []).filter((t: TimelineEntry) => {
+        const cexNames = ["binance","bybit","okx","bitfinex","gate","mexc","bitget","deribit","htx","coinbase","kraken","kucoin","bingx","poloniex","bitrue","crypto.com","upbit","wazirx","bitmart","bitmex","coinex","hotbit"];
+        return !cexNames.some(c => (t.title || "").toLowerCase().includes(c));
+      }));
       setAnomalies(anRes.anomalies ?? []);
       setProjects(pRes.projects ?? []);
       setHealth(hRes.providers ?? []);

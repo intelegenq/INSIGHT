@@ -211,7 +211,8 @@ export default function Home() {
       if (pRes) setPriceData(pRes);
       setProjects(projRes.projects ?? []);
       if (pulseRes.pulse) setPulse(pulseRes.pulse);
-      setTimeline(pulseRes.timeline ?? []);
+      const cexNames = ["binance","bybit","okx","bitfinex","gate","mexc","bitget","deribit","htx","coinbase","kraken","kucoin","bingx","poloniex","bitrue","crypto.com","upbit","wazirx","bitmart","bitmex","coinex","hotbit"];
+      setTimeline((pulseRes.timeline ?? []).filter((t: TimelineEntry) => !cexNames.some(c => (t.title || "").toLowerCase().includes(c))));
       setNarratives(narrRes.narratives ?? []);
       if (anRes) setAnalytics(anRes);
       if (hRes) setHealth(hRes);
