@@ -6,6 +6,16 @@ Insight is a Solana-native intelligence terminal that continuously collects, ana
 
 Built for the Mission: _Create a comprehensive, automatically updating report on the current state of the Solana ecosystem._
 
+## 🔗 Live Demo
+
+| Environment | URL |
+| --- | --- |
+| **Live demo (Cloudflare tunnel)** | https://shots-quit-slots-surgery.trycloudflare.com |
+| **Production (Vercel)** | https://insight-web-six.vercel.app |
+
+> The Cloudflare tunnel runs the latest build (Linear.app UI, live X feed, per-protocol
+> detail pages, rate-limit caching). It serves real live Solana data from public APIs.
+
 ---
 
 ## What Insight Is
