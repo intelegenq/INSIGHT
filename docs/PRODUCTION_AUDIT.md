@@ -9,79 +9,79 @@
 
 ## Route Status
 
-| Route | HTTP | Render | Data | Notes |
-|-------|------|--------|------|-------|
-| `/` | 200 | ✅ | Live | Homepage with ecosystem snapshot, Solana Now feed, top protocols table |
-| `/dashboard` | 200 | ✅ | Live | Customizable dashboard with projects, narratives |
-| `/markets` | 200 | ✅ | Live | Market data, source health, protocol count chart |
-| `/analytics` | 200 | ✅ | Live | Rankings table, TVL/category charts, sort + filter controls |
-| `/ecosystem` | 200 | ✅ | Live | Project universe grid, category filter, narrative cards |
-| `/projects` | 200 | ✅ | Live | Full project listing (428 protocols) |
-| `/projects/[id]` | 200/404 | ⚠️ | Live | Works for DeFiLlama IDs (defillama-2269), 404 for others |
-| `/solana-now` | 200 | ✅ | Partial | Feed loads but timeline has limited items |
-| `/research` | 200 | ✅ | Live | Report viewer with lens selector, export buttons |
-| `/reports` | 200 | ✅ | Live | Report listing |
-| `/alerts` | 200 | ✅ | Live | Alert subscription UI |
-| `/assistant` | 200 | ✅ | ⚠️ | Page loads but AI API returns INTERNAL_ERROR |
-| `/search` | 200 | ✅ | Live | Global search with saved searches |
-| `/graph` | 200 | ✅ | Live | Knowledge graph entity browser (863 entities) |
-| `/trends` | 200 | ✅ | Live | Project trend comparison with sparklines |
-| `/history` | 200 | ✅ | Live | Snapshot history diff |
-| `/evidence` | 200 | ✅ | ⚠️ | Page loads but API returns 0 evidence items |
-| `/compare` | 200 | ✅ | Live | Project comparison |
-| `/saved` | 200 | ✅ | Live | Saved research sessions |
-| `/health` | 200 | ✅ | Live | Source health monitoring |
-| `/narratives` | 200 | ✅ | Live | Narrative listing |
-| `/login` | 200 | ✅ | N/A | Auth page |
-| `/register` | 200 | ✅ | N/A | Auth page |
+| Route            | HTTP    | Render | Data    | Notes                                                                  |
+| ---------------- | ------- | ------ | ------- | ---------------------------------------------------------------------- |
+| `/`              | 200     | ✅     | Live    | Homepage with ecosystem snapshot, Solana Now feed, top protocols table |
+| `/dashboard`     | 200     | ✅     | Live    | Customizable dashboard with projects, narratives                       |
+| `/markets`       | 200     | ✅     | Live    | Market data, source health, protocol count chart                       |
+| `/analytics`     | 200     | ✅     | Live    | Rankings table, TVL/category charts, sort + filter controls            |
+| `/ecosystem`     | 200     | ✅     | Live    | Project universe grid, category filter, narrative cards                |
+| `/projects`      | 200     | ✅     | Live    | Full project listing (428 protocols)                                   |
+| `/projects/[id]` | 200/404 | ⚠️     | Live    | Works for DeFiLlama IDs (defillama-2269), 404 for others               |
+| `/solana-now`    | 200     | ✅     | Partial | Feed loads but timeline has limited items                              |
+| `/research`      | 200     | ✅     | Live    | Report viewer with lens selector, export buttons                       |
+| `/reports`       | 200     | ✅     | Live    | Report listing                                                         |
+| `/alerts`        | 200     | ✅     | Live    | Alert subscription UI                                                  |
+| `/assistant`     | 200     | ✅     | ⚠️      | Page loads but AI API returns INTERNAL_ERROR                           |
+| `/search`        | 200     | ✅     | Live    | Global search with saved searches                                      |
+| `/graph`         | 200     | ✅     | Live    | Knowledge graph entity browser (863 entities)                          |
+| `/trends`        | 200     | ✅     | Live    | Project trend comparison with sparklines                               |
+| `/history`       | 200     | ✅     | Live    | Snapshot history diff                                                  |
+| `/evidence`      | 200     | ✅     | ⚠️      | Page loads but API returns 0 evidence items                            |
+| `/compare`       | 200     | ✅     | Live    | Project comparison                                                     |
+| `/saved`         | 200     | ✅     | Live    | Saved research sessions                                                |
+| `/health`        | 200     | ✅     | Live    | Source health monitoring                                               |
+| `/narratives`    | 200     | ✅     | Live    | Narrative listing                                                      |
+| `/login`         | 200     | ✅     | N/A     | Auth page                                                              |
+| `/register`      | 200     | ✅     | N/A     | Auth page                                                              |
 
 ### API Routes
 
-| Route | HTTP | Notes |
-|-------|------|-------|
-| `/api/pulse` | 200 | 428 projects, 428 evidence, 863 graph entities |
-| `/api/projects` | 200 | 428 projects with TVL and volume metrics |
-| `/api/narratives` | 200 | 3 narratives |
-| `/api/dashboard` | 200 | Dashboard composite data |
-| `/api/analytics` | 200 | Time-series, category distribution, top by TVL |
-| `/api/health` | 200 | coingecko: healthy, defillama: healthy, helius: healthy, solana-rpc: unavailable |
-| `/api/evidence` | 200 | Returns 0 items (evidence not populated in API response) |
-| `/api/evidence/timeline` | 200 | Timeline endpoint |
-| `/api/reports` | 200 | Report listing |
-| `/api/reports/evaluated` | 200 | Evaluated report |
-| `/api/reports/export` | 200 | Markdown export: 56,942 chars |
-| `/api/graph` | 200 | 863 entities (428 project, 428 evidence, 4 source, 3 narrative) |
-| `/api/anomalies` | 200 | 0 anomalies (needs 2+ snapshots) |
-| `/api/snapshots` | 200 | 0 snapshots listed (in-memory only) |
-| `/api/assistant` | 500 | ⚠️ INTERNAL_ERROR — AI provider failing |
+| Route                    | HTTP | Notes                                                                            |
+| ------------------------ | ---- | -------------------------------------------------------------------------------- |
+| `/api/pulse`             | 200  | 428 projects, 428 evidence, 863 graph entities                                   |
+| `/api/projects`          | 200  | 428 projects with TVL and volume metrics                                         |
+| `/api/narratives`        | 200  | 3 narratives                                                                     |
+| `/api/dashboard`         | 200  | Dashboard composite data                                                         |
+| `/api/analytics`         | 200  | Time-series, category distribution, top by TVL                                   |
+| `/api/health`            | 200  | coingecko: healthy, defillama: healthy, helius: healthy, solana-rpc: unavailable |
+| `/api/evidence`          | 200  | Returns 0 items (evidence not populated in API response)                         |
+| `/api/evidence/timeline` | 200  | Timeline endpoint                                                                |
+| `/api/reports`           | 200  | Report listing                                                                   |
+| `/api/reports/evaluated` | 200  | Evaluated report                                                                 |
+| `/api/reports/export`    | 200  | Markdown export: 56,942 chars                                                    |
+| `/api/graph`             | 200  | 863 entities (428 project, 428 evidence, 4 source, 3 narrative)                  |
+| `/api/anomalies`         | 200  | 0 anomalies (needs 2+ snapshots)                                                 |
+| `/api/snapshots`         | 200  | 0 snapshots listed (in-memory only)                                              |
+| `/api/assistant`         | 500  | ⚠️ INTERNAL_ERROR — AI provider failing                                          |
 
 ---
 
 ## Data Sources
 
-| Source | Status | Live Data | Notes |
-|--------|--------|-----------|-------|
-| **DeFiLlama** | ✅ Healthy | Yes | 428 Solana protocols with TVL, volume, 24h/7d/30d changes |
-| **CoinGecko** | ✅ Healthy | Yes | SOL price, market cap, volume |
-| **Helius** | ✅ Healthy | Yes | On-chain data (API key configured) |
-| **Solana RPC** | ❌ Unavailable | No | Health check failing — public endpoint may be rate-limited on Vercel |
-| **AI Provider** | ❌ Error | No | API returns INTERNAL_ERROR — likely env vars not set or model unavailable |
+| Source          | Status         | Live Data | Notes                                                                     |
+| --------------- | -------------- | --------- | ------------------------------------------------------------------------- |
+| **DeFiLlama**   | ✅ Healthy     | Yes       | 428 Solana protocols with TVL, volume, 24h/7d/30d changes                 |
+| **CoinGecko**   | ✅ Healthy     | Yes       | SOL price, market cap, volume                                             |
+| **Helius**      | ✅ Healthy     | Yes       | On-chain data (API key configured)                                        |
+| **Solana RPC**  | ❌ Unavailable | No        | Health check failing — public endpoint may be rate-limited on Vercel      |
+| **AI Provider** | ❌ Error       | No        | API returns INTERNAL_ERROR — likely env vars not set or model unavailable |
 
 ---
 
 ## Current Coverage
 
-| Metric | Value | Source |
-|--------|-------|--------|
-| Projects | 428 | DeFiLlama (Solana-filtered) |
-| Categories | 3 | defi (1), infrastructure (1), other (426) |
-| Narratives | 3 | Ecosystem (up), DeFi (flat), Infrastructure (flat) |
-| Evidence | 428 | Pulse metric (API returns 0 via /api/evidence) |
-| Graph Entities | 863 | 428 project + 428 evidence + 4 source + 3 narrative |
-| Total TVL | $69.86B | Aggregate across all projects |
-| Snapshots | 0 | In-memory only (no persistence in production) |
-| Anomalies | 0 | Needs 2+ snapshots for comparison |
-| Report Length | 56,942 chars | Markdown ecosystem report |
+| Metric         | Value        | Source                                              |
+| -------------- | ------------ | --------------------------------------------------- |
+| Projects       | 428          | DeFiLlama (Solana-filtered)                         |
+| Categories     | 3            | defi (1), infrastructure (1), other (426)           |
+| Narratives     | 3            | Ecosystem (up), DeFi (flat), Infrastructure (flat)  |
+| Evidence       | 428          | Pulse metric (API returns 0 via /api/evidence)      |
+| Graph Entities | 863          | 428 project + 428 evidence + 4 source + 3 narrative |
+| Total TVL      | $69.86B      | Aggregate across all projects                       |
+| Snapshots      | 0            | In-memory only (no persistence in production)       |
+| Anomalies      | 0            | Needs 2+ snapshots for comparison                   |
+| Report Length  | 56,942 chars | Markdown ecosystem report                           |
 
 ---
 
@@ -187,18 +187,20 @@
 
 ## Summary of Findings
 
-| Severity | Count |
-|----------|-------|
-| Critical | 1 |
-| High | 6 |
-| Medium | 5 |
-| Low | 3 |
+| Severity  | Count  |
+| --------- | ------ |
+| Critical  | 1      |
+| High      | 6      |
+| Medium    | 5      |
+| Low       | 3      |
 | **Total** | **15** |
 
 ### Critical
+
 - AI Assistant returns 500 INTERNAL_ERROR in production
 
 ### High
+
 - Solana RPC health unavailable
 - Category system broken (426/428 "other")
 - CEXs mixed with ecosystem projects
@@ -207,6 +209,7 @@
 - Dual navigation in DOM on /assistant
 
 ### Medium
+
 - No persisted snapshots (0 snapshots)
 - Sparse Solana Now feed
 - Empty historical charts
@@ -214,6 +217,7 @@
 - Narrative detail routes 404
 
 ### Low
+
 - Static footer year
 - No search debounce
 - No loading skeletons

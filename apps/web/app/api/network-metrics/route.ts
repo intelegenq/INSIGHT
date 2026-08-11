@@ -18,10 +18,7 @@ import { ok } from "../../../lib/api";
  * - fees/revenue (from DeFiLlama, total24h field)
  */
 
-const RPC_ENDPOINTS = [
-  "https://api.mainnet-beta.solana.com",
-  "https://solana-rpc.publicnode.com",
-];
+const RPC_ENDPOINTS = ["https://api.mainnet-beta.solana.com", "https://solana-rpc.publicnode.com"];
 
 interface RpcResult<T> {
   endpoint: string;
@@ -30,7 +27,11 @@ interface RpcResult<T> {
   error?: string;
 }
 
-async function rpcCall<T>(method: string, params: unknown[] = [], timeout = 5000): Promise<RpcResult<T>> {
+async function rpcCall<T>(
+  method: string,
+  params: unknown[] = [],
+  timeout = 5000,
+): Promise<RpcResult<T>> {
   for (const endpoint of RPC_ENDPOINTS) {
     try {
       const controller = new AbortController();
@@ -58,27 +59,37 @@ export async function GET(): Promise<Response> {
 
   // Fire all RPC calls in parallel
   const [epochRes, voteRes, perfRes, inflationRes, supplyRes, nodesRes] = await Promise.all([
-    rpcCall<{ epoch: number; slotIndex: number; slotsInEpoch: number; blockHeight: number; transactionCount: number }>(
-      "getEpochInfo", [{ commitment: "confirmed" }]
-    ),
+    rpcCall<{
+      epoch: number;
+      slotIndex: number;
+      slotsInEpoch: number;
+      blockHeight: number;
+      transactionCount: number;
+    }>("getEpochInfo", [{ commitment: "confirmed" }]),
     rpcCall<{ current: Validator[]; delinquent: Validator[] }>("getVoteAccounts"),
-    rpcCall<Array<{ numSlots: number; numTransactions: number; samplePeriodSecs: number; slot: number }>>(
-      "getRecentPerformanceSamples", [20]
-    ),
+    rpcCall<
+      Array<{ numSlots: number; numTransactions: number; samplePeriodSecs: number; slot: number }>
+    >("getRecentPerformanceSamples", [20]),
     rpcCall<{ total: number; validator: number; foundation: number }>("getInflationRate"),
     rpcCall<{ total: number; circulating: number; nonCirculating: number }>("getSupply"),
     rpcCall<Array<{ gossip: string; version: string }>>("getClusterNodes"),
   ]);
 
   // Process epoch
-  const epoch = epochRes.ok && epochRes.data ? {
-    epoch: epochRes.data.epoch,
-    slotIndex: epochRes.data.slotIndex,
-    slotsInEpoch: epochRes.data.slotsInEpoch,
-    blockHeight: epochRes.data.blockHeight,
-    transactionCount: epochRes.data.transactionCount,
-    progress: epochRes.data.slotsInEpoch > 0 ? (epochRes.data.slotIndex / epochRes.data.slotsInEpoch) * 100 : 0,
-  } : null;
+  const epoch =
+    epochRes.ok && epochRes.data
+      ? {
+          epoch: epochRes.data.epoch,
+          slotIndex: epochRes.data.slotIndex,
+          slotsInEpoch: epochRes.data.slotsInEpoch,
+          blockHeight: epochRes.data.blockHeight,
+          transactionCount: epochRes.data.transactionCount,
+          progress:
+            epochRes.data.slotsInEpoch > 0
+              ? (epochRes.data.slotIndex / epochRes.data.slotsInEpoch) * 100
+              : 0,
+        }
+      : null;
 
   // Process validators
   let validators = null;
@@ -87,9 +98,10 @@ export async function GET(): Promise<Response> {
     const delinquent = voteRes.data.delinquent || [];
     const totalStake = current.reduce((sum, v) => sum + (v.activatedStake || 0), 0);
     const delinqStake = delinquent.reduce((sum, v) => sum + (v.activatedStake || 0), 0);
-    const avgCommission = current.length > 0
-      ? current.reduce((sum, v) => sum + (v.commission || 0), 0) / current.length
-      : 0;
+    const avgCommission =
+      current.length > 0
+        ? current.reduce((sum, v) => sum + (v.commission || 0), 0) / current.length
+        : 0;
 
     const topValidators = [...current]
       .sort((a, b) => (b.activatedStake || 0) - (a.activatedStake || 0))
@@ -108,9 +120,10 @@ export async function GET(): Promise<Response> {
       active: current.length,
       delinquent: delinquent.length,
       total: current.length + delinquent.length,
-      delinquencyRate: (current.length + delinquent.length) > 0
-        ? (delinquent.length / (current.length + delinquent.length)) * 100
-        : 0,
+      delinquencyRate:
+        current.length + delinquent.length > 0
+          ? (delinquent.length / (current.length + delinquent.length)) * 100
+          : 0,
       totalStake,
       delinquentStake: delinqStake,
       avgCommission,
@@ -129,7 +142,7 @@ export async function GET(): Promise<Response> {
       current: totalTime > 0 ? totalTx / totalTime : 0,
       avgSlotTime: totalSlots > 0 ? totalTime / totalSlots : 0,
       samples: samples.length,
-      history: samples.map(s => ({
+      history: samples.map((s) => ({
         slot: s.slot,
         tps: s.samplePeriodSecs > 0 ? s.numTransactions / s.samplePeriodSecs : 0,
         slotTime: s.numSlots > 0 ? s.samplePeriodSecs / s.numSlots : 0,
@@ -138,18 +151,24 @@ export async function GET(): Promise<Response> {
   }
 
   // Process inflation
-  const inflation = inflationRes.ok && inflationRes.data ? {
-    total: inflationRes.data.total,
-    validator: inflationRes.data.validator,
-    foundation: inflationRes.data.foundation,
-  } : null;
+  const inflation =
+    inflationRes.ok && inflationRes.data
+      ? {
+          total: inflationRes.data.total,
+          validator: inflationRes.data.validator,
+          foundation: inflationRes.data.foundation,
+        }
+      : null;
 
   // Process supply
-  const supply = supplyRes.ok && supplyRes.data ? {
-    total: supplyRes.data.total,
-    circulating: supplyRes.data.circulating,
-    nonCirculating: supplyRes.data.nonCirculating,
-  } : null;
+  const supply =
+    supplyRes.ok && supplyRes.data
+      ? {
+          total: supplyRes.data.total,
+          circulating: supplyRes.data.circulating,
+          nonCirculating: supplyRes.data.nonCirculating,
+        }
+      : null;
 
   // Process cluster nodes
   const clusterNodes = nodesRes.ok && nodesRes.data ? nodesRes.data.length : null;
@@ -160,13 +179,15 @@ export async function GET(): Promise<Response> {
     fetchDexVolume(),
     fetchFeesRevenue(),
     fetchRwaProtocols(),
-    rpcCall<Array<{ prioritizationFee: number; slot: number }>>("getRecentPrioritizationFees", [[]]),
+    rpcCall<Array<{ prioritizationFee: number; slot: number }>>("getRecentPrioritizationFees", [
+      [],
+    ]),
   ]);
 
   // Process prioritization fees for median fee calculation
   let medianFee = null;
   if (prioritizationFees.ok && prioritizationFees.data && prioritizationFees.data.length > 0) {
-    const fees = prioritizationFees.data.map(f => f.prioritizationFee || 0).sort((a, b) => a - b);
+    const fees = prioritizationFees.data.map((f) => f.prioritizationFee || 0).sort((a, b) => a - b);
     const mid = Math.floor(fees.length / 2);
     medianFee = {
       medianLamports: fees[mid],
@@ -198,19 +219,22 @@ export async function GET(): Promise<Response> {
     upcomingUpgrades: [
       {
         name: "Alpenglow",
-        description: "Consensus upgrade introducing BFT voting and Votor to reduce finality times from ~12s to ~100ms.",
+        description:
+          "Consensus upgrade introducing BFT voting and Votor to reduce finality times from ~12s to ~100ms.",
         status: "In development",
         simd: "SIMD-220",
       },
       {
         name: "SIMD-525",
-        description: "Real Economic Value (REV) metric standardization — defines fee economics and validator revenue reporting.",
+        description:
+          "Real Economic Value (REV) metric standardization — defines fee economics and validator revenue reporting.",
         status: "Proposed",
         simd: "SIMD-525",
       },
       {
         name: "SIMD-228",
-        description: "Token Extensions — non-transferable positions, transfer hooks, metadata extensions for compliant assets.",
+        description:
+          "Token Extensions — non-transferable positions, transfer hooks, metadata extensions for compliant assets.",
         status: "Active",
         simd: "SIMD-228",
       },
@@ -236,21 +260,29 @@ interface Validator {
 
 // ── DeFiLlama helpers ──
 
-async function fetchStablecoinSupply(): Promise<{ totalSupply: number; byToken: Array<{ name: string; symbol: string; supply: number }>; history: Array<{ date: number; total: number }> } | null> {
+async function fetchStablecoinSupply(): Promise<{
+  totalSupply: number;
+  byToken: Array<{ name: string; symbol: string; supply: number }>;
+  history: Array<{ date: number; total: number }>;
+} | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch("https://stablecoins.llama.fi/stablecoincharts/Solana", {
       signal: controller.signal,
+      next: { revalidate: 21600 },
     });
     clearTimeout(timer);
     if (!res.ok) return null;
-    const data: Array<{ date: number; totalCirculatingUSD?: { peggedUSD?: number } | Record<string, number> }> = await res.json();
+    const data: Array<{
+      date: number;
+      totalCirculatingUSD?: { peggedUSD?: number } | Record<string, number>;
+    }> = await res.json();
     if (!Array.isArray(data) || data.length === 0) return null;
     const latest = data[data.length - 1];
     const totalSupply = latest.totalCirculatingUSD?.peggedUSD ?? 0;
     // Get last 30 days of history
-    const history = data.slice(-30).map(d => ({
+    const history = data.slice(-30).map((d) => ({
       date: d.date,
       total: d.totalCirculatingUSD?.peggedUSD ?? 0,
     }));
@@ -260,17 +292,28 @@ async function fetchStablecoinSupply(): Promise<{ totalSupply: number; byToken: 
   }
 }
 
-async function fetchDexVolume(): Promise<{ total24h: number; total7d: number; total30d: number; protocols: Array<{ name: string; volume24h: number }> } | null> {
+async function fetchDexVolume(): Promise<{
+  total24h: number;
+  total7d: number;
+  total30d: number;
+  protocols: Array<{ name: string; volume24h: number }>;
+} | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch("https://api.llama.fi/overview/dexs/Solana", {
       signal: controller.signal,
+      next: { revalidate: 21600 },
     });
     clearTimeout(timer);
     if (!res.ok) return null;
-    const data = { total24h: 0, total7d: 0, total30d: 0, protocols: [] as Array<Record<string, unknown>> } as Record<string, unknown>;
-    const json = await res.json() as Record<string, unknown>;
+    const data = {
+      total24h: 0,
+      total7d: 0,
+      total30d: 0,
+      protocols: [] as Array<Record<string, unknown>>,
+    } as Record<string, unknown>;
+    const json = (await res.json()) as Record<string, unknown>;
     const total24h = Number(json["total24h"]) || 0;
     const total7d = Number(json["total7d"]) || 0;
     const total30d = Number(json["total30d"]) || 0;
@@ -286,16 +329,22 @@ async function fetchDexVolume(): Promise<{ total24h: number; total7d: number; to
   }
 }
 
-async function fetchFeesRevenue(): Promise<{ total24hFees: number; total7dFees: number; total30dFees: number; protocols: Array<{ name: string; fees24h: number }> } | null> {
+async function fetchFeesRevenue(): Promise<{
+  total24hFees: number;
+  total7dFees: number;
+  total30dFees: number;
+  protocols: Array<{ name: string; fees24h: number }>;
+} | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch("https://api.llama.fi/overview/fees/Solana", {
       signal: controller.signal,
+      next: { revalidate: 21600 },
     });
     clearTimeout(timer);
     if (!res.ok) return null;
-    const json = await res.json() as Record<string, unknown>;
+    const json = (await res.json()) as Record<string, unknown>;
     const total24hFees = Number(json["total24h"]) || 0;
     const total7dFees = Number(json["total7d"]) || 0;
     const total30dFees = Number(json["total30d"]) || 0;
@@ -311,12 +360,17 @@ async function fetchFeesRevenue(): Promise<{ total24hFees: number; total7dFees: 
   }
 }
 
-async function fetchRwaProtocols(): Promise<Array<{ name: string; tvl: number; category: string }> | null> {
+async function fetchRwaProtocols(): Promise<Array<{
+  name: string;
+  tvl: number;
+  category: string;
+}> | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch("https://api.llama.fi/protocols", {
       signal: controller.signal,
+      next: { revalidate: 21600 },
     });
     clearTimeout(timer);
     if (!res.ok) return null;

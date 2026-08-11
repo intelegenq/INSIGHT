@@ -36,9 +36,7 @@ export interface DriverWiring {
  * `wiring.sql` is required when a Postgres URL is configured (the caller
  * supplies the real pg driver); otherwise a fake SQL client is used.
  */
-export function assembleInfra(
-  injection: DriverWiring,
-): InfraServices {
+export function assembleInfra(injection: DriverWiring): InfraServices {
   const config = injection.config;
   const inMemory = isInMemory(config);
 
@@ -65,7 +63,10 @@ export class InMemorySqlClient implements SqlClient {
   private seenSchema = false;
   private rows: Array<{ id: string; body: string }> = [];
 
-  async query(sql: string, params: unknown[] = []): Promise<{ rowCount: null | number; rows: Array<Record<string, unknown>> }> {
+  async query(
+    sql: string,
+    params: unknown[] = [],
+  ): Promise<{ rowCount: null | number; rows: Array<Record<string, unknown>> }> {
     const stmt = sql.replace(/\s+/g, " ").trim();
     if (stmt.startsWith("CREATE TABLE")) {
       if (!this.seenSchema) {

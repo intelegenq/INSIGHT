@@ -18,7 +18,7 @@ export async function GET(request: Request): Promise<Response> {
 
     // DeFiLlama protocol endpoint — returns full TVL history
     const dlUrl = `https://api.llama.fi/protocol/${slug}`;
-    const res = await fetch(dlUrl, { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(dlUrl, { signal: AbortSignal.timeout(8000), next: { revalidate: 21600 } });
 
     if (!res.ok) {
       return ok(

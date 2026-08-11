@@ -11,6 +11,7 @@ export async function GET(): Promise<Response> {
 
     const res = await fetch("https://solanafloor.com/news", {
       signal: controller.signal,
+      next: { revalidate: 1800 },
       headers: { "User-Agent": "InsightBot/1.0 (+https://insight-web-six.vercel.app)" },
     });
     clearTimeout(timer);

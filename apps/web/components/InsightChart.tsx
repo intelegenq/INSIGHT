@@ -12,7 +12,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  Cell,
+  Legend,
 } from "recharts";
 
 interface ChartData {
@@ -32,14 +32,55 @@ const COLORS = {
   border: "#e8dfd3",
 };
 
+// Categorical palette for stacked charts (Blockworks-style multi-series)
+export const SERIES_PALETTE = [
+  "#3b82f6", // blue
+  "#f59e0b", // amber
+  "#10b981", // green
+  "#8b5cf6", // purple
+  "#ec4899", // pink
+  "#06b6d4", // cyan
+  "#ef4444", // red
+  "#84cc16", // lime
+  "#f97316", // orange
+  "#14b8a6", // teal
+];
+
 const tooltipStyle = {
-  backgroundColor: "#fdfbf7",
-  border: `1px solid ${COLORS.border}`,
+  backgroundColor: "var(--bg-elevated)",
+  border: `1px solid var(--border)`,
   borderRadius: "6px",
   fontSize: "12px",
   fontFamily: "var(--font-mono)",
-  color: COLORS.text,
+  color: "var(--text)",
 };
+
+const axisTick = { fontSize: 10, fill: "var(--text-muted)" };
+const gridStroke = "var(--border)";
+
+/** Subtle centered watermark overlay */
+function Watermark() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+        fontSize: 22,
+        fontWeight: 700,
+        letterSpacing: "0.08em",
+        color: "var(--text)",
+        opacity: 0.04,
+        userSelect: "none",
+      }}
+    >
+      INSIGHT
+    </div>
+  );
+}
 
 interface InsightChartProps {
   data: ChartData[];
@@ -47,18 +88,124 @@ interface InsightChartProps {
   height?: number;
   color?: string;
   formatValue?: (v: number) => string;
+  watermark?: boolean;
 }
 
 export function InsightChart({
   data,
   type = "line",
   height = 200,
-  color = COLORS.brown,
+  color = "var(--accent)",
   formatValue,
+  watermark = true,
 }: InsightChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: 40, color: COLORS.muted, fontSize: 13 }}>
+      <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 13 }}>
+        No data available.
+      </div>
+    );
+  }
+
+  const fmt = formatValue ?? ((v: number) => v.toLocaleString());
+  const sampled =
+    data.length > 100 ? data.filter((_, i) => i % Math.ceil(data.length / 100) === 0) : data;
+
+  const body =
+    type === "bar" ? (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={sampled} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+          <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
+          <YAxis
+            tick={axisTick}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v) => fmt(v)}
+            width={50}
+          />
+          <Tooltip contentStyle={tooltipStyle} formatter={((v: unknown) => fmt(Number(v))) as never} />
+          <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    ) : type === "line" ? (
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={sampled} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+          <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
+          <YAxis
+            tick={axisTick}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v) => fmt(v)}
+            width={50}
+            domain={["auto", "auto"]}
+          />
+          <Tooltip contentStyle={tooltipStyle} formatter={((v: unknown) => fmt(Number(v))) as never} />
+          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    ) : (
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart data={sampled} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+          <defs>
+            <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+          <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
+          <YAxis
+            tick={axisTick}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v) => fmt(v)}
+            width={50}
+            domain={["auto", "auto"]}
+          />
+          <Tooltip contentStyle={tooltipStyle} formatter={((v: unknown) => fmt(Number(v))) as never} />
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill="url(#colorGradient)" />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+
+  return (
+    <div style={{ position: "relative" }}>
+      {watermark && <Watermark />}
+      {body}
+    </div>
+  );
+}
+
+interface StackedRow {
+  label: string;
+  [series: string]: string | number;
+}
+
+interface StackedBarChartProps {
+  data: StackedRow[];
+  series: string[];
+  height?: number;
+  formatValue?: (v: number) => string;
+  colors?: string[];
+  showLegend?: boolean;
+  watermark?: boolean;
+}
+
+/** Stacked bar chart with categorical legend (Blockworks-style) */
+export function StackedBar({
+  data,
+  series,
+  height = 250,
+  formatValue,
+  colors = SERIES_PALETTE,
+  showLegend = true,
+  watermark = true,
+}: StackedBarChartProps) {
+  if (!data || data.length === 0 || series.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", fontSize: 13 }}>
         No data available.
       </div>
     );
@@ -66,76 +213,40 @@ export function InsightChart({
 
   const fmt = formatValue ?? ((v: number) => v.toLocaleString());
 
-  // Sample data if too many points
-  const sampled =
-    data.length > 100 ? data.filter((_, i) => i % Math.ceil(data.length / 100) === 0) : data;
-
-  if (type === "bar") {
-    return (
+  return (
+    <div style={{ position: "relative" }}>
+      {watermark && <Watermark />}
       <ResponsiveContainer width="100%" height={height}>
-        <BarChart data={sampled} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} vertical={false} />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 10, fill: COLORS.muted }}
-            axisLine={{ stroke: COLORS.border }}
-            tickLine={false}
-          />
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+          <XAxis dataKey="label" tick={axisTick} axisLine={{ stroke: gridStroke }} tickLine={false} />
           <YAxis
-            tick={{ fontSize: 10, fill: COLORS.muted }}
+            tick={axisTick}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v) => fmt(v)}
             width={50}
           />
-          <Tooltip
-            contentStyle={tooltipStyle}
-            formatter={((v: unknown) => fmt(Number(v))) as never}
-          />
-          <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} />
+          <Tooltip contentStyle={tooltipStyle} formatter={((v: unknown) => fmt(Number(v))) as never} />
+          {showLegend && (
+            <Legend
+              wrapperStyle={{ fontSize: 11, fontFamily: "var(--font-mono)" }}
+              iconType="circle"
+              iconSize={8}
+            />
+          )}
+          {series.map((s, i) => (
+            <Bar
+              key={s}
+              dataKey={s}
+              stackId="a"
+              fill={colors[i % colors.length]}
+              radius={i === series.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+            />
+          ))}
         </BarChart>
       </ResponsiveContainer>
-    );
-  }
-
-  // Area and Line charts
-  return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={sampled} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-        <defs>
-          <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} vertical={false} />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 10, fill: COLORS.muted }}
-          axisLine={{ stroke: COLORS.border }}
-          tickLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 10, fill: COLORS.muted }}
-          axisLine={false}
-          tickLine={false}
-          tickFormatter={(v) => fmt(v)}
-          width={50}
-          domain={["auto", "auto"]}
-        />
-        <Tooltip
-          contentStyle={tooltipStyle}
-          formatter={((v: unknown) => fmt(Number(v))) as never}
-        />
-        <Area
-          type="monotone"
-          dataKey="value"
-          stroke={color}
-          strokeWidth={2}
-          fill="url(#colorGradient)"
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    </div>
   );
 }
 

@@ -59,11 +59,8 @@ export function evaluateReport(input: {
 }): ReportVerdict {
   const evidence = evaluateEvidence(input.evidence);
   const hasVerifiedEvidence = evidence.verified > 0;
-  const quality: ReportQuality = input.confidence === "high"
-    ? "good"
-    : input.confidence === "medium"
-      ? "fair"
-      : "poor";
+  const quality: ReportQuality =
+    input.confidence === "high" ? "good" : input.confidence === "medium" ? "fair" : "poor";
   return {
     reportId: input.reportId,
     confidence: input.confidence,

@@ -8,12 +8,7 @@ import type { ObservabilitySink, Clock } from "./observability";
 import { systemClock } from "./observability";
 
 /** Inner helper to build a metric record. */
-function emit(
-  sink: ObservabilitySink,
-  name: string,
-  delta: number,
-  timestamp: string,
-): void {
+function emit(sink: ObservabilitySink, name: string, delta: number, timestamp: string): void {
   sink.metric({ name, delta, timestamp });
 }
 

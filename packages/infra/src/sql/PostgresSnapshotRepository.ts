@@ -47,9 +47,7 @@ export class PostgresSnapshotRepository implements AsyncSnapshotRepository {
 
   /** Live count of stored snapshots. */
   async count(): Promise<number> {
-    const result = await this.client.query(
-      "SELECT COUNT(*)::INT AS n FROM insight_snapshot",
-    );
+    const result = await this.client.query("SELECT COUNT(*)::INT AS n FROM insight_snapshot");
     const n = result.rows[0]?.["n"];
     return typeof n === "number" ? n : Number(n);
   }
@@ -70,10 +68,7 @@ export class PostgresSnapshotRepository implements AsyncSnapshotRepository {
   }
 
   async get(id: string): Promise<Snapshot | undefined> {
-    const result = await this.client.query(
-      "SELECT body FROM insight_snapshot WHERE id = $1",
-      [id],
-    );
+    const result = await this.client.query("SELECT body FROM insight_snapshot WHERE id = $1", [id]);
     const body = result.rows[0]?.["body"];
     return typeof body === "string" ? (JSON.parse(body) as Snapshot) : undefined;
   }
@@ -89,10 +84,7 @@ export class PostgresSnapshotRepository implements AsyncSnapshotRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.client.query(
-      "DELETE FROM insight_snapshot WHERE id = $1",
-      [id],
-    );
+    const result = await this.client.query("DELETE FROM insight_snapshot WHERE id = $1", [id]);
     return (result.rowCount ?? 0) > 0;
   }
 

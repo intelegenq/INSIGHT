@@ -89,10 +89,7 @@ export class KvCache {
  * Uses an injected clock for TTL expiry so behavior is reproducible.
  */
 export class InMemoryKvBackend implements KvBackend {
-  private readonly store = new Map<
-    string,
-    { value: string; expiresAt: number | null }
-  >();
+  private readonly store = new Map<string, { value: string; expiresAt: number | null }>();
   private readonly now: () => number;
 
   constructor(now: () => number = () => Date.now()) {

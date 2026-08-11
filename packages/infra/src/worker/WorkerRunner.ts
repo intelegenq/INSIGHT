@@ -49,17 +49,32 @@ export async function runWorkerLoop(
 
   while (!options.signal.aborted && failures < maxFailures) {
     const startedAt = new Date().toISOString();
-    sink.log({ severity: "info", message: "worker iteration start", timestamp: startedAt, attributes: { worker: spec.name, attempt } });
+    sink.log({
+      severity: "info",
+      message: "worker iteration start",
+      timestamp: startedAt,
+      attributes: { worker: spec.name, attempt },
+    });
     try {
       const status = await spec.handle({ attempt, startedAt });
       attempt += 1;
       runs += 1;
-      sink.metric({ name: "worker.run", delta: 1, timestamp: startedAt, attributes: { worker: spec.name, status } });
+      sink.metric({
+        name: "worker.run",
+        delta: 1,
+        timestamp: startedAt,
+        attributes: { worker: spec.name, status },
+      });
       log(`ok (${status}) #${attempt}`);
     } catch (error) {
       failures += 1;
       attempt += 1;
-      sink.metric({ name: "worker.failure", delta: 1, timestamp: startedAt, attributes: { worker: spec.name } });
+      sink.metric({
+        name: "worker.failure",
+        delta: 1,
+        timestamp: startedAt,
+        attributes: { worker: spec.name },
+      });
       sink.log({
         severity: "error",
         message: "worker iteration failed",

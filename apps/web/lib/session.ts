@@ -22,9 +22,7 @@ export async function sessionTokenFromRequest(): Promise<string | undefined> {
 }
 
 /** Resolve the authenticated user (or undefined) for the current request. */
-export async function userFromRequest(
-  service: AuthenticationService,
-): Promise<User | undefined> {
+export async function userFromRequest(service: AuthenticationService): Promise<User | undefined> {
   const token = await sessionTokenFromRequest();
   if (!token) return undefined;
   return service.getUserForSession(token);

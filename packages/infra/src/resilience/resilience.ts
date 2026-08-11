@@ -56,10 +56,7 @@ export interface RetryOptions {
 }
 
 /** Await a task, retrying with a fixed delay until success or the cap. */
-export async function retry<T>(
-  operation: () => Promise<T>,
-  config: RetryOptions = {},
-): Promise<T> {
+export async function retry<T>(operation: () => Promise<T>, config: RetryOptions = {}): Promise<T> {
   const maxAttempts = config.maxAttempts ?? 3;
   const delayMs = config.delayMs ?? 100;
   const shouldRetry = config.shouldRetry ?? (() => true);

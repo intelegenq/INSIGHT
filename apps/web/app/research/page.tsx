@@ -1,227 +1,278 @@
 "use client";
 
-import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useCopilot } from "../../components/Copilot";
+import Link from "next/link";
 
-interface Report {
+interface Evidence {
   id: string;
-  title: string;
-  lens: string;
-  confidence: string;
-  generatedAt: string;
-  isDemo: boolean;
-  sections: { thesis: string; catalyst?: string; risk?: string };
-  evidenceIds: string[];
+  source: string;
+  metric: string;
+  value: string;
+  timestamp: string;
+  url?: string;
+}
+
+interface Snapshot {
+  id: string;
+  referenceDate: string;
+  projects: number;
+  narratives: number;
+  evidence: number;
+}
+
+interface Upgrade {
+  name: string;
+  description: string;
+  status: string;
+  simd: string;
 }
 
 export default function ResearchPage() {
-  const { setPageContext } = useCopilot();
-  useEffect(() => {
-    setPageContext(
-      "[Research] User is viewing research reports with export options (Markdown/JSON/PDF) and evidence citations.",
-    );
-  }, [setPageContext]);
-  const [report, setReport] = useState<Report | undefined>();
-  const [evidenceCount, setEvidenceCount] = useState(0);
+  useCopilot();
+  const [evidence, setEvidence] = useState<Evidence[]>([]);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [upgrades, setUpgrades] = useState<Upgrade[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lens, setLens] = useState("ecosystem");
-  const [exporting, setExporting] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/reports?lens=${lens}`);
-      if (!res.ok) {
-        setReport(undefined);
-        return;
-      }
-      const data = (await res.json()) as { report: Report };
-      setReport(data.report);
-      setEvidenceCount(data.report.evidenceIds.length);
-    } catch {
-      /* ignore */
-    }
-    setLoading(false);
-  }, [lens]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const exportReport = async (format: string) => {
-    setExporting(true);
-    try {
-      const res = await fetch("/api/reports/export", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lens, format }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (format === "pdf") {
-          const w = window.open("", "_blank");
-          if (w) {
-            w.document.write(data.content);
-            w.document.close();
-          }
-        } else {
-          const blob = new Blob([data.content], {
-            type: format === "json" ? "application/json" : "text/markdown",
-          });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `insight-report-${lens}.${format}`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }
+    (async () => {
+      try {
+        const [evRes, snapRes, nmRes] = await Promise.all([
+          fetch("/api/evidence")
+            .then((r) => r.json())
+            .catch(() => ({ evidence: [] })),
+          fetch("/api/snapshots")
+            .then((r) => r.json())
+            .catch(() => ({ snapshots: [] })),
+          fetch("/api/network-metrics")
+            .then((r) => r.json())
+            .catch(() => ({})),
+        ]);
+        setEvidence(evRes.evidence ?? []);
+        setSnapshots(snapRes.snapshots ?? []);
+        setUpgrades(nmRes.upcomingUpgrades ?? []);
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      /* ignore */
-    }
-    setExporting(false);
+    })();
+  }, []);
+
+  const sectionStyle: React.CSSProperties = {
+    marginBottom: 48,
+  };
+  const headerStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    color: "var(--text-muted)",
+    marginBottom: 16,
+  };
+  const tableStyle: React.CSSProperties = {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: 13,
+  };
+  const thStyle: React.CSSProperties = {
+    textAlign: "left",
+    padding: "8px 12px",
+    fontSize: 11,
+    textTransform: "uppercase",
+    color: "var(--text-muted)",
+    fontWeight: 500,
+    borderBottom: "1px solid var(--border)",
+  };
+  const tdStyle: React.CSSProperties = {
+    padding: "8px 12px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text)",
+  };
+  const monoStyle: React.CSSProperties = {
+    fontFamily: "var(--font-mono)",
+    fontSize: 12,
+    color: "var(--text-secondary)",
   };
 
   return (
-    <div>
-      <div className="page-hero">
-        <p className="eyebrow">RESEARCH</p>
-        <h1 style={{ fontSize: 32 }}>Research reports</h1>
-        <p className="subtitle">
-          Evidence-backed reports generated from Insight&apos;s collected data
+    <div className="main-content">
+      <div style={{ maxWidth: "none", margin: 0, padding: "32px 24px" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
+          Research
+        </h1>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 32 }}>
+          Evidence-backed reports, snapshots, and upcoming upgrades.
         </p>
-      </div>
 
-      <div className="terminal-main">
-        {/* Lens selector */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="timeframe-controls">
-            {["ecosystem", "defi", "infrastructure"].map((l) => (
-              <button
-                key={l}
-                className={`timeframe-btn ${lens === l ? "active" : ""}`}
-                onClick={() => setLens(l)}
-              >
-                {l.charAt(0).toUpperCase() + l.slice(1)}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 ml-auto">
-            <button
-              className="t-btn sm"
-              onClick={() => exportReport("markdown")}
-              disabled={exporting || !report}
-            >
-              ↓ Markdown
-            </button>
-            <button
-              className="t-btn sm"
-              onClick={() => exportReport("json")}
-              disabled={exporting || !report}
-            >
-              ↓ JSON
-            </button>
-            <button
-              className="t-btn sm"
-              onClick={() => exportReport("pdf")}
-              disabled={exporting || !report}
-            >
-              ↓ PDF
-            </button>
-          </div>
-        </div>
-
-        {loading && <div className="t-loading">Loading report...</div>}
-
-        {!loading && report && (
+        {loading ? (
+          <div style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading...</div>
+        ) : (
           <>
-            {/* Report metadata */}
-            <div className="terminal-grid terminal-grid-4 mb-4">
-              <div className="metric-card">
-                <span className="metric-label">Confidence</span>
-                <span className="metric-value-sm">{report.confidence}</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Evidence</span>
-                <span className="metric-value-sm">{evidenceCount}</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Generated</span>
-                <span className="metric-value-sm" style={{ fontSize: 14 }}>
-                  {new Date(report.generatedAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Data Mode</span>
-                <span className="metric-value-sm">
-                  <span className={`t-badge ${report.isDemo ? "yellow" : "green"}`}>
-                    {report.isDemo ? "DEMO" : "LIVE"}
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            {/* Report content */}
-            <div className="t-card">
-              <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>{report.title}</h2>
-
-              <div className="terminal-section">
-                <div className="t-card-title">Executive Summary</div>
-                <p className="text-sm mt-2" style={{ lineHeight: 1.6 }}>
-                  {report.sections.thesis}
-                </p>
-              </div>
-
-              {report.sections.catalyst && (
-                <div className="terminal-section">
-                  <div className="t-card-title">What Could Matter Next</div>
-                  <p className="text-sm mt-2" style={{ lineHeight: 1.6 }}>
-                    {report.sections.catalyst}
-                  </p>
-                </div>
-              )}
-
-              {report.sections.risk && (
-                <div className="terminal-section">
-                  <div className="t-card-title">Research Caveat</div>
-                  <p className="text-sm mt-2" style={{ lineHeight: 1.6 }}>
-                    {report.sections.risk}
-                  </p>
-                </div>
-              )}
-
-              <div className="terminal-section">
-                <div className="t-card-title">Evidence</div>
-                <p className="text-sm mt-2 text-muted">
-                  {evidenceCount} evidence items support this report.
-                </p>
-                <Link href="/evidence" className="t-card-link mt-2">
-                  View evidence timeline →
+            {/* Reports */}
+            <div style={sectionStyle}>
+              <div style={headerStyle}>Reports</div>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16 }}>
+                Export the full Solana ecosystem report in multiple formats.
+              </p>
+              <div style={{ display: "flex", gap: 12 }}>
+                <Link
+                  href="/api/reports/export?format=markdown"
+                  style={{
+                    padding: "8px 16px",
+                    fontSize: 13,
+                    background: "var(--bg-elevated)",
+                    color: "var(--text)",
+                    borderRadius: "var(--radius)",
+                    textDecoration: "none",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  ↓ Markdown
+                </Link>
+                <Link
+                  href="/api/reports/export?format=json"
+                  style={{
+                    padding: "8px 16px",
+                    fontSize: 13,
+                    background: "var(--bg-elevated)",
+                    color: "var(--text)",
+                    borderRadius: "var(--radius)",
+                    textDecoration: "none",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  ↓ JSON
                 </Link>
               </div>
             </div>
 
-            {/* Quick links */}
-            <div className="terminal-grid terminal-grid-3 mt-4">
-              <Link href="/history" className="t-card" style={{ textDecoration: "none" }}>
-                <div className="t-card-title">Snapshot History</div>
-                <p className="text-sm mt-2">Compare snapshots and track changes over time →</p>
-              </Link>
-              <Link href="/trends" className="t-card" style={{ textDecoration: "none" }}>
-                <div className="t-card-title">Trend Analysis</div>
-                <p className="text-sm mt-2">Project trends and multi-project overlay →</p>
-              </Link>
-              <Link href="/assistant" className="t-card" style={{ textDecoration: "none" }}>
-                <div className="t-card-title">Ask Insight</div>
-                <p className="text-sm mt-2">AI-powered analysis grounded in data →</p>
-              </Link>
+            {/* Upcoming Upgrades */}
+            <div style={sectionStyle}>
+              <div style={headerStyle}>Upcoming Upgrades</div>
+              {upgrades.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {upgrades.map((u) => (
+                    <div
+                      key={u.simd}
+                      style={{ paddingBottom: 16, borderBottom: "1px solid var(--border)" }}
+                    >
+                      <div
+                        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}
+                      >
+                        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+                          {u.name}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            padding: "2px 8px",
+                            background: "var(--bg-elevated)",
+                            color: "var(--text-secondary)",
+                            borderRadius: "var(--radius-sm)",
+                          }}
+                        >
+                          {u.simd}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: u.status === "Active" ? "var(--green)" : "var(--text-muted)",
+                          }}
+                        >
+                          {u.status}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                        {u.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                  No upgrade data available.
+                </div>
+              )}
+            </div>
+
+            {/* Evidence */}
+            <div style={sectionStyle}>
+              <div style={headerStyle}>Evidence ({evidence.length})</div>
+              {evidence.length > 0 ? (
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Source</th>
+                      <th style={thStyle}>Metric</th>
+                      <th style={thStyle}>Value</th>
+                      <th style={thStyle}>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {evidence.slice(0, 50).map((e) => (
+                      <tr key={e.id}>
+                        <td style={tdStyle}>{e.source}</td>
+                        <td style={tdStyle}>{e.metric}</td>
+                        <td style={{ ...tdStyle, ...monoStyle }}>{e.value}</td>
+                        <td style={{ ...tdStyle, ...monoStyle }}>
+                          {e.timestamp ? new Date(e.timestamp).toLocaleString() : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                  No evidence data available.
+                </div>
+              )}
+            </div>
+
+            {/* Snapshot History */}
+            <div style={sectionStyle}>
+              <div style={headerStyle}>Snapshot History</div>
+              {snapshots.length > 0 ? (
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Date</th>
+                      <th style={thStyle}>Projects</th>
+                      <th style={thStyle}>Narratives</th>
+                      <th style={thStyle}>Evidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {snapshots
+                      .slice(-20)
+                      .reverse()
+                      .map((s) => (
+                        <tr key={s.id}>
+                          <td style={{ ...tdStyle, ...monoStyle }}>
+                            {new Date(s.referenceDate).toLocaleDateString()}
+                          </td>
+                          <td style={{ ...tdStyle, ...monoStyle }}>{s.projects}</td>
+                          <td style={{ ...tdStyle, ...monoStyle }}>{s.narratives}</td>
+                          <td style={{ ...tdStyle, ...monoStyle }}>{s.evidence}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                  No snapshots available.
+                </div>
+              )}
+            </div>
+
+            {/* Source attribution */}
+            <div
+              style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+            >
+              Source: All providers aggregated · Evidence traceable per item
             </div>
           </>
-        )}
-
-        {!loading && !report && (
-          <div className="t-empty">No report available for lens &quot;{lens}&quot;.</div>
         )}
       </div>
     </div>

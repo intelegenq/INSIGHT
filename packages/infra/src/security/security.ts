@@ -33,7 +33,15 @@ export function redactSecrets(text: string): string {
  * Sanitize an object before logging: recursively redacts values under
  * known secret key names.
  */
-const SECRET_KEYS = new Set(["apiKey", "api_key", "token", "secret", "password", "authorization", "privateKey"]);
+const SECRET_KEYS = new Set([
+  "apiKey",
+  "api_key",
+  "token",
+  "secret",
+  "password",
+  "authorization",
+  "privateKey",
+]);
 
 export function sanitizeForLog<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -43,7 +51,8 @@ export function sanitizeForLog<T>(value: T): T {
     const record = value as Record<string, unknown>;
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(record)) {
-      out[k] = typeof v === "string" && keyIsSecret(k) ? "[REDACTED]" : sanitizeForLog(v as unknown);
+      out[k] =
+        typeof v === "string" && keyIsSecret(k) ? "[REDACTED]" : sanitizeForLog(v as unknown);
     }
     return out as unknown as T;
   }
@@ -113,7 +122,11 @@ export class RateLimiter {
   private readonly now: () => number;
   private sink: ObservabilitySink;
 
-  constructor(config: RateLimitConfig, now: () => number = () => Date.now(), sink: ObservabilitySink = noopSink) {
+  constructor(
+    config: RateLimitConfig,
+    now: () => number = () => Date.now(),
+    sink: ObservabilitySink = noopSink,
+  ) {
     this.capacity = config.capacity;
     this.windowMs = config.windowMs;
     this.tokens = config.capacity;

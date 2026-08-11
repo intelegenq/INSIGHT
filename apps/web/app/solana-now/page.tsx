@@ -69,10 +69,35 @@ export default function SolanaNowPage() {
           .then((r) => r.json())
           .catch(() => ({ providers: [] })),
       ]);
-      setTimeline((tlRes.timeline ?? []).filter((t: TimelineEntry) => {
-        const cexNames = ["binance","bybit","okx","bitfinex","gate","mexc","bitget","deribit","htx","coinbase","kraken","kucoin","bingx","poloniex","bitrue","crypto.com","upbit","wazirx","bitmart","bitmex","coinex","hotbit"];
-        return !cexNames.some(c => (t.title || "").toLowerCase().includes(c));
-      }));
+      setTimeline(
+        (tlRes.timeline ?? []).filter((t: TimelineEntry) => {
+          const cexNames = [
+            "binance",
+            "bybit",
+            "okx",
+            "bitfinex",
+            "gate",
+            "mexc",
+            "bitget",
+            "deribit",
+            "htx",
+            "coinbase",
+            "kraken",
+            "kucoin",
+            "bingx",
+            "poloniex",
+            "bitrue",
+            "crypto.com",
+            "upbit",
+            "wazirx",
+            "bitmart",
+            "bitmex",
+            "coinex",
+            "hotbit",
+          ];
+          return !cexNames.some((c) => (t.title || "").toLowerCase().includes(c));
+        }),
+      );
       setAnomalies(anRes.anomalies ?? []);
       setProjects(pRes.projects ?? []);
       setHealth(hRes.providers ?? []);
@@ -181,7 +206,7 @@ export default function SolanaNowPage() {
 
   return (
     <div style={{ background: "var(--linen)", minHeight: "100vh" }}>
-      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "32px 24px 16px" }}>
+      <div style={{ maxWidth: "none", margin: 0, padding: "32px 24px 16px" }}>
         <h1
           style={{
             fontFamily: "var(--font-serif)",
@@ -214,7 +239,7 @@ export default function SolanaNowPage() {
         </button>
       </div>
 
-      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "0 24px 24px" }}>
+      <div style={{ maxWidth: "none", margin: 0, padding: "0 24px 24px" }}>
         {loading && (
           <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
             Loading feed...

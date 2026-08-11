@@ -12,6 +12,7 @@ export async function GET(): Promise<Response> {
 
     const res = await fetch("https://solanafloor.com/etf-tracker", {
       signal: controller.signal,
+      next: { revalidate: 1800 },
       headers: { "User-Agent": "InsightBot/1.0 (+https://insight-web-six.vercel.app)" },
     });
     clearTimeout(timer);
@@ -58,9 +59,10 @@ function parseEtfData(html: string): EtfData[] {
   while ((match = chunkPattern.exec(html)) !== null) {
     try {
       // Decode unicode escapes
-      const decoded = match[1]!.replace(/\\u00([0-9a-fA-F]{2})/g, (_, hex) =>
-        String.fromCharCode(parseInt(hex, 16))
-      ).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      const decoded = match[1]!
+        .replace(/\\u00([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
       chunks.push(decoded);
     } catch {
       // skip
@@ -75,7 +77,8 @@ function parseEtfData(html: string): EtfData[] {
       // Extract the ETF array — it's JSON-like but may have RSC escapes
       const rawArray = etfMatch[1]!;
       // Try to parse individual ETF objects
-      const objPattern = /\{"id":"[^"]+","ticker":"([^"]+)","staking":(true|false),"name":"([^"]+)","current_aum":(\d+),"solana_etf_flows":\[(.*?)\]\}/g;
+      const objPattern =
+        /\{"id":"[^"]+","ticker":"([^"]+)","staking":(true|false),"name":"([^"]+)","current_aum":(\d+),"solana_etf_flows":\[(.*?)\]\}/g;
       let objMatch: RegExpExecArray | null;
       while ((objMatch = objPattern.exec(rawArray)) !== null) {
         const ticker = objMatch[1]!;
@@ -95,7 +98,7 @@ function parseEtfData(html: string): EtfData[] {
           });
         }
 
-        if (!etfs.some(e => e.ticker === ticker)) {
+        if (!etfs.some((e) => e.ticker === ticker)) {
           etfs.push({
             name,
             ticker,
@@ -111,11 +114,12 @@ function parseEtfData(html: string): EtfData[] {
 
   // Also try simpler pattern — search for ticker/name/aum pairs
   if (etfs.length === 0) {
-    const tickerPattern = /"ticker":"([A-Z]+)","staking":(true|false),"name":"([^"]+)","current_aum":(\d+)/g;
+    const tickerPattern =
+      /"ticker":"([A-Z]+)","staking":(true|false),"name":"([^"]+)","current_aum":(\d+)/g;
     for (const chunk of chunks) {
       let m: RegExpExecArray | null;
       while ((m = tickerPattern.exec(chunk)) !== null) {
-        if (!etfs.some(e => e.ticker === m![1])) {
+        if (!etfs.some((e) => e.ticker === m![1])) {
           etfs.push({
             ticker: m![1]!,
             staking: m![2] === "true",

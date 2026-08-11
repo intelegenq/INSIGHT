@@ -86,7 +86,7 @@ export default function EcosystemPage() {
 
   return (
     <div style={{ background: "var(--linen)", minHeight: "100vh" }}>
-      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "32px 24px 16px" }}>
+      <div style={{ maxWidth: "none", margin: 0, padding: "32px 24px 16px" }}>
         <h1
           style={{
             fontFamily: "var(--font-serif)",
@@ -104,7 +104,7 @@ export default function EcosystemPage() {
         </p>
       </div>
 
-      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "0 24px 24px" }}>
+      <div style={{ maxWidth: "none", margin: 0, padding: "0 24px 24px" }}>
         {loading && (
           <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
             Loading ecosystem...

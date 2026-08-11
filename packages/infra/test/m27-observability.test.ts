@@ -58,23 +58,23 @@ describe("observability", () => {
   });
 
   it("counters emit metrics and gauges track value", () => {
-      const sink = new InMemorySink(() => "T");
-      const cnt = new Counter("requests", sink);
-      cnt.increment();
-      cnt.increment(3);
-      expect(cnt.current).toBe(4);
-      expect(sink.getMetrics().length).toBe(2);
-    });
+    const sink = new InMemorySink(() => "T");
+    const cnt = new Counter("requests", sink);
+    cnt.increment();
+    cnt.increment(3);
+    expect(cnt.current).toBe(4);
+    expect(sink.getMetrics().length).toBe(2);
+  });
 
-    it("gauge sets an absolute value", () => {
-      const sink = new InMemorySink(() => "T");
-      const g = new Gauge("up", sink);
-      g.set(1);
-      expect(g.current).toBe(1);
-      g.set(2);
-      expect(g.current).toBe(2);
-      expect(sink.getMetrics().length).toBe(2);
-    });
+  it("gauge sets an absolute value", () => {
+    const sink = new InMemorySink(() => "T");
+    const g = new Gauge("up", sink);
+    g.set(1);
+    expect(g.current).toBe(1);
+    g.set(2);
+    expect(g.current).toBe(2);
+    expect(sink.getMetrics().length).toBe(2);
+  });
 
   it("noop sink discards everything", () => {
     noopSink.log({ severity: "info", message: "x", timestamp: "t" });
@@ -163,7 +163,10 @@ describe("security", () => {
 describe("resilience", () => {
   it("withTimeout rejects slow operations", async () => {
     await expect(
-      withTimeout(() => new Promise((_, reject) => setTimeout(() => reject(new Error("late")), 200)), { timeoutMs: 5 }),
+      withTimeout(
+        () => new Promise((_, reject) => setTimeout(() => reject(new Error("late")), 200)),
+        { timeoutMs: 5 },
+      ),
     ).rejects.toBeInstanceOf(TimeoutError);
   });
 
@@ -187,9 +190,12 @@ describe("resilience", () => {
 
   it("retry stops after the cap", async () => {
     await expect(
-      retry(async () => {
-        throw new Error("nope");
-      }, { maxAttempts: 2, sleeper: async () => undefined }),
+      retry(
+        async () => {
+          throw new Error("nope");
+        },
+        { maxAttempts: 2, sleeper: async () => undefined },
+      ),
     ).rejects.toThrow("nope");
   });
 });

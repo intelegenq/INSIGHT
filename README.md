@@ -14,11 +14,13 @@ Insight is not a generic crypto dashboard. It is a **Solana-first intelligence t
 
 - **Real-time data collection** from Solana RPC, DeFiLlama, CoinGecko, and Helius
 - **Evidence-backed analytics** — every metric traces back to a source
-- **Anomaly detection** — machine-detected significant changes surface as alerts
+- **Anomaly detection** — machine-detected significant changes surface as alerts on the Network page
 - **Breaking intelligence feed** — Solana Now delivers real-time ecosystem events
+- **Live X / Twitter feed** — recent posts from key Solana ecosystem accounts on the dashboard
 - **Historical analysis** — snapshot-based time-series for trend comparison
 - **Grounded AI copilot** — ask questions about Solana from any page, answered from Insight's collected data only
 - **Report generation** — Markdown, JSON, and PDF exports with evidence citations
+- **Linear.app-inspired UI** — floating rounded app shell, monochrome palette, nested collapsible navigation, dark + light themes
 
 ### Who It's For
 
@@ -33,13 +35,12 @@ Insight is not a generic crypto dashboard. It is a **Solana-first intelligence t
 
 | Capability            | Description                                                                        |
 | --------------------- | ---------------------------------------------------------------------------------- |
-| **Overview**          | Homepage with ecosystem snapshot, Solana Now feed, top protocols, and narratives   |
-| **Markets**           | SOL market data, ecosystem TVL, volume, data source health status                  |
-| **Analytics**         | Protocol rankings, TVL charts, category distribution, historical trends            |
-| **Ecosystem**         | Project universe with category filters, narrative tracking                         |
+| **Dashboard**         | Homepage with SOL market snapshot, top protocols, latest news, and a live X feed   |
+| **Network**           | Solana network health — TPS, epoch, validators, inflation, fees, and anomalies     |
+| **Analytics**         | Overview aggregate metrics + per-protocol detail pages (TVL history, peers, chains)|
+| **Analysis Sidebar**  | Nested, collapsible categories (DeFi, Lending, Yield, LST, Perps, RWA, Bridges, …) |
 | **Solana Now**        | Real-time intelligence feed with BREAKING / NEW / EVENT / DATA ALERT badges        |
 | **Research**          | Evidence-backed reports with Markdown / JSON / PDF export                          |
-| **Alerts**            | Anomaly subscription system for health drops, trend changes, TVL movements         |
 | **Evidence**          | Chronological evidence timeline with source attribution and status tracking        |
 | **Historical**        | Snapshot comparison and diff analysis over time                                    |
 | **AI Copilot**        | Global floating chat accessible from every page, grounded in Insight data          |
@@ -81,11 +82,22 @@ The AI copilot is **NOT** the source of truth. It is only a natural-language int
 
 ### Sources working without credentials (public APIs)
 
-| Source         | Data                                                                  | API Key | Configuration                                     |
-| -------------- | --------------------------------------------------------------------- | ------- | ------------------------------------------------- |
-| **Solana RPC** | Epoch, validators, TPS, inflation, cluster nodes, performance samples | None    | `SOLANA_RPC_URL` (defaults to public endpoint)    |
-| **DeFiLlama**  | Protocol TVL, chain breakdowns, 24h/7d/30d changes                    | None    | `DEFILLAMA_API_URL` (defaults to public endpoint) |
-| **CoinGecko**  | SOL price, market cap, 24h volume, circulating supply                 | None    | `COINGECKO_API_URL` (defaults to public endpoint) |
+| Source          | Data                                                                  | API Key | Cache window |
+| --------------- | --------------------------------------------------------------------- | ------- | ------------ |
+| **Solana RPC**  | Epoch, validators, TPS, inflation, cluster nodes, performance samples | None    | live         |
+| **DeFiLlama**   | Protocol TVL, chain breakdowns, DEX volume, fees, stablecoins         | None    | 6 hours      |
+| **CoinGecko**   | SOL price, market cap, 24h volume, circulating supply                 | None    | 5 minutes    |
+| **SolanaFloor** | Solana news headlines, ETF flow tracker (scraped)                     | None    | 30 minutes   |
+| **X / Twitter** | Recent posts from key Solana accounts (via Nitter → rss2json bridge)  | None    | 30 minutes   |
+
+### Rate-limit protection (caching)
+
+External APIs are wrapped with Next.js incremental static regeneration
+(`fetch(url, { next: { revalidate: N } })`). Each upstream is fetched at most
+once per cache window, no matter how many visitors hit the page — so DeFiLlama
+is called at most once every 6 hours, CoinGecko every 5 minutes, and the X /
+news feeds every 30 minutes. This eliminates rate-limit exhaustion without any
+extra cron infrastructure; Vercel serves the cached response to everyone else.
 
 ### Sources requiring credentials (optional)
 
@@ -115,19 +127,39 @@ Insight works without any API keys. Without credentials:
 
 ## Quick Start
 
+Insight runs with **zero API keys** — DeFiLlama, CoinGecko, and Solana RPC all
+serve real live data from public endpoints out of the box.
+
 ```bash
+# 1. Clone
 git clone https://github.com/intelegenq/INSIGHT.git
 cd INSIGHT
+
+# 2. Install dependencies (pnpm 10.x required)
 pnpm install
+
+# 3. Configure environment (optional — defaults work with no keys)
 cp apps/web/.env.example apps/web/.env.local
+
+# 4. Run the dev server
 pnpm run dev
 ```
 
-Open http://localhost:3000
+Open **http://localhost:3000** — the dashboard loads with live Solana data immediately.
 
-### For live data (optional keys)
+### Production build
 
-Edit `apps/web/.env.local` and add:
+```bash
+pnpm run build      # compile all packages + Next.js app
+pnpm run start      # serve the production build on port 3000
+```
+
+> **Note:** if you don't have pnpm, install it first: `npm install -g pnpm@10.14.0`
+> (or `corepack enable && corepack prepare pnpm@10.14.0 --activate`). Node.js **22.x** is required.
+
+### For enhanced data (optional keys)
+
+Edit `apps/web/.env.local` and add any of:
 
 ```env
 HELIUS_API_KEY=your_key
@@ -135,6 +167,9 @@ AI_PROVIDER=openrouter
 OPENROUTER_API_KEY=your_key
 OPENROUTER_MODEL=your_model
 ```
+
+Everything degrades gracefully — missing keys never fabricate data; they show
+`unavailable` or fall back to a public endpoint.
 
 ---
 
@@ -224,9 +259,11 @@ Provider details are hidden from the UI. The interface shows only "Connected" or
 ## Development
 
 ```bash
+pnpm run dev           # Start dev server (all packages, parallel)
+pnpm run build         # Production build
+pnpm run start         # Serve the production build (port 3000)
 pnpm run test          # Run all tests
 pnpm run typecheck     # TypeScript type checking
-pnpm run build         # Production build
 pnpm run format        # Format code
 pnpm run format:check  # Check formatting
 ```

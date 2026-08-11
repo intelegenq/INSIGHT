@@ -120,23 +120,23 @@ describe("InMemoryObjectStore", () => {
 
 describe("runWorkerLoop", () => {
   it("runs one iteration then stops on abort", async () => {
-      const controller = new AbortController();
-      const logs: string[] = [];
-      const promise = runWorkerLoop(
-        {
-          name: "test",
-          async handle({ attempt }) {
-            logs.push(`run-${attempt}`);
-            controller.abort(); // stop after first iteration
-            return "ok";
-          },
+    const controller = new AbortController();
+    const logs: string[] = [];
+    const promise = runWorkerLoop(
+      {
+        name: "test",
+        async handle({ attempt }) {
+          logs.push(`run-${attempt}`);
+          controller.abort(); // stop after first iteration
+          return "ok";
         },
-        { signal: controller.signal, log: (l) => logs.push(l) },
-      );
-      const result = await promise;
-      expect(result.runs).toBeGreaterThanOrEqual(1);
-      expect(logs.length).toBeGreaterThan(0);
-    });
+      },
+      { signal: controller.signal, log: (l) => logs.push(l) },
+    );
+    const result = await promise;
+    expect(result.runs).toBeGreaterThanOrEqual(1);
+    expect(logs.length).toBeGreaterThan(0);
+  });
 
   it("stops after the failure cap", async () => {
     const controller = new AbortController();
@@ -173,11 +173,11 @@ describe("config + assembly", () => {
   });
 
   it("assembles services with an in-memory fallback", () => {
-      const config = resolveInfraConfig({});
-      const services = assembleInfra({ config });
-      expect(services.inMemory).toBe(true);
-      expect(services.snapshotRepository).toBeInstanceOf(PostgresSnapshotRepository);
-      expect(services.cache).toBeInstanceOf(KvCache);
-      expect(services.objectStore).toBeInstanceOf(InMemoryObjectStore);
-    });
+    const config = resolveInfraConfig({});
+    const services = assembleInfra({ config });
+    expect(services.inMemory).toBe(true);
+    expect(services.snapshotRepository).toBeInstanceOf(PostgresSnapshotRepository);
+    expect(services.cache).toBeInstanceOf(KvCache);
+    expect(services.objectStore).toBeInstanceOf(InMemoryObjectStore);
+  });
 });

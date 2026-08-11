@@ -183,7 +183,11 @@ export class SolanaRPCProvider extends BaseProvider {
   }
 
   /** Try a POST to each RPC URL until one succeeds. */
-  private async rpcPost<T>(method: string, params: unknown[] = [], timeoutMs = 5000): Promise<T | undefined> {
+  private async rpcPost<T>(
+    method: string,
+    params: unknown[] = [],
+    timeoutMs = 5000,
+  ): Promise<T | undefined> {
     for (const url of this.rpcUrls) {
       try {
         const response = await this.httpClient.post<JsonRpcResponse<T>>({
@@ -297,11 +301,17 @@ export class SolanaRPCProvider extends BaseProvider {
     try {
       const [epochInfo, voteAccounts, inflationRate, clusterNodes, perfSamples] = await Promise.all(
         [
-          this.rpcPost<EpochInfoResult>("getEpochInfo", [{ commitment: this.commitment }]).catch(() => undefined),
-          this.rpcPost<VoteAccountsResult>("getVoteAccounts", [{ commitment: this.commitment }]).catch(() => undefined),
+          this.rpcPost<EpochInfoResult>("getEpochInfo", [{ commitment: this.commitment }]).catch(
+            () => undefined,
+          ),
+          this.rpcPost<VoteAccountsResult>("getVoteAccounts", [
+            { commitment: this.commitment },
+          ]).catch(() => undefined),
           this.rpcPost<InflationRateResult>("getInflationRate", []).catch(() => undefined),
           this.rpcPost<ClusterNodesResult>("getClusterNodes", []).catch(() => undefined),
-          this.rpcPost<PerformanceSamplesResult>("getPerformanceSamples", [10]).catch(() => undefined),
+          this.rpcPost<PerformanceSamplesResult>("getPerformanceSamples", [10]).catch(
+            () => undefined,
+          ),
         ],
       );
 

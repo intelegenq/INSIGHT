@@ -23,7 +23,12 @@ export {
 } from "./scheduler";
 export type { RuntimeEvent, RuntimeObserver } from "./observability";
 export { noopRuntimeObserver } from "./observability";
-export type { Snapshot, SnapshotRepository, SyncSnapshotRepository, AsyncSnapshotRepository } from "./snapshot";
+export type {
+  Snapshot,
+  SnapshotRepository,
+  SyncSnapshotRepository,
+  AsyncSnapshotRepository,
+} from "./snapshot";
 export {
   InMemorySnapshotRepository,
   buildSnapshotId,

@@ -16,8 +16,8 @@ export async function GET(request: Request): Promise<Response> {
       "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=solana&price_change_percentage=24h,7d,30d";
 
     const [chartRes, marketsRes] = await Promise.all([
-      fetch(coingeckoUrl, { signal: AbortSignal.timeout(8000) }),
-      fetch(marketsUrl, { signal: AbortSignal.timeout(8000) }),
+      fetch(coingeckoUrl, { signal: AbortSignal.timeout(8000), next: { revalidate: 300 } }),
+      fetch(marketsUrl, { signal: AbortSignal.timeout(8000), next: { revalidate: 300 } }),
     ]);
 
     if (!chartRes.ok || !marketsRes.ok) {

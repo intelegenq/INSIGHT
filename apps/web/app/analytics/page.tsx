@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { InsightChart } from "../../components/InsightChart";
 import { ProjectLogo } from "../../components/ProjectLogo";
 import { useCopilot } from "../../components/Copilot";
+
+// ── Types ──────────────────────────────────────────────────────
 
 interface Project {
   id: string;
@@ -13,77 +15,208 @@ interface Project {
   metrics: { tvl?: number; volume24h?: number };
   logoUrl?: string;
   change24h?: number;
+  change7d?: number;
+  change30d?: number;
   classification?: string;
 }
+
 interface AnalyticsData {
   totalTvl: number;
   totalVolume: number;
   projectCount: number;
   categoryCount: number;
   categoryDistribution: { category: string; count: number }[];
+  topByTvl: { id: string; name: string; tvl: number; category: string; volume24h: number }[];
 }
 
-function fmtUsd(v: number | undefined): string {
-  if (!v) return "\u2014";
+interface NetworkMetrics {
+  dexVolume: {
+    total24h: number;
+    protocols: { name: string; volume24h: number }[];
+  } | null;
+  feesRevenue: {
+    total24hFees: number;
+    total7dFees: number;
+    total30dFees: number;
+    protocols: { name: string; fees24h: number }[];
+  } | null;
+}
+
+interface Etf {
+  name: string;
+  ticker: string;
+  staking: boolean;
+  aum: number | null;
+}
+
+// ── Formatters ─────────────────────────────────────────────────
+
+function fmtUsd(v: number | undefined | null): string {
+  if (v === undefined || v === null || v === 0) return "\u2014";
   if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
   if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
   return `$${v.toLocaleString()}`;
 }
 
-const rule = { borderTop: "2px solid #3d2e1e", margin: "24px 0" };
-const sectionHeader = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
+function fmtPct(v: number | undefined): string {
+  if (v === undefined) return "\u2014";
+  return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+}
+
+function changeColor(v: number | undefined): string {
+  if (v === undefined) return "var(--text-muted)";
+  return v >= 0 ? "var(--green)" : "var(--red)";
+}
+
+// ── Style constants ────────────────────────────────────────────
+
+const sectionTitle: React.CSSProperties = {
+  fontSize: 15,
+  fontWeight: 590,
+  letterSpacing: "-0.01em",
   color: "var(--text)",
+  marginBottom: 16,
 };
-const label = {
+
+const metricLabel: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 600,
-  letterSpacing: "0.06em",
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
   color: "var(--text-muted)",
 };
+
+const metricValue: React.CSSProperties = {
+  fontSize: 20,
+  fontWeight: 700,
+  fontFamily: "var(--font-mono)",
+  color: "var(--text)",
+  marginTop: 4,
+};
+
+const sourceNote: React.CSSProperties = {
+  fontSize: 11,
+  color: "var(--text-muted)",
+  fontFamily: "var(--font-mono)",
+  marginTop: 8,
+};
+
+const thStyle: React.CSSProperties = {
+  textAlign: "left",
+  padding: "6px 8px",
+  fontSize: 10,
+  fontWeight: 600,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "var(--text-muted)",
+  borderBottom: "1px solid var(--border)",
+  whiteSpace: "nowrap",
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "8px 8px",
+  borderBottom: "1px solid var(--border)",
+  color: "var(--text)",
+};
+
+const monoRight: React.CSSProperties = {
+  textAlign: "right",
+  fontFamily: "var(--font-mono)",
+  fontSize: 12,
+};
+
+const inputStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 180,
+  padding: "6px 10px",
+  background: "var(--bg-elevated)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
+  fontSize: 13,
+  color: "var(--text)",
+  outline: "none",
+};
+
+const filterBtn = (active: boolean): React.CSSProperties => ({
+  padding: "3px 10px",
+  fontSize: 11,
+  fontWeight: 510,
+  fontFamily: "var(--font-mono)",
+  background: active ? "var(--accent)" : "transparent",
+  color: active ? "var(--accent-fg)" : "var(--text-muted)",
+  border: "1px solid var(--card-border)",
+  borderRadius: "var(--radius)",
+  cursor: "pointer",
+});
+
+const sortBtn = (active: boolean): React.CSSProperties => ({
+  padding: "4px 10px",
+  fontSize: 11,
+  fontWeight: 510,
+  fontFamily: "var(--font-mono)",
+  background: active ? "var(--accent)" : "transparent",
+  color: active ? "var(--accent-fg)" : "var(--text-muted)",
+  border: "1px solid var(--card-border)",
+  borderRadius: "var(--radius)",
+  cursor: "pointer",
+});
+
+// ── Component ──────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
   const { setPageContext } = useCopilot();
   useEffect(() => {
     setPageContext(
-      "[Analytics] Solana DeFi analytics with TVL charts, category breakdown, protocol rankings.",
+      "[Analytics] Solana ecosystem overview: TVL, DEX volume, fees, ETF flows, category breakdown, protocol rankings.",
     );
   }, [setPageContext]);
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [networkMetrics, setNetworkMetrics] = useState<NetworkMetrics | null>(null);
+  const [etfs, setEtfs] = useState<Etf[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Rankings controls
   const [sort, setSort] = useState<"tvl" | "volume24h" | "name">("tvl");
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
 
-  const load = useCallback(async () => {
-    try {
-      const [aRes, pRes] = await Promise.all([
+  useEffect(() => {
+    (async () => {
+      const [aRes, pRes, nmRes, etfRes] = await Promise.all([
         fetch("/api/analytics")
           .then((r) => r.json())
           .catch(() => null),
         fetch("/api/projects?classification=solana_ecosystem")
           .then((r) => r.json())
           .catch(() => ({ projects: [] })),
+        fetch("/api/network-metrics")
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch("/api/etf-flows")
+          .then((r) => r.json())
+          .catch(() => ({ etfs: [] })),
       ]);
       if (aRes) setAnalytics(aRes);
       setProjects(pRes.projects ?? []);
-    } catch {
-      /* ignore */
-    }
-    setLoading(false);
+      if (nmRes) setNetworkMetrics(nmRes);
+      setEtfs(etfRes.etfs ?? []);
+      setLoading(false);
+    })();
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // ── Derived data ──────────────────────────────────────────────
+  // Exclude the chain-level "Solana" entry (category "other", ~$44B TVL) —
+  // it's the L1 itself, not an ecosystem protocol, and would dominate rankings.
+  const isChainEntry = (p: Project) =>
+    p.name.toLowerCase() === "solana" || p.id?.toLowerCase().startsWith("solana-");
 
-  const eco = projects.filter((p) => !p.classification || p.classification === "solana_ecosystem");
+  const eco = projects.filter(
+    (p) =>
+      (!p.classification || p.classification === "solana_ecosystem") && !isChainEntry(p),
+  );
   const categories = ["all", ...new Set(eco.map((p) => p.category))];
   const filtered = eco
     .filter((p) => category === "all" || p.category === category)
@@ -97,214 +230,169 @@ export default function AnalyticsPage() {
     analytics?.categoryDistribution
       ?.slice(0, 12)
       .map((c) => ({ label: c.category, value: c.count })) ?? [];
-  const tvlChart =
-    [...eco]
-      .sort((a, b) => (b.metrics?.tvl ?? 0) - (a.metrics?.tvl ?? 0))
-      .slice(0, 10)
-      .map((p) => ({ label: p.name.slice(0, 10), value: p.metrics?.tvl ?? 0 })) ?? [];
+
+  const feesChart =
+    networkMetrics?.feesRevenue?.protocols
+      ?.slice(0, 20)
+      .map((p) => ({ label: p.name.slice(0, 12), value: p.fees24h })) ?? [];
+
+  const dexVol = networkMetrics?.dexVolume;
+  const feesRev = networkMetrics?.feesRevenue;
+
+  // ── Loading ───────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="a-page">
+        <div className="a-empty">Loading…</div>
+      </div>
+    );
+  }
+
+  // ── Metric strip ─────────────────────────────────────────────
+
+  const metrics = [
+    { label: "Total TVL", value: fmtUsd(analytics?.totalTvl) },
+    { label: "DEX Volume 24h", value: fmtUsd(dexVol?.total24h ?? analytics?.totalVolume) },
+    { label: "Fees 24h", value: fmtUsd(feesRev?.total24hFees) },
+    { label: "Protocols", value: analytics ? String(analytics.projectCount) : "\u2014" },
+    { label: "Categories", value: analytics ? String(analytics.categoryCount) : "\u2014" },
+  ];
+
+  // Blockworks-style grid data
+  const topTvlChart = (analytics?.topByTvl ?? [])
+    .slice(0, 15)
+    .map((p) => ({ label: p.name.slice(0, 10), value: p.tvl }));
+
+  const dexVolChart = (dexVol?.protocols ?? [])
+    .slice(0, 15)
+    .map((p) => ({ label: p.name.slice(0, 10), value: p.volume24h }));
 
   return (
-    <div style={{ background: "var(--linen)", minHeight: "100vh" }}>
-      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "32px 24px 0" }}>
-        <h1
-          style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: 32,
-            fontWeight: 700,
-            margin: 0,
-            color: "var(--text)",
-          }}
-        >
-          Analytics
-        </h1>
-        <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 2 }}>
-          DeFi TVL, DEX volume, category breakdown, protocol rankings
+    <div className="a-page">
+      {/* Header */}
+      <div className="a-head">
+        <h1 className="a-title">Overview</h1>
+        <p className="a-subtitle">
+          Solana ecosystem-wide metrics — aggregate TVL, DEX volume, fees, and category breakdown
         </p>
       </div>
 
-      <div style={{ maxWidth: "var(--max-width)", margin: "0 auto", padding: "0 24px 24px" }}>
-        {loading && (
-          <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
-            Loading analytics...
+      {/* ── Row 1 (8/4): hero + KPI stack ─────────────────────── */}
+      <div className="a-grid a-grid-hero">
+        <div className="a-card a-span-8">
+          <div className="a-card-title">Top Protocols by TVL</div>
+          <div className="a-card-sub">
+            Largest Solana ecosystem protocols by total value locked
           </div>
-        )}
-
-        {!loading && analytics && (
-          <>
-            {/* Stats strip */}
-            <div
-              style={{
-                display: "flex",
-                gap: 0,
-                marginTop: 24,
-                borderTop: "1px solid var(--border)",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              {[
-                { l: "Total TVL", v: fmtUsd(analytics.totalTvl) },
-                { l: "DEX Volume", v: fmtUsd(analytics.totalVolume) },
-                { l: "Protocols", v: `${analytics.projectCount}` },
-                { l: "Categories", v: `${analytics.categoryCount}` },
-              ].map((s, i) => (
-                <div
-                  key={s.l}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    borderRight: i < 3 ? "1px solid var(--border)" : "none",
-                  }}
-                >
-                  <div style={label}>{s.l}</div>
-                  <div
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      fontFamily: "var(--font-mono)",
-                      color: "var(--text)",
-                      marginTop: 2,
-                    }}
-                  >
-                    {s.v}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={rule} />
-
-            {/* TVL chart */}
-            <div style={sectionHeader}>Top 10 Protocols by TVL</div>
-            {tvlChart.length > 0 ? (
-              <div style={{ marginTop: 8 }}>
-                <InsightChart
-                  data={tvlChart}
-                  type="bar"
-                  color="var(--brown)"
-                  height={220}
-                  formatValue={(v) => fmtUsd(v)}
-                />
-              </div>
+          <div className="a-card-body">
+            {topTvlChart.length > 0 ? (
+              <InsightChart data={topTvlChart} type="bar" height={280} formatValue={fmtUsd} />
             ) : (
-              <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
-                TVL data unavailable.
-              </div>
+              <div className="a-empty">Data unavailable</div>
             )}
-            <div
-              style={{
-                fontSize: 11,
-                color: "var(--text-muted)",
-                fontFamily: "var(--font-mono)",
-                marginTop: 4,
-              }}
-            >
-              Source: DeFiLlama
+          </div>
+        </div>
+
+        <div className="a-span-4">
+          <div className="a-card a-stat">
+            <div>
+              <div className="a-card-title">Total TVL</div>
+              <div className="a-card-sub">Ecosystem-wide</div>
             </div>
+            <div className="a-stat-value">{fmtUsd(analytics?.totalTvl)}</div>
+            <div className="a-stat-label">Total value locked</div>
+          </div>
+          <div className="a-card a-stat">
+            <div>
+              <div className="a-card-title">DEX Volume 24h</div>
+              <div className="a-card-sub">Aggregate</div>
+            </div>
+            <div className="a-stat-value">{fmtUsd(dexVol?.total24h ?? analytics?.totalVolume)}</div>
+            <div className="a-stat-label">Routed volume</div>
+          </div>
+        </div>
+      </div>
 
-            <div style={rule} />
-
-            {/* Category chart */}
-            <div style={sectionHeader}>Category Distribution</div>
-            {catChart.length > 0 ? (
-              <div style={{ marginTop: 8 }}>
-                <InsightChart
-                  data={catChart}
-                  type="bar"
-                  color="var(--brown)"
-                  height={200}
-                  formatValue={(v) => `${v}`}
-                />
-              </div>
+      {/* ── Row 2 (6/6): DEX volume + Fees ─────────────────────── */}
+      <div className="a-grid a-grid-2" style={{ marginBottom: 44 }}>
+        <div className="a-card">
+          <div className="a-card-title">DEX Volume by Protocol</div>
+          <div className="a-card-sub">Top DEXs by 24h routed volume</div>
+          <div className="a-card-body">
+            {dexVolChart.length > 0 ? (
+              <InsightChart data={dexVolChart} type="bar" height={260} formatValue={fmtUsd} />
             ) : (
-              <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
-                No category data.
-              </div>
+              <div className="a-empty">Data unavailable</div>
             )}
+          </div>
+        </div>
 
-            <div style={rule} />
+        <div className="a-card">
+          <div className="a-card-title">Fees &amp; Revenue</div>
+          <div className="a-card-sub">
+            Top protocols by 24h fees — {fmtUsd(feesRev?.total24hFees)} total
+          </div>
+          <div className="a-card-body">
+            {feesChart.length > 0 ? (
+              <InsightChart data={feesChart} type="bar" height={260} formatValue={fmtUsd} />
+            ) : (
+              <div className="a-empty">Data unavailable</div>
+            )}
+          </div>
+        </div>
+      </div>
+        <div style={{ marginTop: 40 }}>
+          <div style={sectionTitle}>Protocol Rankings</div>
 
-            {/* Rankings table */}
-            <div style={sectionHeader}>Protocol Rankings</div>
-
-            {/* Controls */}
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                marginTop: 12,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <input
-                placeholder="Search protocols..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  flex: 1,
-                  minWidth: 200,
-                  padding: "6px 10px",
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius)",
-                  fontSize: 13,
-                  color: "var(--text)",
-                }}
-              />
-              <div style={{ display: "flex", gap: 0 }}>
-                {(["tvl", "volume24h", "name"] as const).map((k) => (
-                  <button
-                    key={k}
-                    onClick={() => setSort(k)}
-                    style={{
-                      padding: "4px 10px",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      fontFamily: "var(--font-mono)",
-                      background: sort === k ? "var(--text)" : "transparent",
-                      color: sort === k ? "var(--linen)" : "var(--text-muted)",
-                      border: "1px solid var(--border)",
-                      borderRight: k !== "name" ? "none" : "1px solid var(--border)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {k === "tvl" ? "TVL" : k === "volume24h" ? "VOL" : "NAME"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
-              {categories.slice(0, 15).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  style={{
-                    padding: "3px 8px",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    fontFamily: "var(--font-mono)",
-                    background: category === c ? "var(--brown)" : "transparent",
-                    color: category === c ? "#fff" : "var(--text-muted)",
-                    border: "1px solid var(--border)",
-                    cursor: "pointer",
-                  }}
-                >
-                  {c === "all" ? "ALL" : c}
+          {/* Controls */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginBottom: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <input
+              placeholder="Search protocols..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={inputStyle}
+            />
+            <div style={{ display: "flex", gap: 4 }}>
+              {(["tvl", "volume24h", "name"] as const).map((k) => (
+                <button key={k} onClick={() => setSort(k)} style={sortBtn(sort === k)}>
+                  {k === "tvl" ? "TVL" : k === "volume24h" ? "VOLUME" : "NAME"}
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Table */}
-            <div style={{ marginTop: 12, borderTop: "1px solid var(--border)" }}>
+          {/* Category filter buttons */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
+            {categories.slice(0, 20).map((c) => (
+              <button key={c} onClick={() => setCategory(c)} style={filterBtn(category === c)}>
+                {c === "all" ? "ALL" : c}
+              </button>
+            ))}
+          </div>
+
+          {/* Table */}
+          {filtered.length > 0 ? (
+            <div style={{ borderTop: "1px solid var(--border)" }}>
               <table className="t-table">
                 <thead>
                   <tr>
-                    <th style={{ width: 32 }}>#</th>
-                    <th>Protocol</th>
-                    <th>Category</th>
-                    <th style={{ textAlign: "right" }}>TVL</th>
-                    <th style={{ textAlign: "right" }}>24h</th>
-                    <th style={{ textAlign: "right" }}>Volume</th>
+                    <th style={{ ...thStyle, width: 32 }}>#</th>
+                    <th style={thStyle}>Name</th>
+                    <th style={thStyle}>Category</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>TVL</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>24h</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>7d</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>30d</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>Volume</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,6 +400,7 @@ export default function AnalyticsPage() {
                     <tr key={p.id}>
                       <td
                         style={{
+                          ...tdStyle,
                           color: "var(--text-muted)",
                           fontFamily: "var(--font-mono)",
                           fontSize: 11,
@@ -319,59 +408,168 @@ export default function AnalyticsPage() {
                       >
                         {i + 1}
                       </td>
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <td style={tdStyle}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <ProjectLogo src={p.logoUrl} name={p.name} size={18} />
                           <Link
-                            href={`/projects/${p.id}`}
+                            href={`/analytics/${encodeURIComponent(p.name.toLowerCase().replace(/\s+/g, "-"))}`}
                             style={{ fontSize: 13, color: "var(--text)" }}
                           >
                             {p.name}
                           </Link>
                         </div>
                       </td>
-                      <td style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.category}</td>
+                      <td style={{ ...tdStyle, fontSize: 11, color: "var(--text-muted)" }}>
+                        {p.category}
+                      </td>
+                      <td style={{ ...tdStyle, ...monoRight }}>{fmtUsd(p.metrics?.tvl)}</td>
                       <td
-                        style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12 }}
+                        style={{
+                          ...tdStyle,
+                          ...monoRight,
+                          color: changeColor(p.change24h),
+                        }}
                       >
-                        {fmtUsd(p.metrics?.tvl)}
+                        {fmtPct(p.change24h)}
                       </td>
                       <td
                         style={{
-                          textAlign: "right",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 12,
-                          color: (p.change24h ?? 0) >= 0 ? "var(--green)" : "var(--red)",
+                          ...tdStyle,
+                          ...monoRight,
+                          color: changeColor(p.change7d),
                         }}
                       >
-                        {p.change24h !== undefined
-                          ? `${p.change24h >= 0 ? "+" : ""}${p.change24h.toFixed(1)}%`
-                          : "\u2014"}
+                        {fmtPct(p.change7d)}
                       </td>
                       <td
-                        style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12 }}
+                        style={{
+                          ...tdStyle,
+                          ...monoRight,
+                          color: changeColor(p.change30d),
+                        }}
                       >
-                        {fmtUsd(p.metrics?.volume24h)}
+                        {fmtPct(p.change30d)}
+                      </td>
+                      <td style={{ ...tdStyle, ...monoRight }}>{fmtUsd(p.metrics?.volume24h)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={sourceNote}>
+                Showing {Math.min(50, filtered.length)} of {filtered.length} protocols
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+              No protocols found.
+            </div>
+          )}
+        </div>
+
+        {/* ── 4. Fees / Revenue ────────────────────────────────── */}
+        <div style={{ marginTop: 40 }}>
+          <div style={sectionTitle}>Fees &amp; Revenue — Top 20 Protocols</div>
+          {feesChart.length > 0 ? (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 24,
+                  marginBottom: 16,
+                  fontSize: 12,
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                <span style={{ color: "var(--text-muted)" }}>
+                  24h: <span style={{ color: "var(--text)" }}>{fmtUsd(feesRev?.total24hFees)}</span>
+                </span>
+                <span style={{ color: "var(--text-muted)" }}>
+                  7d: <span style={{ color: "var(--text)" }}>{fmtUsd(feesRev?.total7dFees)}</span>
+                </span>
+                <span style={{ color: "var(--text-muted)" }}>
+                  30d: <span style={{ color: "var(--text)" }}>{fmtUsd(feesRev?.total30dFees)}</span>
+                </span>
+              </div>
+              <InsightChart
+                data={feesChart}
+                type="bar"
+                color="var(--accent)"
+                height={250}
+                formatValue={(v) => fmtUsd(v)}
+              />
+            </>
+          ) : (
+            <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+              Data unavailable
+            </div>
+          )}
+        </div>
+
+        {/* ── 5. ETF Flows ─────────────────────────────────────── */}
+        <div style={{ marginTop: 40 }}>
+          <div style={sectionTitle}>ETF Flows</div>
+          {etfs.length > 0 ? (
+            <div style={{ borderTop: "1px solid var(--border)" }}>
+              <table className="t-table">
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Name</th>
+                    <th style={thStyle}>Ticker</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>AUM</th>
+                    <th style={thStyle}>Staking</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {etfs.map((etf) => (
+                    <tr key={etf.ticker}>
+                      <td style={tdStyle}>{etf.name}</td>
+                      <td
+                        style={{
+                          ...tdStyle,
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 12,
+                          color: "var(--accent)",
+                        }}
+                      >
+                        {etf.ticker}
+                      </td>
+                      <td style={{ ...tdStyle, ...monoRight }}>{fmtUsd(etf.aum ?? 0)}</td>
+                      <td style={{ ...tdStyle, fontSize: 12 }}>
+                        <span
+                          style={{
+                            color: etf.staking ? "var(--green)" : "var(--text-muted)",
+                            fontFamily: "var(--font-mono)",
+                          }}
+                        >
+                          {etf.staking ? "Yes" : "No"}
+                        </span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "var(--text-muted)",
-                fontFamily: "var(--font-mono)",
-                marginTop: 8,
-              }}
-            >
-              Source: DeFiLlama \u00b7 Showing {Math.min(50, filtered.length)} of {filtered.length}{" "}
-              protocols
+          ) : (
+            <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+              Data unavailable
             </div>
-          </>
-        )}
-      </div>
+          )}
+          <div style={sourceNote}>Source: SolanaFloor</div>
+        </div>
+
+        {/* ── 6. Source attribution ────────────────────────────── */}
+        <div
+          style={{
+            marginTop: 32,
+            paddingTop: 16,
+            borderTop: "1px solid var(--border)",
+            fontSize: 11,
+            color: "var(--text-muted)",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          Source: DeFiLlama, SolanaFloor
+        </div>
     </div>
   );
 }

@@ -3,7 +3,10 @@ import { getAuthService, publicUser } from "../../../../lib/auth-service";
 import { errorFromUnknown, requestIdFromRequest } from "../../../../lib/api";
 import { SESSION_COOKIE_NAME } from "../../../../lib/session";
 
-function setSessionCookie(response: NextResponse<{ user: unknown }>, token: string): NextResponse<{ user: unknown }> {
+function setSessionCookie(
+  response: NextResponse<{ user: unknown }>,
+  token: string,
+): NextResponse<{ user: unknown }> {
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
